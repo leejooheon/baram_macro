@@ -1,7 +1,9 @@
 package follower
 
 import common.Keyboard
+import follower.ocr.FailureDetecter
 import kotlinx.coroutines.*
+import org.junit.jupiter.api.fail
 import java.awt.event.KeyEvent
 
 object FollowerMacro {
@@ -9,6 +11,11 @@ object FollowerMacro {
 
     private var healJob: Job? = null
     private var honmaJob: Job? = null
+    private lateinit var failureDetector: FailureDetecter
+
+    fun init(detecter: FailureDetecter) {
+        failureDetector = detecter
+    }
 
     suspend fun healMe() { // BACK_QUOTE
         cancelAll()
@@ -32,9 +39,12 @@ object FollowerMacro {
                     keyEvent = KeyEvent.VK_1, // 힐
                     delay = 400
                 )
-                Keyboard.pressAndRelease(KeyEvent.VK_2) // 공증
-                Keyboard.pressAndRelease(KeyEvent.VK_4) // 금강불체
-                Keyboard.pressAndRelease(KeyEvent.VK_4) // 금강불체
+                do {
+                    Keyboard.pressAndRelease(KeyEvent.VK_2) // 공증
+                } while (failureDetector.detect())
+                do {
+                    Keyboard.pressAndRelease(KeyEvent.VK_4) // 금강불체
+                } while (failureDetector.detect())
             }
         }
     }

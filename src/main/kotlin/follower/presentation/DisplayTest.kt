@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import common.Keyboard
 import java.awt.Rectangle
 import java.awt.Toolkit
 
@@ -16,19 +17,16 @@ internal fun DisplayTest(
     rectangle: Rectangle,
     onRectangleChange: (Rectangle) -> Unit,
 ) {
-//    var rectangle by remember { mutableStateOf(Rectangle(Toolkit.getDefaultToolkit().screenSize)) }
-//    val image = MyRobot.capture(rectangle)
-
     Row(
         modifier = Modifier.fillMaxWidth()
     ) {
         Box(modifier = Modifier.weight(0.65f).background(Color.Black)) {
-//            Image(
-//                bitmap = MyRobot.capture(rectangle),
-//                contentDescription = null,
-//                contentScale = ContentScale.None,
-////                modifier = Modifier.aspectRatio(16f / 9f)
-//            )
+            Image(
+                bitmap = Keyboard.capture(rectangle),
+                contentDescription = null,
+                contentScale = ContentScale.None,
+//                modifier = Modifier.aspectRatio(16f / 9f)
+            )
         }
         Box(modifier = Modifier.weight(0.35f)) {
             Column {

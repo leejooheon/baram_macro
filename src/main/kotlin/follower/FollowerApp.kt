@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import commander.presentation.CommandHistory
 import follower.presentation.ConnectionStateView
+import follower.presentation.DisplayTest
 
 
 @Composable
@@ -39,6 +40,14 @@ fun FollowerApp() {
                 item {
                     CommandHistory(
                         histories = uiState.commandBuffer
+                    )
+                }
+                item {
+                    DisplayTest(
+                        rectangle = uiState.magicResultRect,
+                        onRectangleChange = {
+                            follower.onMagicRectChanged(it)
+                        }
                     )
                 }
                 item {

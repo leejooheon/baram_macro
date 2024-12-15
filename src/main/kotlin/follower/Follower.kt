@@ -1,7 +1,6 @@
 package follower
 
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
-import com.sun.tools.jconsole.JConsoleContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import commander.Commander.Companion.PORT
@@ -12,11 +11,13 @@ import common.Keyboard
 import common.RingBuffer
 import follower.model.ConnectionState
 import follower.model.FollowerUiState
+import follower.ocr.FailureDetecter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.awt.Rectangle
 import java.awt.event.KeyEvent
 import java.net.Socket
 
@@ -26,6 +27,23 @@ class Follower {
 
     private val _uiState = MutableStateFlow(FollowerUiState.default)
     val uiState = _uiState.asStateFlow()
+
+    private var failureDetecter = FailureDetecter()
+
+    init {
+        observe()
+    }
+
+    private fun observe() = scope.launch {
+        launch {
+            failureDetecter.rectangle.collect { rect ->
+                _uiState.update {
+                    it.copy(magicResultRect = rect)
+                }
+            }
+        }
+        FollowerMacro.init(failureDetecter)
+    }
 
     fun start() = scope.launch(Dispatchers.IO) {
         if(_uiState.value.isRunning) {
@@ -69,6 +87,10 @@ class Follower {
                 }
             }
         }
+    }
+
+    fun onMagicRectChanged(rect: Rectangle) {
+        failureDetecter.updateRectangle(rect)
     }
 
     private fun dispatchKeyPressEvent(keyEvent: Int) {

@@ -48,7 +48,6 @@ class Commander {
     fun start() = scope.launch(Dispatchers.IO) {
         if(uiState.value.isRunning) return@launch
         _uiState.update { it.copy(isRunning = true) }
-
         while (true) {
             val client = serverSocket.accept()
             synchronized(clients) {
