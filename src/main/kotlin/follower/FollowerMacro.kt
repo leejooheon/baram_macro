@@ -68,8 +68,8 @@ object FollowerMacro {
         cancelAll()
 
         Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
-        Keyboard.pressAndRelease(KeyEvent.VK_HOME)
         Keyboard.pressAndRelease(KeyEvent.VK_6)
+        Keyboard.pressAndRelease(KeyEvent.VK_HOME)
         Keyboard.pressAndRelease(KeyEvent.VK_7)
 
         Keyboard.pressAndRelease(KeyEvent.VK_TAB)

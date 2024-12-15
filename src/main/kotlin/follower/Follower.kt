@@ -75,10 +75,10 @@ class Follower {
         when {
             keyEvent in ctrlCommandFilter -> {
                 val event = when (keyEvent) {
-                    NativeKeyEvent.VC_W -> KeyEvent.VK_W
-                    NativeKeyEvent.VC_A -> KeyEvent.VK_A
-                    NativeKeyEvent.VC_S -> KeyEvent.VK_S
-                    NativeKeyEvent.VC_D -> KeyEvent.VK_D
+                    NativeKeyEvent.VC_W -> KeyEvent.VK_UP
+                    NativeKeyEvent.VC_A -> KeyEvent.VK_LEFT
+                    NativeKeyEvent.VC_S -> KeyEvent.VK_DOWN
+                    NativeKeyEvent.VC_D -> KeyEvent.VK_RIGHT
                     else -> return
                 }
                 Keyboard.press(event)
@@ -90,10 +90,10 @@ class Follower {
         when {
             keyEvent in ctrlCommandFilter -> {
                 val event = when (keyEvent) {
-                    NativeKeyEvent.VC_W -> KeyEvent.VK_W
-                    NativeKeyEvent.VC_A -> KeyEvent.VK_A
-                    NativeKeyEvent.VC_S -> KeyEvent.VK_S
-                    NativeKeyEvent.VC_D -> KeyEvent.VK_D
+                    NativeKeyEvent.VC_W -> KeyEvent.VK_UP
+                    NativeKeyEvent.VC_A -> KeyEvent.VK_LEFT
+                    NativeKeyEvent.VC_S -> KeyEvent.VK_DOWN
+                    NativeKeyEvent.VC_D -> KeyEvent.VK_RIGHT
                     else -> return
                 }
                 Keyboard.release(event)
