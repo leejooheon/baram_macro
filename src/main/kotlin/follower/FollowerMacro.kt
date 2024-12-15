@@ -11,67 +11,75 @@ object FollowerMacro {
     private var honmaJob: Job? = null
 
     suspend fun healMe() { // BACK_QUOTE
-        Keyboard.event(KeyEvent.VK_ESCAPE)
-        Keyboard.event(KeyEvent.VK_HOME)
-        Keyboard.event(KeyEvent.VK_1)
-        Keyboard.event(KeyEvent.VK_ENTER)
+        cancelAll()
+
+        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+        Keyboard.pressAndRelease(KeyEvent.VK_HOME)
+        Keyboard.pressAndRelease(KeyEvent.VK_1)
+        Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
     }
 
     suspend fun heal() { // F1
         cancelAll()
 
         healJob = scope.launch {
-            Keyboard.event(KeyEvent.VK_ESCAPE)
-            Keyboard.event(KeyEvent.VK_TAB)
-            Keyboard.event(KeyEvent.VK_TAB)
+            Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+            Keyboard.pressAndRelease(KeyEvent.VK_TAB)
+            Keyboard.pressAndRelease(KeyEvent.VK_TAB)
 
             while (isActive) {
-                Keyboard.event(
+                Keyboard.pressAndRelease(
                     keyEvent = KeyEvent.VK_1, // 힐
                     delay = 400
                 )
-                Keyboard.event(KeyEvent.VK_2) // 공증
-                Keyboard.event(KeyEvent.VK_4) // 금강불체
+                Keyboard.pressAndRelease(KeyEvent.VK_2) // 공증
+                Keyboard.pressAndRelease(KeyEvent.VK_4) // 금강불체
             }
         }
     }
 
     suspend fun gongJeung() { // F2
-        Keyboard.event(KeyEvent.VK_U)
-        Keyboard.event(KeyEvent.VK_U)
-        Keyboard.event(KeyEvent.VK_2)
+        cancelAll()
+
+        Keyboard.pressAndRelease(KeyEvent.VK_U)
+        Keyboard.pressAndRelease(KeyEvent.VK_U)
+        Keyboard.pressAndRelease(KeyEvent.VK_2)
     }
 
     suspend fun honmasul() { // F3
         cancelAll()
         honmaJob = scope.launch {
-            Keyboard.event(KeyEvent.VK_ESCAPE)
+            Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
             while (isActive) {
-                Keyboard.event(KeyEvent.VK_5)
-                Keyboard.event(KeyEvent.VK_UP)
-                Keyboard.event(KeyEvent.VK_ENTER)
+                Keyboard.pressAndRelease(KeyEvent.VK_5)
+                Keyboard.pressAndRelease(KeyEvent.VK_UP)
+                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
             }
         }
     }
 
     suspend fun invincible() { // F4
-        Keyboard.event(KeyEvent.VK_4)
+        cancelAll()
+
+        Keyboard.pressAndRelease(KeyEvent.VK_4)
     }
 
     suspend fun bomu() {
-        Keyboard.event(KeyEvent.VK_ESCAPE)
-        Keyboard.event(KeyEvent.VK_HOME)
-        Keyboard.event(KeyEvent.VK_6)
-        Keyboard.event(KeyEvent.VK_7)
+        cancelAll()
 
-        Keyboard.event(KeyEvent.VK_TAB)
-        Keyboard.event(KeyEvent.VK_TAB)
-        Keyboard.event(KeyEvent.VK_6)
-        Keyboard.event(KeyEvent.VK_7)
+        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+        Keyboard.pressAndRelease(KeyEvent.VK_HOME)
+        Keyboard.pressAndRelease(KeyEvent.VK_6)
+        Keyboard.pressAndRelease(KeyEvent.VK_7)
+
+        Keyboard.pressAndRelease(KeyEvent.VK_TAB)
+        Keyboard.pressAndRelease(KeyEvent.VK_TAB)
+        Keyboard.pressAndRelease(KeyEvent.VK_6)
+        Keyboard.pressAndRelease(KeyEvent.VK_7)
     }
 
     suspend fun cancelAll() {
-        Keyboard.event(KeyEvent.VK_ESCAPE)
+        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
 
         healJob?.cancel()
         healJob = null

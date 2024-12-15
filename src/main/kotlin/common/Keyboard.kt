@@ -6,10 +6,11 @@ import java.awt.Robot
 object Keyboard {
     private val robot = Robot()
 
-    suspend fun event(keyEvent: Int, delay: Long = 20) {
-        robot.keyPress(keyEvent)
+    suspend fun pressAndRelease(keyEvent: Int, delay: Long = 20) {
+        press(keyEvent)
         delay(delay)
-        robot.keyRelease(keyEvent)
+        release(keyEvent)
+        delay(delay)
     }
     fun press(keyEvent: Int) {
         robot.keyPress(keyEvent)
