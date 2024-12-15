@@ -24,6 +24,11 @@ dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     implementation("com.github.kwhat:jnativehook:2.2.2")
+
+    implementation(files("libs/tess4j-5.10.0.jar"))
+    implementation("net.sourceforge.tess4j:tess4j:5.10.0") {
+        exclude(group = "net.sourceforge.tess4j", module = "tess4j")
+    }
 }
 
 compose.desktop {
