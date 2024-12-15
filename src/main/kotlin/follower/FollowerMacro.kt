@@ -24,7 +24,7 @@ object FollowerMacro {
 
         healJob = scope.launch {
             Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
-            Keyboard.pressAndRelease(KeyEvent.VK_TAB)
+            Keyboard.pressAndRelease(KeyEvent.VK_TAB, delay = 100)
             Keyboard.pressAndRelease(KeyEvent.VK_TAB)
 
             while (isActive) {
@@ -33,6 +33,7 @@ object FollowerMacro {
                     delay = 400
                 )
                 Keyboard.pressAndRelease(KeyEvent.VK_2) // 공증
+                Keyboard.pressAndRelease(KeyEvent.VK_4) // 금강불체
                 Keyboard.pressAndRelease(KeyEvent.VK_4) // 금강불체
             }
         }
@@ -74,7 +75,7 @@ object FollowerMacro {
         Keyboard.pressAndRelease(KeyEvent.VK_7)
         Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
 
-        Keyboard.pressAndRelease(KeyEvent.VK_TAB)
+        Keyboard.pressAndRelease(KeyEvent.VK_TAB, delay = 100)
         Keyboard.pressAndRelease(KeyEvent.VK_TAB)
         Keyboard.pressAndRelease(KeyEvent.VK_6)
         Keyboard.pressAndRelease(KeyEvent.VK_7)
