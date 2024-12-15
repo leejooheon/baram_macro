@@ -20,6 +20,9 @@ dependencies {
 
     // Include the Test API
     testImplementation(compose.desktop.uiTestJUnit4)
+
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    implementation("com.github.kwhat:jnativehook:2.2.2")
 }
 
 compose.desktop {
