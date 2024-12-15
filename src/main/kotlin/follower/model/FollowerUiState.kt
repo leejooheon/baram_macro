@@ -7,13 +7,13 @@ data class FollowerUiState(
     val commandBuffer: List<String>,
     val magicResultRect: Rectangle,
     val isRunning: Boolean = false,
-
     ) {
     companion object {
         val default = FollowerUiState(
             connectionState = ConnectionState.Disconnected,
             commandBuffer = emptyList(),
-            magicResultRect = Rectangle(100,100,100,100),
+            // 2050, 1100, 200, 30
+            magicResultRect = Rectangle(2050,1100,200,30),
             isRunning = false,
         )
     }

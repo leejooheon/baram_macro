@@ -1,9 +1,8 @@
 package follower
 
 import common.Keyboard
-import follower.ocr.FailureDetecter
+import follower.ocr.TextDetecter
 import kotlinx.coroutines.*
-import org.junit.jupiter.api.fail
 import java.awt.event.KeyEvent
 
 object FollowerMacro {
@@ -11,14 +10,15 @@ object FollowerMacro {
 
     private var healJob: Job? = null
     private var honmaJob: Job? = null
-    private lateinit var failureDetector: FailureDetecter
+    private lateinit var textDetector: TextDetecter
+    private val failureTargets = listOf("실패", "심패")
 
-    fun init(detecter: FailureDetecter) {
-        failureDetector = detecter
+    fun init(detecter: TextDetecter) {
+        textDetector = detecter
     }
-
-    suspend fun healMe() { // BACK_QUOTE
-        cancelAll()
+    // 2050, 1100, 200, 30
+    suspend fun healMe(cancel: Boolean = true) { // BACK_QUOTE
+        if(cancel) cancelAll()
 
         Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
         Keyboard.pressAndRelease(KeyEvent.VK_1)
@@ -28,33 +28,57 @@ object FollowerMacro {
 
     suspend fun heal() { // F1
         cancelAll()
-
         healJob = scope.launch {
             Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
             Keyboard.pressAndRelease(KeyEvent.VK_TAB, delay = 100)
             Keyboard.pressAndRelease(KeyEvent.VK_TAB)
 
             while (isActive) {
-                Keyboard.pressAndRelease(
-                    keyEvent = KeyEvent.VK_1, // 힐
-                    delay = 400
-                )
-                do {
-                    Keyboard.pressAndRelease(KeyEvent.VK_2) // 공증
-                } while (failureDetector.detect())
-                do {
-                    Keyboard.pressAndRelease(KeyEvent.VK_4) // 금강불체
-                } while (failureDetector.detect())
+                repeat(4) {
+                    Keyboard.pressAndRelease(KeyEvent.VK_1)
+                }
+
+                gongJeung(false)
+                healMe(false)
+                invincible(false)
+
+                Keyboard.pressAndRelease(KeyEvent.VK_TAB, delay = 50)
+                Keyboard.pressAndRelease(KeyEvent.VK_TAB)
+
+                repeat(6) {
+                    Keyboard.pressAndRelease(KeyEvent.VK_1)
+                }
+                Keyboard.pressAndRelease(KeyEvent.VK_0)
+
+                maybeFailure()
             }
         }
     }
 
-    suspend fun gongJeung() { // F2
-        cancelAll()
+    suspend fun gongJeung(cancel: Boolean = true) = withContext(Dispatchers.IO) { // F2
+        if(cancel) cancelAll()
 
-        Keyboard.pressAndRelease(KeyEvent.VK_U)
-        Keyboard.pressAndRelease(KeyEvent.VK_U)
-        Keyboard.pressAndRelease(KeyEvent.VK_2)
+        var text: String
+        while (true) {
+            Keyboard.pressAndRelease(KeyEvent.VK_2)
+            text = textDetector.detectString()
+            println("@@@ gongjeung: $text")
+
+            when {
+                 failureTargets.contains(text) -> {
+                    println("@@@ gongjeung: 4561")
+                    continue
+                }
+                text.contains("마력") -> {
+                    println("@@@ gongjeung: 123123")
+                    Keyboard.pressAndRelease(KeyEvent.VK_U)
+                    Keyboard.pressAndRelease(KeyEvent.VK_U)
+                }
+                text.contains("공력") -> {
+                    break
+                }
+            }
+        }
     }
 
     suspend fun honmasul() { // F3
@@ -69,10 +93,12 @@ object FollowerMacro {
         }
     }
 
-    suspend fun invincible() { // F4
-        cancelAll()
+    suspend fun invincible(cancel: Boolean = true) = withContext(Dispatchers.IO) { // F4
+        if(cancel) cancelAll()
 
-        Keyboard.pressAndRelease(KeyEvent.VK_4)
+        do {
+            Keyboard.pressAndRelease(KeyEvent.VK_4)
+        } while (textDetector.detect(failureTargets))
     }
 
     suspend fun bomu() {
@@ -99,5 +125,31 @@ object FollowerMacro {
 
         honmaJob?.cancel()
         honmaJob = null
+    }
+
+    private suspend fun maybeFailure() {
+        val text = textDetector.detectString()
+        println("#### maybeFailure: $text")
+        when {
+            text.contains("마력") -> {
+                gongJeung(false)
+            }
+            text.contains("귀신") -> {
+                dead()
+                healMe(false)
+                invincible(false)
+            }
+        }
+    }
+
+    private suspend fun dead() {
+        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+        Keyboard.pressAndRelease(KeyEvent.VK_0)
+        Keyboard.pressAndRelease(KeyEvent.VK_HOME)
+        Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+
+        Keyboard.pressAndRelease(KeyEvent.VK_1)
+        Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+
     }
 }

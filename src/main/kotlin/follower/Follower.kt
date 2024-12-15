@@ -11,7 +11,7 @@ import common.Keyboard
 import common.RingBuffer
 import follower.model.ConnectionState
 import follower.model.FollowerUiState
-import follower.ocr.FailureDetecter
+import follower.ocr.TextDetecter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,7 +28,7 @@ class Follower {
     private val _uiState = MutableStateFlow(FollowerUiState.default)
     val uiState = _uiState.asStateFlow()
 
-    private var failureDetecter = FailureDetecter()
+    private var textDetecter = TextDetecter()
 
     init {
         observe()
@@ -36,13 +36,13 @@ class Follower {
 
     private fun observe() = scope.launch {
         launch {
-            failureDetecter.rectangle.collect { rect ->
+            textDetecter.rectangle.collect { rect ->
                 _uiState.update {
                     it.copy(magicResultRect = rect)
                 }
             }
         }
-        FollowerMacro.init(failureDetecter)
+        FollowerMacro.init(textDetecter)
     }
 
     fun start() = scope.launch(Dispatchers.IO) {
@@ -57,7 +57,7 @@ class Follower {
             )
         }
 
-        val socket = Socket("localhost", PORT)
+        val socket = Socket("192.168.0.2", PORT)
 
         _uiState.update {
             it.copy(connectionState = ConnectionState.Connected)
@@ -90,17 +90,17 @@ class Follower {
     }
 
     fun onMagicRectChanged(rect: Rectangle) {
-        failureDetecter.updateRectangle(rect)
+        textDetecter.updateRectangle(rect)
     }
 
     private fun dispatchKeyPressEvent(keyEvent: Int) {
         when {
             keyEvent in ctrlCommandFilter -> {
                 val event = when (keyEvent) {
-                    NativeKeyEvent.VC_UP -> KeyEvent.VK_UP
-                    NativeKeyEvent.VC_LEFT -> KeyEvent.VK_LEFT
-                    NativeKeyEvent.VC_DOWN -> KeyEvent.VK_DOWN
-                    NativeKeyEvent.VC_RIGHT -> KeyEvent.VK_RIGHT
+                    NativeKeyEvent.VC_W -> KeyEvent.VK_UP
+                    NativeKeyEvent.VC_A -> KeyEvent.VK_LEFT
+                    NativeKeyEvent.VC_S -> KeyEvent.VK_DOWN
+                    NativeKeyEvent.VC_D -> KeyEvent.VK_RIGHT
                     else -> return
                 }
                 Keyboard.press(event)
@@ -112,10 +112,10 @@ class Follower {
         when {
             keyEvent in ctrlCommandFilter -> {
                 val event = when (keyEvent) {
-                    NativeKeyEvent.VC_UP -> KeyEvent.VK_UP
-                    NativeKeyEvent.VC_LEFT -> KeyEvent.VK_LEFT
-                    NativeKeyEvent.VC_DOWN -> KeyEvent.VK_DOWN
-                    NativeKeyEvent.VC_RIGHT -> KeyEvent.VK_RIGHT
+                    NativeKeyEvent.VC_W -> KeyEvent.VK_UP
+                    NativeKeyEvent.VC_A -> KeyEvent.VK_LEFT
+                    NativeKeyEvent.VC_S -> KeyEvent.VK_DOWN
+                    NativeKeyEvent.VC_D -> KeyEvent.VK_RIGHT
                     else -> return
                 }
                 Keyboard.release(event)
