@@ -9,9 +9,9 @@ import commander.model.macroCommandFilter
 import common.EventModel.Companion.toModel
 import common.Keyboard
 import common.RingBuffer
+import follower.macro.FollowerMacro
 import follower.model.ConnectionState
 import follower.model.FollowerUiState
-import follower.ocr.TextDetecter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,21 +28,8 @@ class Follower {
     private val _uiState = MutableStateFlow(FollowerUiState.default)
     val uiState = _uiState.asStateFlow()
 
-    private var textDetecter = TextDetecter()
-
     init {
-        observe()
-    }
-
-    private fun observe() = scope.launch {
-        launch {
-            textDetecter.rectangle.collect { rect ->
-                _uiState.update {
-                    it.copy(magicResultRect = rect)
-                }
-            }
-        }
-        FollowerMacro.init(textDetecter)
+        FollowerMacro.init(this)
     }
 
     fun start() = scope.launch(Dispatchers.IO) {
@@ -90,7 +77,14 @@ class Follower {
     }
 
     fun onMagicRectChanged(rect: Rectangle) {
-        textDetecter.updateRectangle(rect)
+        _uiState.update {
+            it.copy(magicRect = rect)
+        }
+    }
+    fun onBuffStateRectChanged(rect: Rectangle) {
+        _uiState.update {
+            it.copy(buffStateRect = rect)
+        }
     }
 
     private fun dispatchKeyPressEvent(keyEvent: Int) {
@@ -123,7 +117,7 @@ class Follower {
             keyEvent in macroCommandFilter -> {
                 when (keyEvent) {
                     NativeKeyEvent.VC_ESCAPE -> FollowerMacro.cancelAll()
-                    NativeKeyEvent.VC_BACKQUOTE -> FollowerMacro.healMe()
+                    NativeKeyEvent.VC_BACKQUOTE -> FollowerMacro.gongju()
                     NativeKeyEvent.VC_F1 -> FollowerMacro.heal()
                     NativeKeyEvent.VC_F2 -> FollowerMacro.gongJeung()
                     NativeKeyEvent.VC_F3 -> FollowerMacro.honmasul()

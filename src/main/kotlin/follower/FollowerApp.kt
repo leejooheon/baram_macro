@@ -44,7 +44,15 @@ fun FollowerApp() {
                 }
                 item {
                     DisplayTest(
-                        rectangle = uiState.magicResultRect,
+                        rectangle = uiState.buffStateRect,
+                        onRectangleChange = {
+                            follower.onBuffStateRectChanged(it)
+                        }
+                    )
+                }
+                item {
+                    DisplayTest(
+                        rectangle = uiState.magicRect,
                         onRectangleChange = {
                             follower.onMagicRectChanged(it)
                         }

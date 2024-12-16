@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
 import common.Keyboard
 import java.awt.Rectangle
 import java.awt.Toolkit
@@ -18,7 +19,9 @@ internal fun DisplayTest(
     onRectangleChange: (Rectangle) -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 16.dp)
     ) {
         Box(modifier = Modifier.weight(0.65f).background(Color.Black)) {
             Image(

@@ -1,8 +1,11 @@
-package follower
+package follower.macro
 
 import common.Keyboard
+import follower.Follower
 import follower.ocr.TextDetecter
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collectLatest
+import java.awt.Rectangle
 import java.awt.event.KeyEvent
 
 object FollowerMacro {
@@ -10,13 +13,37 @@ object FollowerMacro {
 
     private var healJob: Job? = null
     private var honmaJob: Job? = null
-    private lateinit var textDetector: TextDetecter
     private val failureTargets = listOf("실패", "심패")
 
-    fun init(detecter: TextDetecter) {
-        textDetector = detecter
+    private var buffRect = Rectangle()
+    private var magicRect = Rectangle()
+
+    private val textDetector = TextDetecter()
+
+    fun init(follower: Follower) {
+        scope.launch {
+            follower.uiState.collectLatest {
+                buffRect = it.buffStateRect
+                magicRect = it.magicRect
+            }
+        }
     }
-    // 2050, 1100, 200, 30
+
+    suspend fun gongju() {
+        cancelAll()
+        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+
+        Keyboard.pressAndRelease(KeyEvent.VK_TAB, delay = 70)
+        Keyboard.pressAndRelease(KeyEvent.VK_TAB)
+
+        Keyboard.pressAndRelease(KeyEvent.VK_8)
+        Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+
+        gongJeung()
+        heal()
+    }
+
     suspend fun healMe(cancel: Boolean = true) { // BACK_QUOTE
         if(cancel) cancelAll()
 
@@ -30,22 +57,26 @@ object FollowerMacro {
         cancelAll()
         healJob = scope.launch {
             Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+            Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
             Keyboard.pressAndRelease(KeyEvent.VK_TAB, delay = 100)
             Keyboard.pressAndRelease(KeyEvent.VK_TAB)
 
+            var toggle = 1
             while (isActive) {
                 repeat(4) {
                     Keyboard.pressAndRelease(KeyEvent.VK_1)
                 }
 
-                gongJeung(false)
-                healMe(false)
-                invincible(false)
+                if(toggle % 4 == 0) {
+                    gongJeung(false)
+                    toggle = 1
+                } else {
+                    toggle += 1
+                }
 
-                Keyboard.pressAndRelease(KeyEvent.VK_TAB, delay = 50)
-                Keyboard.pressAndRelease(KeyEvent.VK_TAB)
+                checkBuff()
 
-                repeat(6) {
+                repeat(4) {
                     Keyboard.pressAndRelease(KeyEvent.VK_1)
                 }
                 Keyboard.pressAndRelease(KeyEvent.VK_0)
@@ -61,22 +92,17 @@ object FollowerMacro {
         var text: String
         while (true) {
             Keyboard.pressAndRelease(KeyEvent.VK_2)
-            text = textDetector.detectString()
+            text = textDetector.detectString(magicRect)
             println("@@@ gongjeung: $text")
 
             when {
-                 failureTargets.contains(text) -> {
-                    println("@@@ gongjeung: 4561")
-                    continue
-                }
+                failureTargets.contains(text) -> continue
                 text.contains("마력") -> {
-                    println("@@@ gongjeung: 123123")
                     Keyboard.pressAndRelease(KeyEvent.VK_U)
                     Keyboard.pressAndRelease(KeyEvent.VK_U)
                 }
-                text.contains("공력") -> {
-                    break
-                }
+                text.contains("귀신") -> dead()
+                text.contains("공력") -> break
             }
         }
     }
@@ -98,11 +124,11 @@ object FollowerMacro {
 
         do {
             Keyboard.pressAndRelease(KeyEvent.VK_4)
-        } while (textDetector.detect(failureTargets))
+        } while (textDetector.detect(failureTargets, magicRect))
     }
 
-    suspend fun bomu() {
-        cancelAll()
+    suspend fun bomu(cancel: Boolean = true) {
+        if(cancel) cancelAll()
 
         Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
         Keyboard.pressAndRelease(KeyEvent.VK_6)
@@ -127,17 +153,34 @@ object FollowerMacro {
         honmaJob = null
     }
 
+    private suspend fun checkBuff() {
+        val text = textDetector.detectString(buffRect)
+        println("checkBuff: $text")
+        if(!text.contains("보호") || !text.contains("무장")) {
+            bomu(false)
+        }
+
+        if(!text.contains("금강")) {
+            healMe(false)
+
+            Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+            Keyboard.pressAndRelease(KeyEvent.VK_TAB, 100)
+            Keyboard.pressAndRelease(KeyEvent.VK_TAB)
+
+            invincible(false)
+        }
+    }
+
     private suspend fun maybeFailure() {
-        val text = textDetector.detectString()
+        val text = textDetector.detectString(magicRect)
         println("#### maybeFailure: $text")
         when {
-            text.contains("마력") -> {
-                gongJeung(false)
-            }
             text.contains("귀신") -> {
                 dead()
-                healMe(false)
-                invincible(false)
+                return
+            }
+            text.contains("마력") -> {
+                gongJeung(false)
             }
         }
     }
@@ -150,6 +193,9 @@ object FollowerMacro {
 
         Keyboard.pressAndRelease(KeyEvent.VK_1)
         Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+
+        gongJeung(false)
+        invincible(false)
 
     }
 }
