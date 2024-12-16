@@ -24,8 +24,12 @@ class TextDetecter {
     ): Boolean = withContext(Dispatchers.IO) {
         delay(100)
         val image = Keyboard.capture(rectangle)
-        val origin = tesseract.doOCR(image.toAwtImage())
-        return@withContext targets.contains(origin)
+        try {
+            val origin = tesseract.doOCR(image.toAwtImage())
+            return@withContext targets.contains(origin)
+        } catch (e: Exception) {
+            return@withContext false
+        }
     }
 
     suspend fun detectString(

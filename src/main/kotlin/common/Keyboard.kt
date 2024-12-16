@@ -11,6 +11,13 @@ import java.lang.Exception
 object Keyboard {
     private val robot = Robot()
 
+    suspend fun pressKeyRepeatedly(keyEvent: Int, time: Int, delay: Long = 20) {
+        repeat(time) {
+            pressAndRelease(keyEvent, delay)
+        }
+    }
+
+
     suspend fun pressAndRelease(keyEvent: Int, delay: Long = 20) {
         press(keyEvent)
         delay(delay)

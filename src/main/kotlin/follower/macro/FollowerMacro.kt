@@ -28,14 +28,12 @@ object FollowerMacro {
             }
         }
     }
-
     suspend fun gongju() {
         cancelAll()
         Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
         Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
 
-        Keyboard.pressAndRelease(KeyEvent.VK_TAB, delay = 70)
-        Keyboard.pressAndRelease(KeyEvent.VK_TAB)
+        tabTab()
 
         Keyboard.pressAndRelease(KeyEvent.VK_8)
         Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
@@ -43,10 +41,20 @@ object FollowerMacro {
         gongJeung()
         heal()
     }
+    private suspend fun tabTab(){
+        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+        delay(20)
+
+        Keyboard.pressAndRelease(KeyEvent.VK_TAB)
+        delay(20)
+        Keyboard.pressAndRelease(KeyEvent.VK_TAB)
+    }
 
     suspend fun healMe(cancel: Boolean = true) { // BACK_QUOTE
         if(cancel) cancelAll()
 
+        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
         Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
         Keyboard.pressAndRelease(KeyEvent.VK_1)
         Keyboard.pressAndRelease(KeyEvent.VK_HOME)
@@ -56,31 +64,21 @@ object FollowerMacro {
     suspend fun heal() { // F1
         cancelAll()
         healJob = scope.launch {
-            Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
-            Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
-            Keyboard.pressAndRelease(KeyEvent.VK_TAB, delay = 100)
-            Keyboard.pressAndRelease(KeyEvent.VK_TAB)
+            tabTab()
 
-            var toggle = 1
+            var counter = 1
             while (isActive) {
-                repeat(4) {
-                    Keyboard.pressAndRelease(KeyEvent.VK_1)
-                }
+                Keyboard.pressKeyRepeatedly(KeyEvent.VK_1, 4)
 
-                if(toggle % 4 == 0) {
+                if (counter % 3 == 0) {
                     gongJeung(false)
-                    toggle = 1
-                } else {
-                    toggle += 1
+                    healMe(false)
+                    tabTab()
                 }
+                counter = (counter % 3) + 1
 
                 checkBuff()
-
-                repeat(4) {
-                    Keyboard.pressAndRelease(KeyEvent.VK_1)
-                }
-                Keyboard.pressAndRelease(KeyEvent.VK_0)
-
+                Keyboard.pressKeyRepeatedly(KeyEvent.VK_1, 4)
                 maybeFailure()
             }
         }
@@ -90,7 +88,7 @@ object FollowerMacro {
         if(cancel) cancelAll()
 
         var text: String
-        while (true) {
+        while (isActive) {
             Keyboard.pressAndRelease(KeyEvent.VK_2)
             text = textDetector.detectString(magicRect)
             println("@@@ gongjeung: $text")
@@ -137,13 +135,14 @@ object FollowerMacro {
         Keyboard.pressAndRelease(KeyEvent.VK_7)
         Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
 
-        Keyboard.pressAndRelease(KeyEvent.VK_TAB, delay = 100)
-        Keyboard.pressAndRelease(KeyEvent.VK_TAB)
+        tabTab()
         Keyboard.pressAndRelease(KeyEvent.VK_6)
         Keyboard.pressAndRelease(KeyEvent.VK_7)
     }
 
     suspend fun cancelAll() {
+        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+        delay(20)
         Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
 
         healJob?.cancel()
@@ -154,6 +153,7 @@ object FollowerMacro {
     }
 
     private suspend fun checkBuff() {
+        Keyboard.pressAndRelease(KeyEvent.VK_S)
         val text = textDetector.detectString(buffRect)
         println("checkBuff: $text")
         if(!text.contains("보호") || !text.contains("무장")) {
@@ -161,12 +161,6 @@ object FollowerMacro {
         }
 
         if(!text.contains("금강")) {
-            healMe(false)
-
-            Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
-            Keyboard.pressAndRelease(KeyEvent.VK_TAB, 100)
-            Keyboard.pressAndRelease(KeyEvent.VK_TAB)
-
             invincible(false)
         }
     }
@@ -177,10 +171,16 @@ object FollowerMacro {
         when {
             text.contains("귀신") -> {
                 dead()
-                return
             }
             text.contains("마력") -> {
                 gongJeung(false)
+                healMe(false)
+
+                tabTab()
+            }
+            text.contains("다른") -> {
+                Keyboard.pressAndRelease(KeyEvent.VK_0)
+                bomu(false)
             }
         }
     }
@@ -196,6 +196,5 @@ object FollowerMacro {
 
         gongJeung(false)
         invincible(false)
-
     }
 }
