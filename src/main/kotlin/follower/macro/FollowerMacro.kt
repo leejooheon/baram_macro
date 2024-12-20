@@ -11,6 +11,7 @@ import java.awt.event.KeyEvent
 object FollowerMacro {
     private val scope = CoroutineScope(SupervisorJob())
 
+    private var gongjeungJob: Job? = null
     private var healJob: Job? = null
     private var honmaJob: Job? = null
     private val failureTargets = listOf("실패", "심패")
@@ -71,7 +72,7 @@ object FollowerMacro {
                 Keyboard.pressKeyRepeatedly(KeyEvent.VK_1, 4)
 
                 if (counter % 3 == 0) {
-                    gongJeung(false)
+                    gongJeung()
                     healMe(false)
                     tabTab()
                 }
@@ -84,9 +85,7 @@ object FollowerMacro {
         }
     }
 
-    suspend fun gongJeung(cancel: Boolean = true) = withContext(Dispatchers.IO) { // F2
-        if(cancel) cancelAll()
-
+    suspend fun gongJeung() = withContext(Dispatchers.IO) { // F2
         var text: String
         while (isActive) {
             Keyboard.pressAndRelease(KeyEvent.VK_2)
@@ -141,15 +140,17 @@ object FollowerMacro {
     }
 
     suspend fun cancelAll() {
-        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
-        delay(20)
-        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
-
         healJob?.cancel()
         healJob = null
 
         honmaJob?.cancel()
         honmaJob = null
+
+        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+        delay(20)
+        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+        delay(20)
+        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
     }
 
     private suspend fun checkBuff() {
@@ -173,7 +174,7 @@ object FollowerMacro {
                 dead()
             }
             text.contains("마력") -> {
-                gongJeung(false)
+                gongJeung()
                 healMe(false)
 
                 tabTab()
@@ -194,7 +195,7 @@ object FollowerMacro {
         Keyboard.pressAndRelease(KeyEvent.VK_1)
         Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
 
-        gongJeung(false)
+        gongJeung()
         invincible(false)
     }
 }

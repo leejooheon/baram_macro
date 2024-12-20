@@ -1,8 +1,6 @@
 package follower
 
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
 import commander.Commander.Companion.PORT
 import commander.model.ctrlCommandFilter
 import commander.model.macroCommandFilter
@@ -12,14 +10,14 @@ import common.RingBuffer
 import follower.macro.FollowerMacro
 import follower.model.ConnectionState
 import follower.model.FollowerUiState
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import java.awt.Rectangle
 import java.awt.event.KeyEvent
 import java.net.Socket
+import java.net.SocketException
 
 class Follower {
     private val scope = CoroutineScope(SupervisorJob())
@@ -28,49 +26,55 @@ class Follower {
     private val _uiState = MutableStateFlow(FollowerUiState.default)
     val uiState = _uiState.asStateFlow()
 
+    private var connectionJob: Job? = null
+
     init {
         FollowerMacro.init(this)
     }
 
-    fun start() = scope.launch(Dispatchers.IO) {
-        if(_uiState.value.isRunning) {
-            return@launch
-        }
-
-        _uiState.update {
-            it.copy(
-                isRunning = true,
-                connectionState = ConnectionState.Connecting
-            )
-        }
-
-        val socket = Socket("192.168.0.2", PORT)
-
-        _uiState.update {
-            it.copy(connectionState = ConnectionState.Connected)
-        }
-
-        val reader = socket.getInputStream().bufferedReader()
-
-        // 서버 메시지를 수신하기 위한 루프
-        while (true) {
-            val message = reader.readLine() ?: break // 서버 메시지 읽기
-            commandBuffer.append(message)
-            _uiState.update {
-                it.copy(commandBuffer = commandBuffer.toList())
+    fun start() {
+        connectionJob?.cancel()
+        connectionJob = scope.launch(Dispatchers.IO) {
+            if(_uiState.value.isRunning) {
+                return@launch
             }
-            scope.launch(Dispatchers.Default) {
-                try {
-                    val model = message.toModel()
-                    println("서버로부터 메시지 수신: $model")
 
-                    if (model.isPressed) {
-                        dispatchKeyPressEvent(model.keyEvent)
-                    } else {
-                        dispatchKeyReleaseEvent(model.keyEvent)
+            _uiState.update {
+                it.copy(
+                    isRunning = true,
+                    connectionState = ConnectionState.Connecting
+                )
+            }
+
+            val socket = Socket("192.168.0.2", PORT)
+
+            _uiState.update {
+                it.copy(connectionState = ConnectionState.Connected)
+            }
+
+            val reader = socket.getInputStream().bufferedReader()
+
+            // 서버 메시지를 수신하기 위한 루프
+            while (isActive) {
+                try {
+                    val message = reader.readLine() ?: break // 서버 메시지 읽기
+                    commandBuffer.append(message)
+                    _uiState.update {
+                        it.copy(commandBuffer = commandBuffer.toList())
                     }
-                } catch (e: Exception) {
-                    // ignore
+                    launch(Dispatchers.Default) {
+
+                        val model = message.toModel()
+                        println("서버로부터 메시지 수신: $model")
+
+                        if (model.isPressed) {
+                            dispatchKeyPressEvent(model.keyEvent)
+                        } else {
+                            dispatchKeyReleaseEvent(model.keyEvent)
+                        }
+                    }
+                } catch (e: SocketException) {
+                    onDisconnected()
                 }
             }
         }
@@ -85,6 +89,17 @@ class Follower {
         _uiState.update {
             it.copy(buffStateRect = rect)
         }
+    }
+
+    private fun onDisconnected() {
+        _uiState.update {
+            it.copy(
+                isRunning = false,
+                connectionState = ConnectionState.Disconnected
+            )
+        }
+        connectionJob?.cancel()
+        connectionJob = null
     }
 
     private fun dispatchKeyPressEvent(keyEvent: Int) {
@@ -119,7 +134,7 @@ class Follower {
                     NativeKeyEvent.VC_ESCAPE -> FollowerMacro.cancelAll()
                     NativeKeyEvent.VC_BACKQUOTE -> FollowerMacro.gongju()
                     NativeKeyEvent.VC_F1 -> FollowerMacro.heal()
-                    NativeKeyEvent.VC_F2 -> FollowerMacro.gongJeung()
+//                    NativeKeyEvent.VC_F2 -> FollowerMacro.gongJeung()
                     NativeKeyEvent.VC_F3 -> FollowerMacro.honmasul()
                     NativeKeyEvent.VC_F4 -> FollowerMacro.invincible()
                     NativeKeyEvent.VC_F5 -> FollowerMacro.bomu()
