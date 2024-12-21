@@ -1,6 +1,7 @@
 package follower.macro
 
 import common.Keyboard
+import follower.macro.FollowerMacro.cancelAll
 import follower.model.MagicResultState
 import follower.ocr.TextDetecter
 import kotlinx.coroutines.*
@@ -45,7 +46,11 @@ class MacroDetailAction(
                     dead(true)
                     break
                 }
-                text.contains("공력") -> break
+                text.contains("공력") -> {
+                    healMe()
+                    tabTab()
+                    break
+                }
             }
         }
     }
@@ -76,12 +81,18 @@ class MacroDetailAction(
         }
     }
 
+    private suspend fun healMe() {
+        escape()
+        focusMe(KeyEvent.VK_1)
+        Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+    }
+
     private suspend fun eat() {
         Keyboard.pressAndRelease(KeyEvent.VK_U)
         Keyboard.pressAndRelease(KeyEvent.VK_U)
     }
 
-    private suspend fun tabTab() {
+    suspend fun tabTab() {
         escape()
         Keyboard.pressAndRelease(KeyEvent.VK_TAB)
         delay(20)

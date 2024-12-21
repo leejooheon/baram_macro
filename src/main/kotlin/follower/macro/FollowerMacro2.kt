@@ -68,6 +68,7 @@ object FollowerMacro2 {
                 while (isActive) checkMagicResult()
             }
 
+            macroDetailAction.tabTab()
             while (isActive) {
                 Keyboard.pressAndRelease(KeyEvent.VK_1)
 
