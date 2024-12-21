@@ -8,6 +8,7 @@ import common.EventModel.Companion.toModel
 import common.Keyboard
 import common.RingBuffer
 import follower.macro.FollowerMacro
+import follower.macro.FollowerMacro2
 import follower.model.ConnectionState
 import follower.model.FollowerUiState
 import kotlinx.coroutines.*
@@ -29,7 +30,8 @@ class Follower {
     private var connectionJob: Job? = null
 
     init {
-        FollowerMacro.init(this)
+//        FollowerMacro.init(this)
+        FollowerMacro2.init(this)
     }
 
     fun start() {
@@ -130,15 +132,16 @@ class Follower {
                 Keyboard.release(event)
             }
             keyEvent in macroCommandFilter -> {
-                when (keyEvent) {
-                    NativeKeyEvent.VC_ESCAPE -> FollowerMacro.cancelAll()
-                    NativeKeyEvent.VC_BACKQUOTE -> FollowerMacro.gongju()
-                    NativeKeyEvent.VC_F1 -> FollowerMacro.heal()
-//                    NativeKeyEvent.VC_F2 -> FollowerMacro.gongJeung()
-                    NativeKeyEvent.VC_F3 -> FollowerMacro.honmasul()
-                    NativeKeyEvent.VC_F4 -> FollowerMacro.invincible()
-                    NativeKeyEvent.VC_F5 -> FollowerMacro.bomu()
-                }
+                FollowerMacro2.dispatch(keyEvent)
+//                when (keyEvent) {
+//                    NativeKeyEvent.VC_ESCAPE -> FollowerMacro.cancelAll()
+//                    NativeKeyEvent.VC_BACKQUOTE -> FollowerMacro.gongju()
+//                    NativeKeyEvent.VC_F1 -> FollowerMacro.heal()
+////                    NativeKeyEvent.VC_F2 -> FollowerMacro.gongJeung()
+//                    NativeKeyEvent.VC_F3 -> FollowerMacro.honmasul()
+//                    NativeKeyEvent.VC_F4 -> FollowerMacro.invincible()
+//                    NativeKeyEvent.VC_F5 -> FollowerMacro.bomu()
+//                }
             }
         }
     }

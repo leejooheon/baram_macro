@@ -11,7 +11,6 @@ import java.awt.event.KeyEvent
 object FollowerMacro {
     private val scope = CoroutineScope(SupervisorJob())
 
-    private var gongjeungJob: Job? = null
     private var healJob: Job? = null
     private var honmaJob: Job? = null
     private val failureTargets = listOf("실패", "심패")
@@ -59,6 +58,7 @@ object FollowerMacro {
         Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
         Keyboard.pressAndRelease(KeyEvent.VK_1)
         Keyboard.pressAndRelease(KeyEvent.VK_HOME)
+        delay(20)
         Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
     }
 
