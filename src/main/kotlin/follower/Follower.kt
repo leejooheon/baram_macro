@@ -8,7 +8,6 @@ import common.EventModel.Companion.toModel
 import common.Keyboard
 import common.RingBuffer
 import follower.macro.FollowerMacro
-import follower.macro.FollowerMacro2
 import follower.model.ConnectionState
 import follower.model.FollowerUiState
 import kotlinx.coroutines.*
@@ -31,7 +30,7 @@ class Follower {
 
     init {
 //        FollowerMacro.init(this)
-        FollowerMacro2.init(this)
+        FollowerMacro.init(this)
     }
 
     fun start() {
@@ -119,7 +118,7 @@ class Follower {
         }
     }
 
-    private suspend fun dispatchKeyReleaseEvent(keyEvent: Int) {
+    suspend fun dispatchKeyReleaseEvent(keyEvent: Int) {
         when {
             keyEvent in ctrlCommandFilter -> {
                 val event = when (keyEvent) {
@@ -132,16 +131,7 @@ class Follower {
                 Keyboard.release(event)
             }
             keyEvent in macroCommandFilter -> {
-                FollowerMacro2.dispatch(keyEvent)
-//                when (keyEvent) {
-//                    NativeKeyEvent.VC_ESCAPE -> FollowerMacro.cancelAll()
-//                    NativeKeyEvent.VC_BACKQUOTE -> FollowerMacro.gongju()
-//                    NativeKeyEvent.VC_F1 -> FollowerMacro.heal()
-////                    NativeKeyEvent.VC_F2 -> FollowerMacro.gongJeung()
-//                    NativeKeyEvent.VC_F3 -> FollowerMacro.honmasul()
-//                    NativeKeyEvent.VC_F4 -> FollowerMacro.invincible()
-//                    NativeKeyEvent.VC_F5 -> FollowerMacro.bomu()
-//                }
+                FollowerMacro.dispatch(keyEvent)
             }
         }
     }

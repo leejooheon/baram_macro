@@ -1,15 +1,12 @@
 package follower.macro
 
 import common.Keyboard
-import follower.macro.FollowerMacro.cancelAll
 import follower.model.MagicResultState
 import follower.ocr.TextDetecter
 import kotlinx.coroutines.*
 import java.awt.event.KeyEvent
 
-class MacroDetailAction(
-    private val textDetector: TextDetecter
-) {
+class MacroDetailAction {
     private val failureTargets = listOf("실패", "심패")
 
     suspend fun honmasul() = withContext(Dispatchers.Default) {
@@ -24,24 +21,31 @@ class MacroDetailAction(
     suspend fun gongju() {
         escape()
         tabTab()
-
         Keyboard.pressAndRelease(KeyEvent.VK_8)
-        Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
-
         eat()
         gongJeung()
     }
+    suspend fun tryGongJeung() {
+        Keyboard.pressAndRelease(KeyEvent.VK_2)
+        healMe()
+        tabTab()
+    }
 
-    suspend fun gongJeung() = withContext(Dispatchers.IO) { // F2
+    suspend fun gongJeung() = withContext(Dispatchers.IO) {
         var text: String
+        var tryCount = 0
         while (isActive) {
             Keyboard.pressAndRelease(KeyEvent.VK_2)
-            text = textDetector.detectString(FollowerMacro2.magicRect)
-            println("@@@ gongjeung: $text")
-
+            text = TextDetecter.detectString(FollowerMacro.magicRect)
+            tryCount += 1
             when {
                 failureTargets.contains(text) -> continue
-                text.contains(MagicResultState.NO_MP.tag) -> eat()
+                text.contains(MagicResultState.NO_MP.tag) -> {
+                    if(tryCount > 5) {
+                        eat()
+                        tryCount = 0
+                    }
+                }
                 text.contains(MagicResultState.ME_DEAD.tag) -> {
                     dead(true)
                     break
@@ -75,6 +79,7 @@ class MacroDetailAction(
             Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
 
             gongJeung()
+            invincible()
         } else {
             tabTab()
             Keyboard.pressAndRelease(KeyEvent.VK_0)
@@ -106,15 +111,25 @@ class MacroDetailAction(
         delay(20)
     }
 
-    private suspend fun escape() {
+    suspend fun escape() {
         Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
 //        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
 //        delay(20)
     }
 
     suspend fun invincible() = withContext(Dispatchers.IO) {
-        do {
+        while (isActive) {
             Keyboard.pressAndRelease(KeyEvent.VK_4)
-        } while (textDetector.detect(failureTargets, FollowerMacro2.magicRect))
+            val result = TextDetecter.detectString(FollowerMacro.magicRect)
+            println("invincible: $result")
+            when {
+                result.contains("이미") -> break
+                result.contains(MagicResultState.NO_MP.tag) -> gongJeung()
+                result.contains(MagicResultState.ME_DEAD.tag) -> {
+                    dead(true)
+                    break
+                }
+            }
+        }
     }
 }
