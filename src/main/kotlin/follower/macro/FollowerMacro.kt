@@ -10,6 +10,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import java.awt.Rectangle
 import java.awt.event.KeyEvent
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 object FollowerMacro {
@@ -20,9 +21,10 @@ object FollowerMacro {
 
     private val buffState = AtomicReference(BuffState.NONE)
     private val magicResultState = AtomicReference(MagicResultState.NONE)
-
+    private var moveState = AtomicBoolean(false)
     private var buffRect = Rectangle()
     var magicRect = Rectangle()
+
 
     fun init(follower: Follower) {
         scope.launch {
@@ -32,6 +34,11 @@ object FollowerMacro {
             }
         }
     }
+
+    fun onMoving(pressed: Boolean) {
+        moveState.set(pressed)
+    }
+
     suspend fun dispatch(keyEvent: Int) {
         when (keyEvent) {
             NativeKeyEvent.VC_ESCAPE -> {
@@ -72,6 +79,8 @@ object FollowerMacro {
 
             macroDetailAction.tabTab()
             while (isActive) {
+                if(moveState.get()) continue
+
                 val buffState = buffState.get()
                 if(buffState != BuffState.NONE) {
                     println("@@@ buffState: $buffState")

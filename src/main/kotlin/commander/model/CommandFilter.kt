@@ -14,13 +14,15 @@ val macroCommandFilter = listOf(
 
 const val ctrlCommand = NativeKeyEvent.VC_CONTROL
 val ctrlCommandFilter = listOf(
-//    NativeKeyEvent.VC_UP,
-//    NativeKeyEvent.VC_LEFT,
-//    NativeKeyEvent.VC_DOWN,
-//    NativeKeyEvent.VC_RIGHT,
-
     NativeKeyEvent.VC_W,
     NativeKeyEvent.VC_A,
     NativeKeyEvent.VC_S,
     NativeKeyEvent.VC_D,
+)
+
+val moveCommandFilter = listOf(
+    NativeKeyEvent.VC_UP,
+    NativeKeyEvent.VC_LEFT,
+    NativeKeyEvent.VC_DOWN,
+    NativeKeyEvent.VC_RIGHT,
 )

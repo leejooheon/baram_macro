@@ -4,6 +4,7 @@ import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
 import commander.Commander.Companion.PORT
 import commander.model.ctrlCommandFilter
 import commander.model.macroCommandFilter
+import commander.model.moveCommandFilter
 import common.EventModel.Companion.toModel
 import common.Keyboard
 import common.RingBuffer
@@ -103,7 +104,7 @@ class Follower {
         connectionJob = null
     }
 
-    private fun dispatchKeyPressEvent(keyEvent: Int) {
+    fun dispatchKeyPressEvent(keyEvent: Int) {
         when {
             keyEvent in ctrlCommandFilter -> {
                 val event = when (keyEvent) {
@@ -114,6 +115,9 @@ class Follower {
                     else -> return
                 }
                 Keyboard.press(event)
+            }
+            keyEvent in moveCommandFilter -> {
+                FollowerMacro.onMoving(true)
             }
         }
     }
@@ -132,6 +136,9 @@ class Follower {
             }
             keyEvent in macroCommandFilter -> {
                 FollowerMacro.dispatch(keyEvent)
+            }
+            keyEvent in moveCommandFilter -> {
+                FollowerMacro.onMoving(false)
             }
         }
     }

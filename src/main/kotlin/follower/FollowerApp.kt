@@ -8,15 +8,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import commander.presentation.CommandHistory
+import common.ObserveKeyEvents
 import follower.presentation.ConnectionStateView
 import follower.presentation.DisplayTest
+import kotlinx.coroutines.launch
 
 
 @Composable
@@ -24,6 +23,19 @@ import follower.presentation.DisplayTest
 fun FollowerApp() {
     val follower = remember { Follower() }
     val uiState by follower.uiState.collectAsState()
+    val scope = rememberCoroutineScope()
+    ObserveKeyEvents(
+        onReleased = {
+            scope.launch {
+                follower.dispatchKeyReleaseEvent(it)
+            }
+        },
+        onPressed = {
+            scope.launch {
+                follower.dispatchKeyPressEvent(it)
+            }
+        }
+    )
 
     MaterialTheme {
         Column(
