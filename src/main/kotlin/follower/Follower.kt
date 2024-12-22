@@ -104,7 +104,7 @@ class Follower {
         connectionJob = null
     }
 
-    suspend fun dispatchKeyPressEvent(keyEvent: Int) {
+    private fun dispatchKeyPressEvent(keyEvent: Int) {
         when {
             keyEvent in ctrlCommandFilter -> {
                 val event = when (keyEvent) {
@@ -116,13 +116,10 @@ class Follower {
                 }
                 Keyboard.press(event)
             }
-            keyEvent in moveCommandFilter -> {
-                FollowerMacro.onMoving(true)
-            }
         }
     }
 
-    suspend fun dispatchKeyReleaseEvent(keyEvent: Int) {
+    private suspend fun dispatchKeyReleaseEvent(keyEvent: Int) {
         when {
             keyEvent in ctrlCommandFilter -> {
                 val event = when (keyEvent) {
@@ -137,6 +134,18 @@ class Follower {
             keyEvent in macroCommandFilter -> {
                 FollowerMacro.dispatch(keyEvent)
             }
+        }
+    }
+
+    suspend fun onFollowerKeyPressEvent(keyEvent: Int) {
+        when {
+            keyEvent in moveCommandFilter -> {
+                FollowerMacro.onMoving(true)
+            }
+        }
+    }
+    suspend fun onFollowerKeyReleaseEvent(keyEvent: Int) {
+        when {
             keyEvent in moveCommandFilter -> {
                 FollowerMacro.onMoving(false)
             }

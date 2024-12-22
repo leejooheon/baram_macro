@@ -27,12 +27,12 @@ fun FollowerApp() {
     ObserveKeyEvents(
         onReleased = {
             scope.launch {
-                follower.dispatchKeyReleaseEvent(it)
+                follower.onFollowerKeyPressEvent(it)
             }
         },
         onPressed = {
             scope.launch {
-                follower.dispatchKeyPressEvent(it)
+                follower.onFollowerKeyReleaseEvent(it)
             }
         }
     )
