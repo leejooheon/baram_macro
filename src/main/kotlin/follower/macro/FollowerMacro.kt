@@ -35,7 +35,7 @@ object FollowerMacro {
         }
     }
 
-    fun onMoving(pressed: Boolean) {
+    suspend fun onMoving(pressed: Boolean) = withContext(Dispatchers.IO) {
         moveState.set(pressed)
     }
 
@@ -65,7 +65,7 @@ object FollowerMacro {
     }
 
     fun heal() {
-        val maxCount = 15 // 수시로 조정하자
+        val maxCount = 20 // 수시로 조정하자
         var counter = 0
 
         job?.cancel()
@@ -79,25 +79,17 @@ object FollowerMacro {
 
             macroDetailAction.tabTab()
             while (isActive) {
+                Keyboard.pressAndRelease(KeyEvent.VK_1)
                 if(moveState.get()) continue
-
-                val buffState = buffState.get()
-                if(buffState != BuffState.NONE) {
-                    println("@@@ buffState: $buffState")
-                    buff(buffState)
-                }
-
-                val magicResultState = magicResultState.get()
-                if(magicResultState != MagicResultState.NONE) {
-                    magic(magicResultState)
-                }
 
                 if(counter > maxCount) {
                     macroDetailAction.tryGongJeung()
                     counter = 0
                 }
-                Keyboard.pressAndRelease(KeyEvent.VK_1)
                 counter += 1
+
+                maybeBuff()
+                maybeMagic()
             }
         }
     }
@@ -115,8 +107,9 @@ object FollowerMacro {
             !text.contains(BuffState.BOMU.tag) -> BuffState.BOMU
             else -> BuffState.NONE
         }
+
         if(state != BuffState.NONE) {
-            println("@@@ buffStateRaw: ${buffState.get()}")
+            println("buffState: $state")
         }
 
         buffState.set(state)
@@ -134,25 +127,38 @@ object FollowerMacro {
             text.contains(MagicResultState.NO_MP.tag) -> MagicResultState.NO_MP
             else -> MagicResultState.NONE
         }
+
+        if(state != MagicResultState.NONE) {
+            println("magicResultState: $state")
+        }
+
         magicResultState.set(state)
     }
 
-    private suspend fun buff(state: BuffState) {
+    private suspend fun maybeBuff() {
+        val state = buffState.get()
+        if(state == BuffState.NONE) {
+            return
+        }
+
         when(state) {
             BuffState.INVINSIBILITY -> macroDetailAction.invincible()
             BuffState.BOMU -> macroDetailAction.bomu()
-            BuffState.NONE -> { /** nothing **/ }
+            else -> { /** nothing **/ }
         }
 
         buffState.set(BuffState.NONE)
     }
 
-    private suspend fun magic(state: MagicResultState) {
+    private suspend fun maybeMagic() {
+        val state = magicResultState.get()
+        if(state == MagicResultState.NONE) return
+
         when(state) {
             MagicResultState.ME_DEAD -> macroDetailAction.dead(true)
             MagicResultState.OTHER_DEAD -> macroDetailAction.dead(false)
             MagicResultState.NO_MP -> macroDetailAction.gongJeung()
-            MagicResultState.NONE -> { /** nothing **/ }
+            else -> { /** nothing **/ }
         }
         magicResultState.set(MagicResultState.NONE)
     }

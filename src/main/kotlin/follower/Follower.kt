@@ -104,7 +104,7 @@ class Follower {
         connectionJob = null
     }
 
-    fun dispatchKeyPressEvent(keyEvent: Int) {
+    suspend fun dispatchKeyPressEvent(keyEvent: Int) {
         when {
             keyEvent in ctrlCommandFilter -> {
                 val event = when (keyEvent) {
