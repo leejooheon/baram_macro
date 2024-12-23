@@ -12,6 +12,7 @@ import java.awt.Rectangle
 import java.awt.event.KeyEvent
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.time.Duration.Companion.seconds
 
 object FollowerMacro {
     private val scope = CoroutineScope(SupervisorJob())
@@ -79,8 +80,12 @@ object FollowerMacro {
 
             macroDetailAction.tabTab()
             while (isActive) {
+                if(moveState.get()) {
+                    delay(1.seconds)
+                    continue
+                }
+
                 Keyboard.pressAndRelease(KeyEvent.VK_1)
-                if(moveState.get()) continue
 
                 if(counter > maxCount) {
                     macroDetailAction.tryGongJeung()
