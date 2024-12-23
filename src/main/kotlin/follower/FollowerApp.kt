@@ -12,7 +12,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import commander.presentation.CommandHistory
-import common.ObserveKeyEvents
+import common.event.ObserveKeyEvents
+import common.event.ObserveMouseEvents
 import follower.presentation.ConnectionStateView
 import follower.presentation.DisplayTest
 import kotlinx.coroutines.launch
@@ -34,6 +35,12 @@ fun FollowerApp() {
             scope.launch {
                 follower.onFollowerKeyReleaseEvent(it)
             }
+        }
+    )
+
+    ObserveMouseEvents(
+        onClicked = {
+            // TODO::
         }
     )
 

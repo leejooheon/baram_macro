@@ -25,7 +25,7 @@ fun ObserveKeyEvents(
 
                 nativeEvent?.keyCode?.let { keyCode ->
                     onPressed.invoke(keyCode)
-                    println("Pressed $keyCode")
+//                    println("Pressed $keyCode")
                 }
             }
         }
