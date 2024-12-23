@@ -1,4 +1,4 @@
-package common
+package common.model
 
 class RingBuffer<T>(val size: Int, init: (index: Int) -> T) {
     private val list = MutableList(size, init)

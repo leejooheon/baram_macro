@@ -9,9 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import common.Keyboard
+import common.robot.Keyboard
 import java.awt.Rectangle
-import java.awt.Toolkit
 
 @Composable
 internal fun DisplayTest(

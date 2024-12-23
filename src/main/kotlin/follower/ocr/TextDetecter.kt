@@ -1,12 +1,8 @@
 package follower.ocr
 
 import androidx.compose.ui.graphics.toAwtImage
-import common.Keyboard
-import follower.model.FollowerUiState
+import common.robot.Keyboard
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext

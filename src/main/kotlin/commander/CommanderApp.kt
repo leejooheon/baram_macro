@@ -11,7 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import commander.presentation.ClientList
 import commander.presentation.CommandHistory
-import common.ObserveKeyEvents
+import common.event.ObserveKeyEvents
 
 
 @Composable

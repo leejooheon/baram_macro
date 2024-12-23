@@ -1,6 +1,6 @@
 package follower.macro
 
-import common.Keyboard
+import common.robot.Keyboard
 import follower.model.MagicResultState
 import follower.ocr.TextDetecter
 import kotlinx.coroutines.*

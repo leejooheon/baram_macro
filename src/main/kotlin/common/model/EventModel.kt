@@ -1,4 +1,4 @@
-package common
+package common.model
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json

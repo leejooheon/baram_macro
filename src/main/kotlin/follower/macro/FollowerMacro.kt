@@ -1,7 +1,7 @@
 package follower.macro
 
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
-import common.Keyboard
+import common.robot.Keyboard
 import follower.Follower
 import follower.model.BuffState
 import follower.model.MagicResultState

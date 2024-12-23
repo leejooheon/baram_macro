@@ -1,4 +1,4 @@
-package common
+package common.robot
 
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
@@ -16,7 +16,6 @@ object Keyboard {
             pressAndRelease(keyEvent, delay)
         }
     }
-
 
     suspend fun pressAndRelease(keyEvent: Int, delay: Long = 20) {
         press(keyEvent)

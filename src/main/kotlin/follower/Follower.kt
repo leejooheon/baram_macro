@@ -5,9 +5,9 @@ import commander.Commander.Companion.PORT
 import commander.model.ctrlCommandFilter
 import commander.model.macroCommandFilter
 import commander.model.moveCommandFilter
-import common.EventModel.Companion.toModel
-import common.Keyboard
-import common.RingBuffer
+import common.model.EventModel.Companion.toModel
+import common.robot.Keyboard
+import common.model.RingBuffer
 import follower.macro.FollowerMacro
 import follower.model.ConnectionState
 import follower.model.FollowerUiState
