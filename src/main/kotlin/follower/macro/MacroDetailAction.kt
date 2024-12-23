@@ -33,21 +33,22 @@ class MacroDetailAction {
 
     suspend fun gongJeung() = withContext(Dispatchers.IO) {
         var text: String
-        var tryCount = 0
+        val maxTryCount = 3
+        var counter = 0
         while (isActive) {
             Keyboard.pressAndRelease(KeyEvent.VK_2)
             text = TextDetecter.detectString(FollowerMacro.magicRect)
-            tryCount += 1
+            counter += 1
             when {
                 failureTargets.contains(text) -> continue
                 text.contains(MagicResultState.NO_MP.tag) -> {
-                    if(tryCount > 5) {
+                    if(counter >= maxTryCount) {
                         eat()
-                        tryCount = 0
+                        counter = 0
                     }
                 }
                 text.contains(MagicResultState.ME_DEAD.tag) -> {
-                    dead(true)
+                    dead(MagicResultState.ME_DEAD)
                     break
                 }
                 text.contains("공력") -> {
@@ -70,19 +71,23 @@ class MacroDetailAction {
         Keyboard.pressAndRelease(KeyEvent.VK_7)
     }
 
-    suspend fun dead(flag: Boolean) {
-        if(flag) {
-            focusMe(KeyEvent.VK_0)
-            Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+    suspend fun dead(state: MagicResultState) {
+        when(state) {
+            MagicResultState.ME_DEAD -> {
+                focusMe(KeyEvent.VK_0)
+                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
 
-            Keyboard.pressAndRelease(KeyEvent.VK_1)
-            Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+                Keyboard.pressAndRelease(KeyEvent.VK_1)
+                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
 
-            gongJeung()
-            invincible()
-        } else {
-            tabTab()
-            Keyboard.pressAndRelease(KeyEvent.VK_0)
+                gongJeung()
+                invincible()
+            }
+            MagicResultState.OTHER_DEAD -> {
+                tabTab()
+                Keyboard.pressAndRelease(KeyEvent.VK_0)
+            }
+            else -> throw IllegalArgumentException("invalidArgument!!: $state")
         }
     }
 
@@ -113,7 +118,7 @@ class MacroDetailAction {
 
     suspend fun escape() {
         Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
-//        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
 //        delay(20)
     }
 
@@ -126,7 +131,7 @@ class MacroDetailAction {
                 result.contains("이미") -> break
                 result.contains(MagicResultState.NO_MP.tag) -> gongJeung()
                 result.contains(MagicResultState.ME_DEAD.tag) -> {
-                    dead(true)
+                    dead(MagicResultState.ME_DEAD)
                     break
                 }
             }

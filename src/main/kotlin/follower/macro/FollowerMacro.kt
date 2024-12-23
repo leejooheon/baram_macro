@@ -65,16 +65,16 @@ object FollowerMacro {
     }
 
     fun heal() {
-        val maxCount = 20 // 수시로 조정하자
+        val maxCount = 14 // 수시로 조정하자
         var counter = 0
 
         job?.cancel()
         job = scope.launch {
             launch(Dispatchers.IO) {
-                while (isActive) checkBuffState()
+                while (isActive) observeBuffState()
             }
             launch(Dispatchers.IO) {
-                while (isActive) checkMagicResult()
+                while (isActive) observeMagicResult()
             }
 
             macroDetailAction.tabTab()
@@ -88,13 +88,13 @@ object FollowerMacro {
                 }
                 counter += 1
 
-                maybeBuff()
-                maybeMagic()
+                checkBuff()
+                checkMagicResult()
             }
         }
     }
 
-    private suspend fun checkBuffState() {
+    private suspend fun observeBuffState() {
         if(buffState.get() != BuffState.NONE) {
             return
         }
@@ -115,7 +115,7 @@ object FollowerMacro {
         buffState.set(state)
     }
 
-    private suspend fun checkMagicResult() {
+    private suspend fun observeMagicResult() {
         if(magicResultState.get() != MagicResultState.NONE) {
             return
         }
@@ -135,11 +135,9 @@ object FollowerMacro {
         magicResultState.set(state)
     }
 
-    private suspend fun maybeBuff() {
+    private suspend fun checkBuff() {
         val state = buffState.get()
-        if(state == BuffState.NONE) {
-            return
-        }
+        if(state == BuffState.NONE) return
 
         when(state) {
             BuffState.INVINSIBILITY -> macroDetailAction.invincible()
@@ -150,13 +148,13 @@ object FollowerMacro {
         buffState.set(BuffState.NONE)
     }
 
-    private suspend fun maybeMagic() {
+    private suspend fun checkMagicResult() {
         val state = magicResultState.get()
         if(state == MagicResultState.NONE) return
 
         when(state) {
-            MagicResultState.ME_DEAD -> macroDetailAction.dead(true)
-            MagicResultState.OTHER_DEAD -> macroDetailAction.dead(false)
+            MagicResultState.ME_DEAD,
+            MagicResultState.OTHER_DEAD, -> macroDetailAction.dead(state)
             MagicResultState.NO_MP -> macroDetailAction.gongJeung()
             else -> { /** nothing **/ }
         }
