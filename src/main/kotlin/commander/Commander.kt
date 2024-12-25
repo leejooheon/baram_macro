@@ -2,12 +2,12 @@ package commander
 
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
 import commander.model.*
-import common.EventModel
-import common.Keyboard
+import common.model.EventModel
+import common.model.RingBuffer
+import common.robot.Keyboard
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import common.RingBuffer
 import kotlinx.coroutines.*
 import java.awt.event.KeyEvent
 import java.io.BufferedWriter
