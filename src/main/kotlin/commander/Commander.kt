@@ -1,15 +1,15 @@
 package commander
 
+import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
 import commander.model.*
-import common.model.EventModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import common.EventModel
+import common.Keyboard
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
-import common.model.RingBuffer
+import common.RingBuffer
+import kotlinx.coroutines.*
+import java.awt.event.KeyEvent
 import java.io.BufferedWriter
 import java.io.OutputStreamWriter
 import java.net.ServerSocket
@@ -100,6 +100,22 @@ class Commander {
                     isPressed = false,
                 )
                 sendCommand(model.toString())
+            }
+
+            keyEvent in oneHandFilter -> {
+                scope.launch {
+                    when(keyEvent) {
+                        NativeKeyEvent.VC_PAGE_UP -> {
+                            Keyboard.pressAndRelease(KeyEvent.VK_F1)
+                        }
+                        NativeKeyEvent.VC_PAGE_DOWN -> {
+                            Keyboard.pressAndRelease(KeyEvent.VK_F3)
+                        }
+                        NativeKeyEvent.VC_KANJI -> {
+                            Keyboard.pressAndRelease(KeyEvent.VK_BACK_QUOTE)
+                        }
+                    }
+                }
             }
         }
     }
