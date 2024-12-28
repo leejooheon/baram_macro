@@ -7,6 +7,7 @@ import common.base.BaseViewModel
 import common.base.UiStateHolder
 import common.event.UiEvent
 import common.model.EventModel.Companion.toEventModel
+import common.model.PointModel
 import common.model.PointModel.Companion.toPointModel
 import common.model.Type
 import common.model.UiState
@@ -21,9 +22,7 @@ import follower.macro.FollowerMacro
 import follower.macro.MoveDetailAction
 import follower.model.ConnectionState
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import java.awt.Point
 import java.awt.Rectangle
 import java.awt.event.KeyEvent
@@ -41,6 +40,7 @@ class FollowerViewModel: BaseViewModel() {
 
     init {
         observeScreens()
+        observeCoordinates()
         init()
     }
 
@@ -125,13 +125,8 @@ class FollowerViewModel: BaseViewModel() {
                         }
                         message.toPointModel()?.let { model ->
                             println("commander Coordinates: $model")
-                            val myPoint = UiStateHolder.getCoordinates() ?: return@let
-                            val commanderPoint = Point(model.x, model.y)
-
-                            moveDetailAction.moveTowards(
-                                commanderPoint = commanderPoint,
-                                myPoint = myPoint
-                            )
+                            moveDetailAction.update(Point(model.x, model.y))
+                            moveDetailAction.moveTowards(UiStateHolder.getCoordinates())
                         }
                     }
                 } catch (e: SocketException) {
@@ -208,6 +203,26 @@ class FollowerViewModel: BaseViewModel() {
             )
         }
     }
+
+    private fun observeCoordinates() = scope.launch {
+        UiStateHolder.state
+            .map {
+                val x = it.xState.texts.firstOrNull()?.toIntOrNull()
+                val y = it.yState.texts.firstOrNull()?.toIntOrNull()
+                x to y
+            }
+            .distinctUntilChanged { old, new ->
+                old.first == new.first && old.second == new.second
+            }
+            .filter { (x, y) ->
+                x != null && y != null
+            }
+            .collect { (x, y) ->
+                println("xState: $x, yState: $y")
+                moveDetailAction.moveTowards(Point(x!!, y!!))
+            }
+    }
+
     private fun init() = scope.launch {
         UiStateHolder.init(
             UiState.default.copy(
