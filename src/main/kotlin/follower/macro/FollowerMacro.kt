@@ -78,7 +78,7 @@ object FollowerMacro {
     private fun onBuffStateUpdate(text: String) {
         val state = when {
             !text.contains(BuffState.INVINSIBILITY.tag) -> BuffState.INVINSIBILITY
-            !text.contains(BuffState.BOMU.tag) -> BuffState.BOMU
+//            !text.contains(BuffState.BOMU.tag) -> BuffState.BOMU
             else -> BuffState.NONE
         }
 
@@ -108,7 +108,7 @@ object FollowerMacro {
 
         when(state) {
             BuffState.INVINSIBILITY -> macroDetailAction.invincible()
-            BuffState.BOMU -> macroDetailAction.bomu()
+//            BuffState.BOMU -> macroDetailAction.bomu()
             else -> { /** nothing **/ }
         }
 

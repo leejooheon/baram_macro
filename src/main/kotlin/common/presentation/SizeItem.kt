@@ -14,7 +14,6 @@ internal fun SizeItem(
     rectangle: Rectangle,
     onRectangleChanged: (Rectangle) -> Unit,
 ) {
-    println("test: $rectangle")
     Row(
         horizontalArrangement = Arrangement.SpaceAround
     ) {

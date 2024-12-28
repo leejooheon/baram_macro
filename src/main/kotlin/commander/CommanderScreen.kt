@@ -2,6 +2,7 @@ package commander
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -29,34 +30,25 @@ internal fun CommanderScreen(
                     state = uiState.connectionState
                 )
             }
-            item {
-                DisplaySection(
-                    model = uiState.xState,
-                    onRectangleChanged = {
-                        val event = UiEvent.OnRectangleChanged(
-                            rectangle = it,
-                            type = Type.X
-                        )
-                        onEvent.invoke(event)
-                    },
-                    modifier = Modifier
-                        .width(96.dp)
-                        .height(32.dp)
+
+            items(
+                listOf(
+                    uiState.xState,
+                    uiState.yState,
                 )
-            }
-            item {
+            ) { model ->
                 DisplaySection(
-                    model = uiState.yState,
+                    model = model,
                     onRectangleChanged = {
                         val event = UiEvent.OnRectangleChanged(
                             rectangle = it,
-                            type = Type.Y
+                            type = model.type
                         )
                         onEvent.invoke(event)
                     },
                     modifier = Modifier
-                        .width(96.dp)
-                        .height(32.dp)
+                        .width(model.rectangle.width.dp)
+                        .height(model.rectangle.height.dp)
                 )
             }
 

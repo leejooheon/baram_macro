@@ -31,8 +31,8 @@ class MacroDetailAction(
     }
     suspend fun tryGongJeung() {
         Keyboard.pressAndRelease(KeyEvent.VK_2)
-        healMe()
-        tabTab()
+//        healMe()
+//        tabTab()
     }
 
     suspend fun gongJeung() = withContext(Dispatchers.IO) {
@@ -134,20 +134,23 @@ class MacroDetailAction(
     }
 
     suspend fun invincible() = withContext(Dispatchers.IO) {
-        while (isActive) {
-            Keyboard.pressAndRelease(KeyEvent.VK_4)
-            val state = UiStateHolder.state.value
-            val magicState = state.magicResultState.texts.joinToString("\n")
-            when {
-                magicState.contains("이미") -> break
-                magicState.contains("공력") -> break
-                magicState.contains(MagicResultState.NO_MP.tag) -> gongJeung()
-                magicState.contains(MagicResultState.ME_DEAD.tag) -> {
-                    dead(MagicResultState.ME_DEAD)
-                    break
-                }
-            }
-            delay((0.25).seconds)
-        }
+        Keyboard.pressAndRelease(KeyEvent.VK_4)
+
+//        while (isActive) {
+//            Keyboard.pressAndRelease(KeyEvent.VK_4)
+//            val state = UiStateHolder.state.value
+//            val magicState = state.magicResultState.texts.joinToString("\n")
+//            println("magic: $magicState")
+//            when {
+//                magicState.contains("이미") -> break
+//                magicState.contains("공력") -> break
+//                magicState.contains(MagicResultState.NO_MP.tag) -> gongJeung()
+//                magicState.contains(MagicResultState.ME_DEAD.tag) -> {
+//                    dead(MagicResultState.ME_DEAD)
+//                    break
+//                }
+//            }
+//            delay((0.25).seconds)
+//        }
     }
 }

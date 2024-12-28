@@ -33,10 +33,9 @@ import kotlin.time.Duration.Companion.seconds
 class FollowerViewModel: BaseViewModel() {
     private val scope = CoroutineScope(SupervisorJob())
 
-    private val moveDetailAction = MoveDetailAction()
+    private val moveDetailAction by lazy { MoveDetailAction(scope) }
     private val ocrClient = OcrClient(createHttpClient())
     private var connectionJob: Job? = null
-    private var moveJob: Job? = null
 
     init {
         observeScreens()
@@ -181,13 +180,13 @@ class FollowerViewModel: BaseViewModel() {
         launch {
             observeAndUpdate(
                 type = Type.X,
-                duration = 1.seconds
+                duration = (0.5).seconds
             )
         }
         launch {
             observeAndUpdate(
                 type = Type.Y,
-                duration = 1.seconds
+                duration = (0.5).seconds
             )
         }
         launch {
@@ -227,16 +226,20 @@ class FollowerViewModel: BaseViewModel() {
         UiStateHolder.init(
             UiState.default.copy(
                 xState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(2210, 1255, 80, 30)
+                    rectangle = Rectangle(2165, 1258, 80, 30),
+                    type = Type.X
                 ),
                 yState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(2280, 1255, 80, 30)
+                    rectangle = Rectangle(2248, 1258, 80, 30),
+                    type = Type.Y
                 ),
                 buffState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(2080, 850, 256, 128)
+                    rectangle = Rectangle(2020, 790, 256, 128),
+                    type = Type.BUFF
                 ),
                 magicResultState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(2080, 1060, 256, 64)
+                    rectangle = Rectangle(2000, 1056, 256, 50),
+                    type = Type.MAGIC_RESULT
                 ),
             )
         )

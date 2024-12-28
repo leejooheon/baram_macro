@@ -2,6 +2,7 @@ package follower
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -29,66 +30,27 @@ internal fun FollowerScreen(
                     state = uiState.connectionState
                 )
             }
-            item {
-                DisplaySection(
-                    model = uiState.xState,
-                    onRectangleChanged = {
-                        val event = UiEvent.OnRectangleChanged(
-                            rectangle = it,
-                            type = Type.X
-                        )
-                        onEvent.invoke(event)
-                    },
-                    modifier = Modifier
-                        .width(96.dp)
-                        .height(32.dp)
-                )
-            }
-            item {
-                DisplaySection(
-                    model = uiState.yState,
-                    onRectangleChanged = {
-                        val event = UiEvent.OnRectangleChanged(
-                            rectangle = it,
-                            type = Type.Y
-                        )
-                        onEvent.invoke(event)
-                    },
-                    modifier = Modifier
-                        .width(96.dp)
-                        .height(32.dp)
-                )
-            }
 
-            item {
-                DisplaySection(
-                    model = uiState.buffState,
-                    onRectangleChanged = {
-                        val event = UiEvent.OnRectangleChanged(
-                            rectangle = it,
-                            type = Type.BUFF
-                        )
-                        onEvent.invoke(event)
-                    },
-                    modifier = Modifier
-                        .width(256.dp)
-                        .height(128.dp)
+            items(
+                listOf(
+                    uiState.xState,
+                    uiState.yState,
+                    uiState.buffState,
+                    uiState.magicResultState,
                 )
-            }
-
-            item {
+            ) { model ->
                 DisplaySection(
-                    model = uiState.magicResultState,
+                    model = model,
                     onRectangleChanged = {
                         val event = UiEvent.OnRectangleChanged(
                             rectangle = it,
-                            type = Type.MAGIC_RESULT
+                            type = model.type
                         )
                         onEvent.invoke(event)
                     },
                     modifier = Modifier
-                        .width(256.dp)
-                        .height(58.dp)
+                        .width(model.rectangle.width.dp)
+                        .height(model.rectangle.height.dp)
                 )
             }
 
