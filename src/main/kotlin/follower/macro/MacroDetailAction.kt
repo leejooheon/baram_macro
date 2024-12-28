@@ -6,6 +6,7 @@ import follower.model.MagicResultState
 import follower.ocr.TextDetecter
 import kotlinx.coroutines.*
 import java.awt.event.KeyEvent
+import kotlin.time.Duration.Companion.seconds
 
 class MacroDetailAction(
     private val scope: CoroutineScope
@@ -35,15 +36,20 @@ class MacroDetailAction(
     }
 
     suspend fun gongJeung() = withContext(Dispatchers.IO) {
-        val maxTryCount = 3
+        val maxTryCount = 4
         var counter = 0
         while (isActive) {
             Keyboard.pressAndRelease(KeyEvent.VK_2)
             val state = UiStateHolder.state.value
             val text = state.magicResultState.texts.joinToString("\n")
+
             counter += 1
             when {
-                failureTargets.contains(text) -> continue
+                text.contains("공력") -> {
+                    healMe()
+                    tabTab()
+                    break
+                }
                 text.contains(MagicResultState.NO_MP.tag) -> {
                     if(counter >= maxTryCount) {
                         eat()
@@ -60,6 +66,8 @@ class MacroDetailAction(
                     break
                 }
             }
+
+            delay((0.25).seconds)
         }
     }
 
@@ -139,6 +147,7 @@ class MacroDetailAction(
                     break
                 }
             }
+            delay((0.25).seconds)
         }
     }
 }

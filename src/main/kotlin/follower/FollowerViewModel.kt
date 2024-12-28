@@ -37,6 +37,7 @@ class FollowerViewModel: BaseViewModel() {
 
     init {
         observeScreens()
+        init()
     }
 
     override fun dispatch(event: UiEvent) = scope.launch {
@@ -119,7 +120,7 @@ class FollowerViewModel: BaseViewModel() {
                             }
                         }
                         message.toPointModel()?.let { model ->
-                            println("receive!! $model")
+                            println("commander Coordinates: $model")
                         }
                     }
                 } catch (e: SocketException) {
@@ -186,13 +187,13 @@ class FollowerViewModel: BaseViewModel() {
         launch {
             observeAndUpdate(
                 type = Type.BUFF,
-                duration = 1.seconds
+                duration = (0.5).seconds
             )
         }
         launch {
             observeAndUpdate(
                 type = Type.MAGIC_RESULT,
-                duration = 1.seconds
+                duration = (0.25).seconds
             )
         }
     }
@@ -200,16 +201,16 @@ class FollowerViewModel: BaseViewModel() {
         UiStateHolder.init(
             UiState.default.copy(
                 xState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(1330, 815, 80, 30)
+                    rectangle = Rectangle(2210, 1255, 80, 30)
                 ),
                 yState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(1410, 815, 80, 30)
+                    rectangle = Rectangle(2280, 1255, 80, 30)
                 ),
                 buffState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(1180, 370, 256, 128)
+                    rectangle = Rectangle(2080, 850, 256, 128)
                 ),
                 magicResultState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(1180, 620, 256, 64)
+                    rectangle = Rectangle(2080, 1060, 256, 64)
                 ),
             )
         )

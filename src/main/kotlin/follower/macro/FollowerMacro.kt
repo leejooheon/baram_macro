@@ -9,6 +9,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import java.awt.event.KeyEvent
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.random.Random
 
 object FollowerMacro {
     private val scope = CoroutineScope(SupervisorJob())
@@ -20,6 +21,10 @@ object FollowerMacro {
 
     private val buffState = AtomicReference(BuffState.NONE)
     private val magicResultState = AtomicReference(MagicResultState.NONE)
+
+    init {
+        collectStates()
+    }
 
     suspend fun dispatch(keyEvent: Int) {
         when (keyEvent) {
@@ -47,14 +52,17 @@ object FollowerMacro {
     }
 
     private fun heal() {
-        val maxCount = 10 // 수시로 조정하자
+        val maxCount = 14 // 수시로 조정하자
         var counter = 0
 
         job?.cancel()
         job = scope.launch {
             macroDetailAction.tabTab()
             while (isActive) {
-                Keyboard.pressAndRelease(KeyEvent.VK_1)
+                Keyboard.pressAndRelease(
+                    keyEvent = KeyEvent.VK_1,
+                    delay = Random.nextLong(40, 70)
+                )
 
                 if(counter++ > maxCount) {
                     macroDetailAction.tryGongJeung()
@@ -74,11 +82,10 @@ object FollowerMacro {
             else -> BuffState.NONE
         }
 
-        if(state != BuffState.NONE) {
-            println("buffState: $buffState")
+        if(buffState.get() != state) {
+            println("buffState: $state")
+            buffState.set(state)
         }
-
-        buffState.set(state)
     }
 
     private fun onMagicResultUpdate(text: String) {
@@ -89,11 +96,10 @@ object FollowerMacro {
             else -> MagicResultState.NONE
         }
 
-        if(state != MagicResultState.NONE) {
+        if(magicResultState.get() != state) {
             println("magicResultState: $state")
+            magicResultState.set(state)
         }
-
-        magicResultState.set(state)
     }
 
     private suspend fun checkBuff() {
@@ -123,7 +129,7 @@ object FollowerMacro {
     }
 
     private fun collectStates() = scope.launch {
-        UiStateHolder.state.collectLatest {
+        UiStateHolder.state.collect {
             onBuffStateUpdate(it.buffState.texts.joinToString("\n"))
             onMagicResultUpdate(it.magicResultState.texts.joinToString("\n"))
         }
