@@ -21,8 +21,6 @@ import kotlin.time.Duration
 abstract class BaseViewModel {
     private val updateMutex = Mutex()
     private val ocrClient = OcrClient(createHttpClient())
-//    protected abstract val _uiState: MutableStateFlow<UiState>
-//    abstract val uiState: StateFlow<UiState>
 
     abstract fun dispatch(event: UiEvent): Job
 
@@ -59,14 +57,19 @@ abstract class BaseViewModel {
     }.flowOn(Dispatchers.IO)
 
     private fun readText(image: BufferedImage) = flow {
-        ocrClient
-            .readImage(image)
-            .onSuccess { model ->
-                emit(model.results)
-            }
-            .onError {
-                emit(listOf("error"))
-            }
+        val isRunning = UiStateHolder.state.value.isRunning
+        if(isRunning) {
+            ocrClient
+                .readImage(image)
+                .onSuccess { model ->
+                    emit(model.results)
+                }
+                .onError {
+                    emit(listOf("error"))
+                }
+        } else {
+            emit(listOf("-"))
+        }
     }.flowOn(Dispatchers.IO)
 
     private fun getStateFromType(type: Type): UiState.CommonState {
