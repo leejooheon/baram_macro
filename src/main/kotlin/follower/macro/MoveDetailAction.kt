@@ -1,10 +1,7 @@
 package follower.macro
 
 import common.robot.Keyboard
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import java.awt.Point
 import java.awt.event.KeyEvent
 import java.util.concurrent.atomic.AtomicReference
@@ -25,7 +22,7 @@ class MoveDetailAction(
 
     fun moveTowards(myPoint: Point?) {
         moveJob?.cancel()
-        moveJob = scope.launch {
+        moveJob = scope.launch(Dispatchers.IO) {
             myPoint ?: return@launch
             val point = commanderPoint.get() ?: return@launch
             val deltaX = point.x - myPoint.x
@@ -52,26 +49,18 @@ class MoveDetailAction(
     private suspend fun tryMove(
         direction: Direction,
     ) {
+        println("tryMove: $direction")
         val keyEvent = when(direction) {
-            Direction.UP -> {
-                println("KeyEvent.VK_UP")
-                KeyEvent.VK_UP
-            }
-            Direction.DOWN -> {
-                println("KeyEvent.VK_DOWN")
-                KeyEvent.VK_DOWN
-            }
-            Direction.LEFT -> {
-                println("KeyEvent.VK_LEFT")
-                KeyEvent.VK_LEFT
-            }
-            Direction.RIGHT -> {
-                println("KeyEvent.VK_RIGHT")
-                KeyEvent.VK_RIGHT
-            }
+            Direction.UP -> KeyEvent.VK_UP
+            Direction.DOWN -> KeyEvent.VK_DOWN
+            Direction.LEFT -> KeyEvent.VK_LEFT
+            Direction.RIGHT -> KeyEvent.VK_RIGHT
+        }
+        try {
+            Keyboard.pressAndRelease(keyEvent, 500)
+        } catch (e: CancellationException) {
+            Keyboard.release(keyEvent)
         }
 
-        Keyboard.pressAndRelease(keyEvent, 100)
-        delay((0.25).seconds)
     }
 }

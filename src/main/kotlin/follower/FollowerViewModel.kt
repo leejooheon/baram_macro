@@ -180,45 +180,41 @@ class FollowerViewModel: BaseViewModel() {
         launch {
             observeAndUpdate(
                 type = Type.X,
-                duration = (0.5).seconds
+                duration = (0.25).seconds
             )
         }
         launch {
             observeAndUpdate(
                 type = Type.Y,
-                duration = (0.5).seconds
-            )
-        }
-        launch {
-            observeAndUpdate(
-                type = Type.BUFF,
-                duration = (0.5).seconds
-            )
-        }
-        launch {
-            observeAndUpdate(
-                type = Type.MAGIC_RESULT,
                 duration = (0.25).seconds
             )
         }
+//        launch {
+//            observeAndUpdate(
+//                type = Type.BUFF,
+//                duration = 1.seconds
+//            )
+//        }
+//        launch {
+//            observeAndUpdate(
+//                type = Type.MAGIC_RESULT,
+//                duration = 1.seconds
+//            )
+//        }
     }
 
     private fun observeCoordinates() = scope.launch {
         UiStateHolder.state
             .map {
-                val x = it.xState.texts.firstOrNull()?.toIntOrNull()
-                val y = it.yState.texts.firstOrNull()?.toIntOrNull()
+                val x = it.xState.texts
+                val y = it.yState.texts
                 x to y
             }
             .distinctUntilChanged { old, new ->
                 old.first == new.first && old.second == new.second
             }
-            .filter { (x, y) ->
-                x != null && y != null
-            }
             .collect { (x, y) ->
-                println("xState: $x, yState: $y")
-                moveDetailAction.moveTowards(Point(x!!, y!!))
+                moveDetailAction.moveTowards(UiStateHolder.getCoordinates())
             }
     }
 
@@ -226,19 +222,19 @@ class FollowerViewModel: BaseViewModel() {
         UiStateHolder.init(
             UiState.default.copy(
                 xState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(2165, 1258, 80, 30),
+                    rectangle = Rectangle(2070, 1248, 100, 36),
                     type = Type.X
                 ),
                 yState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(2248, 1258, 80, 30),
+                    rectangle = Rectangle(2170, 1248, 100, 36),
                     type = Type.Y
                 ),
                 buffState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(2020, 790, 256, 128),
+                    rectangle = Rectangle(1886, 670, 256, 128),
                     type = Type.BUFF
                 ),
                 magicResultState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(2000, 1056, 256, 50),
+                    rectangle = Rectangle(1852, 999, 256, 64),
                     type = Type.MAGIC_RESULT
                 ),
             )

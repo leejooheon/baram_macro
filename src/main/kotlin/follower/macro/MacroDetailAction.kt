@@ -60,11 +60,6 @@ class MacroDetailAction(
                     dead(MagicResultState.ME_DEAD)
                     break
                 }
-                text.contains("공력") -> {
-                    healMe()
-                    tabTab()
-                    break
-                }
             }
 
             delay((0.25).seconds)

@@ -46,19 +46,14 @@ object UiStateHolder {
         val state = state.value
         val x = state.xState.texts
             .firstOrNull()
-            ?.replace("고", "2")
-            ?.replace("o", "0")
-            ?.replace("n", "0")
             ?.replace(" ", "")
+            ?.drop(1)
             ?.toIntOrNull()
         val y = state.yState.texts
             .firstOrNull()
-            ?.replace("고", "2")
-            ?.replace("o", "0")
-            ?.replace("n", "0")
             ?.replace(" ", "")
+            ?.drop(1)
             ?.toIntOrNull()
-
         return if(x == null || y == null) null
         else Point(x, y)
     }

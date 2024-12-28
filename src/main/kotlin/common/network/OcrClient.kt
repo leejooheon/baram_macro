@@ -6,6 +6,7 @@ import common.util.NetworkError
 import common.util.Result
 import io.ktor.client.*
 import io.ktor.client.call.*
+import io.ktor.client.network.sockets.*
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.http.*
@@ -48,7 +49,9 @@ class OcrClient(
             return@withContext Result.Error(NetworkError.NO_INTERNET)
         } catch(e: SerializationException) {
             return@withContext Result.Error(NetworkError.SERIALIZATION)
-        } finally {
+        } catch (e: SocketTimeoutException) {
+            return@withContext Result.Error(NetworkError.REQUEST_TIMEOUT)}
+        finally {
             file.delete()
         }
 

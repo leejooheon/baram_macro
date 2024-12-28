@@ -225,7 +225,6 @@ class CommanderViewModel: BaseViewModel() {
                 x != null && y != null
             }
             .collect { (x, y) ->
-                println("xState: $x, yState: $y")
                 val event = PointModel(x!!, y!!)
                 sendCommand(event.toString())
             }
