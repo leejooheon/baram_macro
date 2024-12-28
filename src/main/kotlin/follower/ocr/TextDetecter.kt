@@ -17,21 +17,6 @@ object TextDetecter {
 
     private val mutex = Mutex()
 
-    suspend fun detect(
-        targets: List<String>,
-        rectangle: Rectangle
-    ): Boolean = withContext(Dispatchers.IO) {
-        mutex.withLock {
-            val image = Keyboard.capture(rectangle)
-            try {
-                val origin = tesseract.doOCR(image.toAwtImage())
-                return@withContext targets.contains(origin)
-            } catch (e: Exception) {
-                return@withContext false
-            }
-        }
-    }
-
     suspend fun detectString(
         rectangle: Rectangle
     ): String = withContext(Dispatchers.IO) {

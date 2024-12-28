@@ -6,11 +6,8 @@ import follower.model.MagicResultState
 import follower.ocr.TextDetecter
 import kotlinx.coroutines.*
 import java.awt.event.KeyEvent
-import kotlin.time.Duration.Companion.seconds
 
-class MacroDetailAction(
-    private val scope: CoroutineScope
-) {
+class MacroDetailAction {
     private val failureTargets = listOf("실패", "심패")
 
     suspend fun honmasul() = withContext(Dispatchers.Default) {
@@ -31,25 +28,23 @@ class MacroDetailAction(
     }
     suspend fun tryGongJeung() {
         Keyboard.pressAndRelease(KeyEvent.VK_2)
-//        healMe()
-//        tabTab()
+        healMe()
+        tabTab()
     }
 
     suspend fun gongJeung() = withContext(Dispatchers.IO) {
-        val maxTryCount = 4
+        var text: String
+        val maxTryCount = 3
         var counter = 0
         while (isActive) {
             Keyboard.pressAndRelease(KeyEvent.VK_2)
-            val state = UiStateHolder.state.value
-            val text = state.magicResultState.texts.joinToString("\n")
+            val uiState = UiStateHolder.state.value
+            val rect = uiState.magicResultState.rectangle
 
+            text = TextDetecter.detectString(rect)
             counter += 1
             when {
-                text.contains("공력") -> {
-                    healMe()
-                    tabTab()
-                    break
-                }
+                failureTargets.contains(text) -> continue
                 text.contains(MagicResultState.NO_MP.tag) -> {
                     if(counter >= maxTryCount) {
                         eat()
@@ -60,9 +55,12 @@ class MacroDetailAction(
                     dead(MagicResultState.ME_DEAD)
                     break
                 }
+                text.contains("공력") -> {
+                    healMe()
+                    tabTab()
+                    break
+                }
             }
-
-            delay((0.25).seconds)
         }
     }
 
@@ -129,23 +127,21 @@ class MacroDetailAction(
     }
 
     suspend fun invincible() = withContext(Dispatchers.IO) {
-        Keyboard.pressAndRelease(KeyEvent.VK_4)
+        while (isActive) {
+            Keyboard.pressAndRelease(KeyEvent.VK_4)
+            val uiState = UiStateHolder.state.value
+            val rect = uiState.magicResultState.rectangle
 
-//        while (isActive) {
-//            Keyboard.pressAndRelease(KeyEvent.VK_4)
-//            val state = UiStateHolder.state.value
-//            val magicState = state.magicResultState.texts.joinToString("\n")
-//            println("magic: $magicState")
-//            when {
-//                magicState.contains("이미") -> break
-//                magicState.contains("공력") -> break
-//                magicState.contains(MagicResultState.NO_MP.tag) -> gongJeung()
-//                magicState.contains(MagicResultState.ME_DEAD.tag) -> {
-//                    dead(MagicResultState.ME_DEAD)
-//                    break
-//                }
-//            }
-//            delay((0.25).seconds)
-//        }
+            val result = TextDetecter.detectString(rect)
+            println("invincible: $result")
+            when {
+                result.contains("이미") -> break
+                result.contains(MagicResultState.NO_MP.tag) -> gongJeung()
+                result.contains(MagicResultState.ME_DEAD.tag) -> {
+                    dead(MagicResultState.ME_DEAD)
+                    break
+                }
+            }
+        }
     }
 }

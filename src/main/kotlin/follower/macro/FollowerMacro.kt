@@ -5,6 +5,7 @@ import common.base.UiStateHolder
 import common.robot.Keyboard
 import follower.model.BuffState
 import follower.model.MagicResultState
+import follower.ocr.TextDetecter
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import java.awt.event.KeyEvent
@@ -21,10 +22,6 @@ object FollowerMacro {
 
     private val buffState = AtomicReference(BuffState.NONE)
     private val magicResultState = AtomicReference(MagicResultState.NONE)
-
-    init {
-        collectStates()
-    }
 
     suspend fun dispatch(keyEvent: Int) {
         when (keyEvent) {
@@ -57,17 +54,22 @@ object FollowerMacro {
 
         job?.cancel()
         job = scope.launch {
+            launch(Dispatchers.IO) {
+                while (isActive) observeBuffState()
+            }
+            launch(Dispatchers.IO) {
+                while (isActive) observeMagicResult()
+            }
+
             macroDetailAction.tabTab()
             while (isActive) {
-                Keyboard.pressAndRelease(
-                    keyEvent = KeyEvent.VK_1,
-                    delay = Random.nextLong(40, 70)
-                )
+                Keyboard.pressAndRelease(KeyEvent.VK_1)
 
-                if(counter++ > maxCount) {
+                if(counter > maxCount) {
                     macroDetailAction.tryGongJeung()
                     counter = 0
                 }
+                counter += 1
 
                 checkBuff()
                 checkMagicResult()
@@ -75,20 +77,39 @@ object FollowerMacro {
         }
     }
 
-    private fun onBuffStateUpdate(text: String) {
+    private suspend fun observeBuffState() {
+        if(buffState.get() != BuffState.NONE) {
+            return
+        }
+        withContext(Dispatchers.Default) {
+            Keyboard.pressAndRelease(KeyEvent.VK_S)
+        }
+        val uiState = UiStateHolder.state.value
+        val rect = uiState.buffState.rectangle
+
+        val text = TextDetecter.detectString(rect)
         val state = when {
             !text.contains(BuffState.INVINSIBILITY.tag) -> BuffState.INVINSIBILITY
-//            !text.contains(BuffState.BOMU.tag) -> BuffState.BOMU
+            !text.contains(BuffState.BOMU.tag) -> BuffState.BOMU
             else -> BuffState.NONE
         }
 
-        if(buffState.get() != state) {
+        if(state != BuffState.NONE) {
             println("buffState: $state")
-            buffState.set(state)
         }
+
+        buffState.set(state)
     }
 
-    private fun onMagicResultUpdate(text: String) {
+    private suspend fun observeMagicResult() {
+        if(magicResultState.get() != MagicResultState.NONE) {
+            return
+        }
+
+        val uiState = UiStateHolder.state.value
+        val rect = uiState.magicResultState.rectangle
+
+        val text = TextDetecter.detectString(rect)
         val state = when {
             text.contains(MagicResultState.ME_DEAD.tag) -> MagicResultState.ME_DEAD
             text.contains(MagicResultState.OTHER_DEAD.tag) -> MagicResultState.OTHER_DEAD
@@ -96,10 +117,11 @@ object FollowerMacro {
             else -> MagicResultState.NONE
         }
 
-        if(magicResultState.get() != state) {
+        if(state != MagicResultState.NONE) {
             println("magicResultState: $state")
-            magicResultState.set(state)
         }
+
+        magicResultState.set(state)
     }
 
     private suspend fun checkBuff() {
@@ -126,12 +148,5 @@ object FollowerMacro {
             else -> { /** nothing **/ }
         }
         magicResultState.set(MagicResultState.NONE)
-    }
-
-    private fun collectStates() = scope.launch {
-        UiStateHolder.state.collect {
-            onBuffStateUpdate(it.buffState.texts.joinToString("\n"))
-            onMagicResultUpdate(it.magicResultState.texts.joinToString("\n"))
-        }
     }
 }
