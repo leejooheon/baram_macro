@@ -6,6 +6,7 @@ import follower.model.ConnectionState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import java.awt.Point
 
 object UiStateHolder {
     private val _state = MutableStateFlow(UiState.default)
@@ -39,5 +40,14 @@ object UiStateHolder {
                 Type.MAGIC_RESULT -> it.copy(magicResultState = state)
             }
         }
+    }
+
+    fun getCoordinates(): Point? {
+        val state = state.value
+        val x = state.xState.texts.firstOrNull()?.toIntOrNull()
+        val y = state.yState.texts.firstOrNull()?.toIntOrNull()
+
+        return if(x == null || y == null) null
+        else Point(x, y)
     }
 }

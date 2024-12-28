@@ -18,11 +18,13 @@ import common.robot.Keyboard
 import common.util.onError
 import common.util.onSuccess
 import follower.macro.FollowerMacro
+import follower.macro.MoveDetailAction
 import follower.model.ConnectionState
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import java.awt.Point
 import java.awt.Rectangle
 import java.awt.event.KeyEvent
 import java.net.Socket
@@ -32,8 +34,10 @@ import kotlin.time.Duration.Companion.seconds
 class FollowerViewModel: BaseViewModel() {
     private val scope = CoroutineScope(SupervisorJob())
 
+    private val moveDetailAction = MoveDetailAction()
     private val ocrClient = OcrClient(createHttpClient())
     private var connectionJob: Job? = null
+    private var moveJob: Job? = null
 
     init {
         observeScreens()
@@ -121,6 +125,13 @@ class FollowerViewModel: BaseViewModel() {
                         }
                         message.toPointModel()?.let { model ->
                             println("commander Coordinates: $model")
+                            val myPoint = UiStateHolder.getCoordinates() ?: return@let
+                            val commanderPoint = Point(model.x, model.y)
+
+                            moveDetailAction.moveTowards(
+                                commanderPoint = commanderPoint,
+                                myPoint = myPoint
+                            )
                         }
                     }
                 } catch (e: SocketException) {
