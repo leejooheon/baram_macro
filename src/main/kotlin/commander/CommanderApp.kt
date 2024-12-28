@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import commander.presentation.ClientList
 import commander.presentation.CommandHistory
+import common.base.UiStateHolder
 import common.event.ObserveKeyEvents
 import common.event.ObserveMouseEvents
 
@@ -20,7 +21,7 @@ const val PORT = "23456"
 @Preview
 fun CommanderApp() {
     val viewModel = remember { CommanderViewModel() }
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by UiStateHolder.state.collectAsState()
 
     ObserveMouseEvents(
         onClicked = {

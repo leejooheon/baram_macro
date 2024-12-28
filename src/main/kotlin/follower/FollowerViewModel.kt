@@ -4,6 +4,7 @@ import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
 import commander.model.ctrlCommandFilter
 import commander.model.macroCommandFilter
 import common.base.BaseViewModel
+import common.base.UiStateHolder
 import common.event.UiEvent
 import common.model.EventModel.Companion.toEventModel
 import common.model.PointModel.Companion.toPointModel
@@ -31,25 +32,6 @@ import kotlin.time.Duration.Companion.seconds
 class FollowerViewModel: BaseViewModel() {
     private val scope = CoroutineScope(SupervisorJob())
 
-    override val _uiState: MutableStateFlow<UiState> =
-        MutableStateFlow(
-            UiState.default.copy(
-                xState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(1330, 815, 80, 30)
-                ),
-                yState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(1410, 815, 80, 30)
-                ),
-                buffState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(1180, 370, 256, 128)
-                ),
-                magicResultState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(1180, 620, 256, 64)
-                ),
-            )
-        )
-    override val uiState = _uiState.asStateFlow()
-
     private val ocrClient = OcrClient(createHttpClient())
     private var connectionJob: Job? = null
 
@@ -76,14 +58,18 @@ class FollowerViewModel: BaseViewModel() {
         type: Type,
         rectangle: Rectangle,
     ) {
-        _uiState.update {
-            when (type) {
-                Type.X -> it.copy(xState = it.xState.copy(rectangle = rectangle))
-                Type.Y -> it.copy(yState = it.yState.copy(rectangle = rectangle))
-                Type.BUFF -> it.copy(buffState = it.buffState.copy(rectangle = rectangle))
-                Type.MAGIC_RESULT -> it.copy(magicResultState = it.magicResultState.copy(rectangle = rectangle))
-            }
+        val state = UiStateHolder.state.value
+        val newState = when (type) {
+            Type.X -> state.xState.copy(rectangle = rectangle)
+            Type.Y -> state.yState.copy(rectangle = rectangle)
+            Type.BUFF -> state.buffState.copy(rectangle = rectangle)
+            Type.MAGIC_RESULT -> state.magicResultState.copy(rectangle = rectangle)
         }
+
+        UiStateHolder.update(
+            type = type,
+            state = newState
+        )
     }
 
     private suspend fun test() {
@@ -103,23 +89,21 @@ class FollowerViewModel: BaseViewModel() {
 
         connectionJob?.cancel()
         connectionJob = scope.launch(Dispatchers.IO) {
-            if(_uiState.value.isRunning) {
+            val state = UiStateHolder.state.value
+            if(state.isRunning) {
                 return@launch
             }
-
-            _uiState.update {
-                it.copy(
-                    isRunning = true,
-                    connectionState = ConnectionState.Connecting
-                )
-            }
+            UiStateHolder.update(
+                isRunning = true,
+                connectionState = ConnectionState.Connecting
+            )
 
             val socket = Socket(host, commanderPort)
 
-            _uiState.update {
-                it.copy(connectionState = ConnectionState.Connected)
-            }
-
+            UiStateHolder.update(
+                isRunning = true,
+                connectionState = ConnectionState.Connected
+            )
             val reader = socket.getInputStream().bufferedReader()
 
             // 서버 메시지를 수신하기 위한 루프
@@ -145,13 +129,10 @@ class FollowerViewModel: BaseViewModel() {
         }
     }
     private fun onDisconnected() {
-        _uiState.update {
-            it.copy(
-                isRunning = false,
-                connectionState = ConnectionState.Disconnected
-            )
-        }
-
+        UiStateHolder.update(
+            isRunning = false,
+            connectionState = ConnectionState.Disconnected
+        )
         connectionJob?.cancel()
         connectionJob = null
     }
@@ -214,5 +195,23 @@ class FollowerViewModel: BaseViewModel() {
                 duration = 1.seconds
             )
         }
+    }
+    private fun init() = scope.launch {
+        UiStateHolder.init(
+            UiState.default.copy(
+                xState = UiState.CommonState.default.copy(
+                    rectangle = Rectangle(1330, 815, 80, 30)
+                ),
+                yState = UiState.CommonState.default.copy(
+                    rectangle = Rectangle(1410, 815, 80, 30)
+                ),
+                buffState = UiState.CommonState.default.copy(
+                    rectangle = Rectangle(1180, 370, 256, 128)
+                ),
+                magicResultState = UiState.CommonState.default.copy(
+                    rectangle = Rectangle(1180, 620, 256, 64)
+                ),
+            )
+        )
     }
 }

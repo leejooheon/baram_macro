@@ -1,12 +1,15 @@
 package follower.macro
 
+import common.base.UiStateHolder
 import common.robot.Keyboard
 import follower.model.MagicResultState
 import follower.ocr.TextDetecter
 import kotlinx.coroutines.*
 import java.awt.event.KeyEvent
 
-class MacroDetailAction {
+class MacroDetailAction(
+    private val scope: CoroutineScope
+) {
     private val failureTargets = listOf("실패", "심패")
 
     suspend fun honmasul() = withContext(Dispatchers.Default) {
@@ -32,32 +35,32 @@ class MacroDetailAction {
     }
 
     suspend fun gongJeung() = withContext(Dispatchers.IO) {
-//        var text: String
-//        val maxTryCount = 3
-//        var counter = 0
-//        while (isActive) {
-//            Keyboard.pressAndRelease(KeyEvent.VK_2)
-//            text = TextDetecter.detectString(FollowerMacro.magicRect)
-//            counter += 1
-//            when {
-//                failureTargets.contains(text) -> continue
-//                text.contains(MagicResultState.NO_MP.tag) -> {
-//                    if(counter >= maxTryCount) {
-//                        eat()
-//                        counter = 0
-//                    }
-//                }
-//                text.contains(MagicResultState.ME_DEAD.tag) -> {
-//                    dead(MagicResultState.ME_DEAD)
-//                    break
-//                }
-//                text.contains("공력") -> {
-//                    healMe()
-//                    tabTab()
-//                    break
-//                }
-//            }
-//        }
+        val maxTryCount = 3
+        var counter = 0
+        while (isActive) {
+            Keyboard.pressAndRelease(KeyEvent.VK_2)
+            val state = UiStateHolder.state.value
+            val text = state.magicResultState.texts.joinToString("\n")
+            counter += 1
+            when {
+                failureTargets.contains(text) -> continue
+                text.contains(MagicResultState.NO_MP.tag) -> {
+                    if(counter >= maxTryCount) {
+                        eat()
+                        counter = 0
+                    }
+                }
+                text.contains(MagicResultState.ME_DEAD.tag) -> {
+                    dead(MagicResultState.ME_DEAD)
+                    break
+                }
+                text.contains("공력") -> {
+                    healMe()
+                    tabTab()
+                    break
+                }
+            }
+        }
     }
 
     suspend fun bomu() {
@@ -123,18 +126,19 @@ class MacroDetailAction {
     }
 
     suspend fun invincible() = withContext(Dispatchers.IO) {
-//        while (isActive) {
-//            Keyboard.pressAndRelease(KeyEvent.VK_4)
-//            val result = TextDetecter.detectString(FollowerMacro.magicRect)
-//            println("invincible: $result")
-//            when {
-//                result.contains("이미") -> break
-//                result.contains(MagicResultState.NO_MP.tag) -> gongJeung()
-//                result.contains(MagicResultState.ME_DEAD.tag) -> {
-//                    dead(MagicResultState.ME_DEAD)
-//                    break
-//                }
-//            }
-//        }
+        while (isActive) {
+            Keyboard.pressAndRelease(KeyEvent.VK_4)
+            val state = UiStateHolder.state.value
+            val magicState = state.magicResultState.texts.joinToString("\n")
+            when {
+                magicState.contains("이미") -> break
+                magicState.contains("공력") -> break
+                magicState.contains(MagicResultState.NO_MP.tag) -> gongJeung()
+                magicState.contains(MagicResultState.ME_DEAD.tag) -> {
+                    dead(MagicResultState.ME_DEAD)
+                    break
+                }
+            }
+        }
     }
 }

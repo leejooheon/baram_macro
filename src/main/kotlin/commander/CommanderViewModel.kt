@@ -6,6 +6,7 @@ import commander.model.ctrlCommandFilter
 import commander.model.macroCommandFilter
 import commander.model.oneHandFilter
 import common.base.BaseViewModel
+import common.base.UiStateHolder
 import common.event.UiEvent
 import common.model.EventModel
 import common.model.PointModel
@@ -34,22 +35,10 @@ class CommanderViewModel: BaseViewModel() {
     private var isCtrlPressed = AtomicBoolean(false)
     private var connectionJob: Job? = null
 
-    override val _uiState: MutableStateFlow<UiState> =
-        MutableStateFlow(
-            UiState.default.copy(
-                xState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(1330, 815, 80, 30)
-                ),
-                yState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(1410, 815, 80, 30)
-                ),
-            )
-        )
-    override val uiState = _uiState.asStateFlow()
-
     init {
         observeScreens()
         observeCoordinates()
+        init()
     }
 
     override fun dispatch(event: UiEvent) = scope.launch {
@@ -67,18 +56,21 @@ class CommanderViewModel: BaseViewModel() {
     private fun start() {
         connectionJob?.cancel()
         connectionJob = scope.launch(Dispatchers.IO) {
-            if(uiState.value.isRunning) return@launch
-            _uiState.update { it.copy(isRunning = true) }
+            val state = UiStateHolder.state.value
+            if(state.isRunning) return@launch
+            UiStateHolder.update(
+                isRunning = true,
+                connectionState = ConnectionState.Connecting
+            )
+
             while (isActive) {
                 val client = serverSocket.accept().also {
                     this@CommanderViewModel.client = it
                 }
-
-                _uiState.update {
-                    it.copy(
-                        connectionState = ConnectionState.Connected
-                    )
-                }
+                UiStateHolder.update(
+                    isRunning = true,
+                    connectionState = ConnectionState.Connected
+                )
                 println("connected: ${client.inetAddress.hostAddress}")
 
                 launch(Dispatchers.IO) {
@@ -92,14 +84,19 @@ class CommanderViewModel: BaseViewModel() {
         type: Type,
         rectangle: Rectangle,
     ) {
-        _uiState.update {
-            when (type) {
-                Type.X -> it.copy(xState = it.xState.copy(rectangle = rectangle))
-                Type.Y -> it.copy(xState = it.yState.copy(rectangle = rectangle))
-                Type.BUFF -> it.copy(buffState = it.buffState.copy(rectangle = rectangle))
-                Type.MAGIC_RESULT -> it.copy(magicResultState = it.magicResultState.copy(rectangle = rectangle))
-            }
+
+        val state = UiStateHolder.state.value
+        val newState = when (type) {
+            Type.X -> state.xState.copy(rectangle = rectangle)
+            Type.Y -> state.yState.copy(rectangle = rectangle)
+            Type.BUFF -> state.buffState.copy(rectangle = rectangle)
+            Type.MAGIC_RESULT -> state.magicResultState.copy(rectangle = rectangle)
         }
+
+        UiStateHolder.update(
+            type = type,
+            state = newState
+        )
     }
 
     fun dispatchKeyPressEvent(keyEvent: Int) {
@@ -191,13 +188,11 @@ class CommanderViewModel: BaseViewModel() {
     private fun disconnectClient() {
         println("클라이언트 연결 해제: ${client?.inetAddress?.hostAddress}")
 
+        UiStateHolder.update(
+            connectionState = ConnectionState.Disconnected,
+            isRunning = false
+        )
         client = null
-        _uiState.update {
-            it.copy(
-                connectionState = ConnectionState.Disconnected,
-                isRunning = false
-            )
-        }
     }
 
 
@@ -217,7 +212,7 @@ class CommanderViewModel: BaseViewModel() {
     }
 
     private fun observeCoordinates() = scope.launch {
-        uiState
+        UiStateHolder.state
             .map {
                 val x = it.xState.texts.firstOrNull()?.toIntOrNull()
                 val y = it.yState.texts.firstOrNull()?.toIntOrNull()
@@ -234,5 +229,18 @@ class CommanderViewModel: BaseViewModel() {
                 val event = PointModel(x!!, y!!)
                 sendCommand(event.toString())
             }
+    }
+
+    private fun init() = scope.launch {
+        UiStateHolder.init(
+            UiState.default.copy(
+                xState = UiState.CommonState.default.copy(
+                    rectangle = Rectangle(1330, 815, 80, 30)
+                ),
+                yState = UiState.CommonState.default.copy(
+                    rectangle = Rectangle(1410, 815, 80, 30)
+                ),
+            )
+        )
     }
 }

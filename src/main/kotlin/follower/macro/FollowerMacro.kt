@@ -1,10 +1,12 @@
 package follower.macro
 
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
+import common.base.UiStateHolder
 import common.robot.Keyboard
 import follower.model.BuffState
 import follower.model.MagicResultState
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collectLatest
 import java.awt.event.KeyEvent
 import java.util.concurrent.atomic.AtomicReference
 
@@ -12,7 +14,10 @@ object FollowerMacro {
     private val scope = CoroutineScope(SupervisorJob())
     private var job: Job? = null
 
-    private val macroDetailAction = MacroDetailAction()
+    private val macroDetailAction by lazy {
+        MacroDetailAction(scope)
+    }
+
     private val buffState = AtomicReference(BuffState.NONE)
     private val magicResultState = AtomicReference(MagicResultState.NONE)
 
@@ -41,8 +46,8 @@ object FollowerMacro {
         }
     }
 
-    fun heal() {
-        val maxCount = 14 // 수시로 조정하자
+    private fun heal() {
+        val maxCount = 10 // 수시로 조정하자
         var counter = 0
 
         job?.cancel()
@@ -62,7 +67,7 @@ object FollowerMacro {
         }
     }
 
-    internal fun onBuffStateUpdate(text: String) {
+    private fun onBuffStateUpdate(text: String) {
         val state = when {
             !text.contains(BuffState.INVINSIBILITY.tag) -> BuffState.INVINSIBILITY
             !text.contains(BuffState.BOMU.tag) -> BuffState.BOMU
@@ -76,7 +81,7 @@ object FollowerMacro {
         buffState.set(state)
     }
 
-    internal fun onMagicResultUpdate(text: String) {
+    private fun onMagicResultUpdate(text: String) {
         val state = when {
             text.contains(MagicResultState.ME_DEAD.tag) -> MagicResultState.ME_DEAD
             text.contains(MagicResultState.OTHER_DEAD.tag) -> MagicResultState.OTHER_DEAD
@@ -115,5 +120,12 @@ object FollowerMacro {
             else -> { /** nothing **/ }
         }
         magicResultState.set(MagicResultState.NONE)
+    }
+
+    private fun collectStates() = scope.launch {
+        UiStateHolder.state.collectLatest {
+            onBuffStateUpdate(it.buffState.texts.joinToString("\n"))
+            onMagicResultUpdate(it.magicResultState.texts.joinToString("\n"))
+        }
     }
 }

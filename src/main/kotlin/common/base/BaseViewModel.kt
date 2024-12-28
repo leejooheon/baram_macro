@@ -21,8 +21,8 @@ import kotlin.time.Duration
 abstract class BaseViewModel {
     private val updateMutex = Mutex()
     private val ocrClient = OcrClient(createHttpClient())
-    protected abstract val _uiState: MutableStateFlow<UiState>
-    abstract val uiState: StateFlow<UiState>
+//    protected abstract val _uiState: MutableStateFlow<UiState>
+//    abstract val uiState: StateFlow<UiState>
 
     abstract fun dispatch(event: UiEvent): Job
 
@@ -70,7 +70,7 @@ abstract class BaseViewModel {
     }.flowOn(Dispatchers.IO)
 
     private fun getStateFromType(type: Type): UiState.CommonState {
-        val state = uiState.value
+        val state = UiStateHolder.state.value
         return when(type) {
             Type.X -> state.xState
             Type.Y -> state.yState
@@ -88,14 +88,9 @@ abstract class BaseViewModel {
             image = image,
             texts = texts
         )
-
-        _uiState.update {
-            when(type) {
-                Type.X -> it.copy(xState =  state)
-                Type.Y -> it.copy(yState = state)
-                Type.BUFF -> it.copy(buffState = state)
-                Type.MAGIC_RESULT -> it.copy(magicResultState = state)
-            }
-        }
+        UiStateHolder.update(
+            type = type,
+            state = state
+        )
     }
 }

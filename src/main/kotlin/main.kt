@@ -8,7 +8,7 @@ fun main() = application {
     Window(onCloseRequest = ::exitApplication) {
         RegisterNativeHook()
 
-//        CommanderApp()
-        FollowerApp()
+        CommanderApp()
+//        FollowerApp()
     }
 }
