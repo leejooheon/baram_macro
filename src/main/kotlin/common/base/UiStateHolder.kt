@@ -44,8 +44,20 @@ object UiStateHolder {
 
     fun getCoordinates(): Point? {
         val state = state.value
-        val x = state.xState.texts.firstOrNull()?.toIntOrNull()
-        val y = state.yState.texts.firstOrNull()?.toIntOrNull()
+        val x = state.xState.texts
+            .firstOrNull()
+            ?.replace("고", "2")
+            ?.replace("o", "0")
+            ?.replace("n", "0")
+            ?.replace(" ", "")
+            ?.toIntOrNull()
+        val y = state.yState.texts
+            .firstOrNull()
+            ?.replace("고", "2")
+            ?.replace("o", "0")
+            ?.replace("n", "0")
+            ?.replace(" ", "")
+            ?.toIntOrNull()
 
         return if(x == null || y == null) null
         else Point(x, y)
