@@ -12,46 +12,31 @@ import androidx.compose.ui.unit.dp
 import commander.presentation.ClientList
 import commander.presentation.CommandHistory
 import common.event.ObserveKeyEvents
+import common.event.ObserveMouseEvents
 
+const val PORT = "23456"
 
 @Composable
 @Preview
 fun CommanderApp() {
-    val commander = remember { Commander() }
-    val uiState by commander.uiState.collectAsState()
+    val viewModel = remember { CommanderViewModel() }
+    val uiState by viewModel.uiState.collectAsState()
+
+    ObserveMouseEvents(
+        onClicked = {
+            println("nativeMouseClicked: $it")
+        }
+    )
 
     ObserveKeyEvents(
-        onReleased = commander::dispatchKeyReleaseEvent,
-        onPressed = commander::dispatchKeyPressEvent
+        onReleased = viewModel::dispatchKeyReleaseEvent,
+        onPressed = viewModel::dispatchKeyPressEvent
     )
 
     MaterialTheme {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
-            LazyColumn {
-                item {
-                    ClientList(
-                        clients = uiState.commanderState.clientHostAddressList
-                    )
-                }
-                item {
-                    CommandHistory(
-                        histories = uiState.commandBuffer
-                    )
-                }
-
-                item {
-                    Button(
-                        onClick = { commander.start() },
-                        enabled = !uiState.isRunning,
-                    ) {
-                        Text("Start")
-                    }
-                }
-            }
-        }
+        CommanderScreen(
+            uiState = uiState,
+            onEvent = viewModel::dispatch
+        )
     }
 }

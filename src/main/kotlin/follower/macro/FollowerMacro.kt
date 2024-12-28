@@ -2,43 +2,19 @@ package follower.macro
 
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
 import common.robot.Keyboard
-import follower.Follower
 import follower.model.BuffState
 import follower.model.MagicResultState
-import follower.ocr.TextDetecter
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collectLatest
-import java.awt.Rectangle
 import java.awt.event.KeyEvent
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
-import kotlin.time.Duration.Companion.seconds
 
 object FollowerMacro {
     private val scope = CoroutineScope(SupervisorJob())
     private var job: Job? = null
 
     private val macroDetailAction = MacroDetailAction()
-
     private val buffState = AtomicReference(BuffState.NONE)
     private val magicResultState = AtomicReference(MagicResultState.NONE)
-    private var moveState = AtomicBoolean(false)
-    private var buffRect = Rectangle()
-    var magicRect = Rectangle()
-
-
-    fun init(follower: Follower) {
-        scope.launch {
-            follower.uiState.collectLatest {
-                buffRect = it.buffStateRect
-                magicRect = it.magicRect
-            }
-        }
-    }
-
-    suspend fun onMoving(pressed: Boolean) = withContext(Dispatchers.IO) {
-        moveState.set(pressed)
-    }
 
     suspend fun dispatch(keyEvent: Int) {
         when (keyEvent) {
@@ -71,27 +47,14 @@ object FollowerMacro {
 
         job?.cancel()
         job = scope.launch {
-            launch(Dispatchers.IO) {
-                while (isActive) observeBuffState()
-            }
-            launch(Dispatchers.IO) {
-                while (isActive) observeMagicResult()
-            }
-
             macroDetailAction.tabTab()
             while (isActive) {
-                if(moveState.get()) {
-                    delay(1.seconds)
-                    continue
-                }
-
                 Keyboard.pressAndRelease(KeyEvent.VK_1)
 
-                if(counter > maxCount) {
+                if(counter++ > maxCount) {
                     macroDetailAction.tryGongJeung()
                     counter = 0
                 }
-                counter += 1
 
                 checkBuff()
                 checkMagicResult()
@@ -99,14 +62,7 @@ object FollowerMacro {
         }
     }
 
-    private suspend fun observeBuffState() {
-        if(buffState.get() != BuffState.NONE) {
-            return
-        }
-        withContext(Dispatchers.Default) {
-            Keyboard.pressAndRelease(KeyEvent.VK_S)
-        }
-        val text = TextDetecter.detectString(buffRect)
+    internal fun onBuffStateUpdate(text: String) {
         val state = when {
             !text.contains(BuffState.INVINSIBILITY.tag) -> BuffState.INVINSIBILITY
             !text.contains(BuffState.BOMU.tag) -> BuffState.BOMU
@@ -114,18 +70,13 @@ object FollowerMacro {
         }
 
         if(state != BuffState.NONE) {
-            println("buffState: $state")
+            println("buffState: $buffState")
         }
 
         buffState.set(state)
     }
 
-    private suspend fun observeMagicResult() {
-        if(magicResultState.get() != MagicResultState.NONE) {
-            return
-        }
-
-        val text = TextDetecter.detectString(magicRect)
+    internal fun onMagicResultUpdate(text: String) {
         val state = when {
             text.contains(MagicResultState.ME_DEAD.tag) -> MagicResultState.ME_DEAD
             text.contains(MagicResultState.OTHER_DEAD.tag) -> MagicResultState.OTHER_DEAD

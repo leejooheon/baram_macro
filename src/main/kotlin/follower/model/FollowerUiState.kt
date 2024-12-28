@@ -4,10 +4,10 @@ import java.awt.Rectangle
 
 data class FollowerUiState(
     val connectionState: ConnectionState,
+    val isRunning: Boolean = false,
     val commandBuffer: List<String>,
     val magicRect: Rectangle,
     val buffStateRect: Rectangle,
-    val isRunning: Boolean = false,
     ) {
     companion object {
         val default = FollowerUiState(

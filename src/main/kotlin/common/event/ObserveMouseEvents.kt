@@ -18,7 +18,7 @@ fun ObserveMouseEvents(
                 super.nativeMouseClicked(nativeEvent)
                 val event = nativeEvent ?: return
 
-                println("nativeMouseClicked: ${event.point}, ${event.button}, ${event.clickCount}")
+//                println("nativeMouseClicked: ${event.point}, ${event.button}, ${event.clickCount}")
                 onClicked.invoke(event.point)
             }
         }
