@@ -1,84 +1,94 @@
 package common.presentation
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
+import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import java.awt.Rectangle
+import javax.swing.tree.DefaultTreeCellEditor.DefaultTextField
 
-
+@Preview
 @Composable
 internal fun SizeItem(
     rectangle: Rectangle,
     onRectangleChanged: (Rectangle) -> Unit,
 ) {
-    Row(
-        horizontalArrangement = Arrangement.SpaceAround
-    ) {
-        Text(
-            text = "X: ",
-            style = MaterialTheme.typography.body2
-        )
-        BasicTextField(
+    Row {
+        CustomTextField(
             value = rectangle.x.toString(),
-            textStyle = MaterialTheme.typography.body2,
-            onValueChange = {
-                it.toIntOrNull()?.let {
-                    onRectangleChanged.invoke(
-                        Rectangle(it, rectangle.y, rectangle.width, rectangle.height)
-                    )
-                }
-            },
+            label = "x 좌표",
+            contentDescription = "x",
+            onValueChanged = {
+                val rect = Rectangle(it, rectangle.y, rectangle.width, rectangle.height)
+                onRectangleChanged.invoke(rect)
+            }
         )
-
-        Text(
-            text = "Y: ",
-            style = MaterialTheme.typography.body2
-        )
-        BasicTextField(
+        Spacer(modifier = Modifier.width(8.dp))
+        CustomTextField(
             value = rectangle.y.toString(),
-            textStyle = MaterialTheme.typography.body2,
-            onValueChange = {
-                it.toIntOrNull()?.let {
-                    onRectangleChanged.invoke(
-                        Rectangle(rectangle.x, it, rectangle.width, rectangle.height)
-                    )
-                }
-            },
+            label = "y 좌표",
+            contentDescription = "y",
+            onValueChanged = {
+                val rect = Rectangle(rectangle.x, it, rectangle.width, rectangle.height)
+                onRectangleChanged.invoke(rect)
+            }
         )
-
-        Text(
-            text = "Width: ",
-            style = MaterialTheme.typography.body2
-        )
-        BasicTextField(
+        Spacer(modifier = Modifier.width(8.dp))
+        CustomTextField(
             value = rectangle.width.toString(),
-            textStyle = MaterialTheme.typography.body2,
-            onValueChange = {
-                it.toIntOrNull()?.let {
-                    onRectangleChanged.invoke(
-                        Rectangle(rectangle.x, rectangle.y, it, rectangle.height)
-                    )
-                }
-            },
+            label = "width",
+            contentDescription = "width",
+            onValueChanged = {
+                val rect = Rectangle(rectangle.x, rectangle.y, it, rectangle.height)
+                onRectangleChanged.invoke(rect)
+            }
         )
-
-        Text(
-            text = "Height: ",
-            style = MaterialTheme.typography.body2
-        )
-        BasicTextField(
+        Spacer(modifier = Modifier.width(8.dp))
+        CustomTextField(
             value = rectangle.height.toString(),
-            textStyle = MaterialTheme.typography.body2,
-            onValueChange = {
-                it.toIntOrNull()?.let {
-                    onRectangleChanged.invoke(
-                        Rectangle(rectangle.x, rectangle.y, rectangle.width, it)
-                    )
-                }
-            },
+            label = "height",
+            contentDescription = "height",
+            onValueChanged = {
+                val rect = Rectangle(rectangle.x, rectangle.y, rectangle.width, it)
+                onRectangleChanged.invoke(rect)
+            }
         )
     }
+}
+
+@Composable
+private fun CustomTextField(
+    value: String,
+    label: String,
+    contentDescription: String,
+    onValueChanged: (Int) -> Unit
+) {
+    OutlinedTextField(
+        value = value,
+        textStyle = MaterialTheme.typography.body2,
+        singleLine = true,
+        label = { Text(text = label) },
+        placeholder = { Text(text = contentDescription) },
+        onValueChange = {
+            it.toIntOrNull()?.let {
+                onValueChanged.invoke(it)
+            }
+        },
+        colors = TextFieldDefaults.textFieldColors(
+            backgroundColor = Color(0xFFF5F5F5),
+            focusedIndicatorColor = Color.Blue,
+            focusedLabelColor = Color.Blue,
+            unfocusedLabelColor = Color.Gray,
+            unfocusedIndicatorColor = Color.Gray,
+            cursorColor = Color.Red,
+        ),
+        modifier = Modifier.width(96.dp)
+    )
 }

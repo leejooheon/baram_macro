@@ -1,11 +1,19 @@
 package common.presentation
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.KeyboardArrowUp
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -19,33 +27,63 @@ internal fun DisplaySection(
     onRectangleChanged: (Rectangle) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var isExpanded by remember { mutableStateOf(false) }
+
     Column(
-        modifier = Modifier
+        modifier = Modifier,
     ) {
-        Row {
-            Image(
-                bitmap = model.image.toComposeImageBitmap(),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = modifier
-            )
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(modifier = Modifier.clip(MaterialTheme.shapes.medium)) {
+                Image(
+                    bitmap = model.image.toComposeImageBitmap(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = modifier
+                )
+            }
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            Text(
-                text = model.texts.joinToString(separator = "\n"),
-                style = MaterialTheme.typography.body1.copy(
+            IconButton(
+                onClick = { isExpanded = !isExpanded }
+            ) {
+                Icon(
+                    imageVector = if(isExpanded) Icons.Outlined.KeyboardArrowDown
+                                  else Icons.Outlined.KeyboardArrowUp,
+                    contentDescription = if(isExpanded) "down" else "up"
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            OutlinedTextField(
+                value = model.texts.joinToString(separator = "\n"),
+                colors = TextFieldDefaults.textFieldColors(
+                    backgroundColor = Color(0xFFF5F5F5),
+                    disabledTextColor = Color.Black
+                ),
+                textStyle = MaterialTheme.typography.body1.copy(
                     fontWeight = FontWeight.Bold
                 ),
-                modifier = Modifier.widthIn(32.dp)
+                enabled = false,
+                maxLines = 3,
+                onValueChange = {},
+                modifier = Modifier.weight(1f)
             )
         }
 
-        SizeItem(
-            rectangle = model.rectangle,
-            onRectangleChanged = onRectangleChanged
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
+        AnimatedVisibility(
+            visible = isExpanded,
+            enter = expandVertically(),
+            exit = shrinkVertically()
+        ) {
+            SizeItem(
+                rectangle = model.rectangle,
+                onRectangleChanged = onRectangleChanged
+            )
+        }
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
