@@ -12,20 +12,7 @@ val macroCommandFilter = listOf(
     NativeKeyEvent.VC_F5,
 )
 
-const val ctrlCommand = NativeKeyEvent.VC_SHIFT
-val ctrlCommandFilter = listOf(
-    NativeKeyEvent.VC_W,
-    NativeKeyEvent.VC_A,
-    NativeKeyEvent.VC_S,
-    NativeKeyEvent.VC_D,
-)
-
-val moveCommandFilter = listOf(
-    NativeKeyEvent.VC_UP,
-    NativeKeyEvent.VC_LEFT,
-    NativeKeyEvent.VC_DOWN,
-    NativeKeyEvent.VC_RIGHT,
-)
+const val ctrlCommand = NativeKeyEvent.VC_CONTROL
 
 val oneHandFilter = listOf(
     NativeKeyEvent.VC_PAGE_UP,

@@ -12,6 +12,10 @@ data class UiState(
     val buffState: CommonState,
     val magicResultState: CommonState,
 ) {
+    enum class Type {
+        X, Y, BUFF, MAGIC_RESULT
+    }
+
     data class CommonState(
         val texts: List<String>,
         val image: BufferedImage,

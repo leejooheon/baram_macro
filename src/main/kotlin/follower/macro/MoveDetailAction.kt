@@ -1,90 +1,68 @@
 package follower.macro
 
-import common.base.UiStateHolder
 import common.robot.Keyboard
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withContext
 import java.awt.Point
 import java.awt.event.KeyEvent
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.abs
-import kotlin.time.Duration.Companion.seconds
 
-class MoveDetailAction(
-    private val scope: CoroutineScope
-) {
+class MoveDetailAction {
     private enum class Direction { UP, DOWN, LEFT, RIGHT }
 
     private val commanderPoint = AtomicReference<Point?>(null)
-    private var moveJob: Job? = null
 
-    fun update(point: Point) {
-        commanderPoint.set(point)
-    }
+    internal suspend fun moveTowards(myPoint: Point) = withContext(Dispatchers.IO) {
+        val point = commanderPoint.get() ?: return@withContext
+        var deltaX = point.x - myPoint.x
+        var deltaY = point.y - myPoint.y
 
-    fun moveTowards(myPoint: Point?) {
-        moveJob?.cancel()
-//        if(FollowerMacro.job?.isActive == true) {
-//            return
-//        }
-        moveJob = scope.launch(Dispatchers.IO) {
-            myPoint ?: return@launch
-            val point = commanderPoint.get() ?: return@launch
-            val deltaX = point.x - myPoint.x
-            val deltaY = point.y - myPoint.y
+        while (isActive) {
             println("deltaX: $deltaX, deltaY: $deltaY")
             if (abs(deltaX) <= 1 && abs(deltaY) <= 1) {
-                return@launch
+                break
             }
 
             if (deltaX > 1) {
-                tryMove(Direction.RIGHT)
+                if(tryMove(Direction.RIGHT)) deltaX -= 1
+                else break
             } else if (deltaX < -1) {
-                tryMove(Direction.LEFT)
+                if(tryMove(Direction.LEFT)) deltaX += 1
+                else break
             }
 
             if (deltaY > 1) {
-                tryMove(Direction.DOWN)
+                if(tryMove(Direction.DOWN)) deltaY -= 1
+                else break
             } else if (deltaY < -1) {
-                tryMove(Direction.UP)
+                if(tryMove(Direction.UP)) deltaY += 1
+                else break
             }
         }
     }
 
+    internal fun update(point: Point) {
+        commanderPoint.set(point)
+    }
+
     private suspend fun tryMove(
         direction: Direction,
-    ) {
-        if(UiStateHolder.ignore) return
-        println("tryMove: $direction")
+    ): Boolean {
+        val property = FollowerMacro.property.get()
+        val ctrlToggle = FollowerMacro.ctrlToggle.get()
+        if(property || ctrlToggle) return false
+
         val keyEvent = when(direction) {
             Direction.UP -> KeyEvent.VK_UP
             Direction.DOWN -> KeyEvent.VK_DOWN
             Direction.LEFT -> KeyEvent.VK_LEFT
             Direction.RIGHT -> KeyEvent.VK_RIGHT
         }
-        try {
-            Keyboard.pressAndRelease(keyEvent, 700)
-        } catch (e: CancellationException) {
-            Keyboard.release(keyEvent)
-        }
-    }
-    companion object {
-        private var job: Job? = null
-        fun releaseAll() {
-            UiStateHolder.ignore = true
-            listOf(
-                KeyEvent.VK_UP,
-                KeyEvent.VK_DOWN,
-                KeyEvent.VK_LEFT,
-                KeyEvent.VK_RIGHT,
-            ).forEach {
-                Keyboard.release(it)
-            }
-            job?.cancel()
-            job = CoroutineScope(Dispatchers.IO).launch {
-                delay(250)
-                UiStateHolder.ignore = false
-            }
-        }
-    }
 
+        Keyboard.pressAndRelease(keyEvent, 300)
+
+        return true
+    }
 }

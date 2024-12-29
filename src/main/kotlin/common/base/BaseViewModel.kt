@@ -1,78 +1,73 @@
 package common.base
 
+import common.UiStateHolder
 import common.display.DisplayProvider
-import common.event.UiEvent
-import common.model.Type
+import common.model.UiEvent
 import common.model.UiState
+import common.model.UiState.Type
 import common.network.OcrClient
 import common.network.createHttpClient
-import common.robot.Keyboard
 import common.util.onError
 import common.util.onSuccess
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+import follower.ocr.TextDetecter
+import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.awt.image.BufferedImage
 import kotlin.time.Duration
 
 abstract class BaseViewModel {
-    private val updateMutex = Mutex()
     private val ocrClient = OcrClient(createHttpClient())
 
     abstract fun dispatch(event: UiEvent): Job
 
-    protected suspend fun observeAndUpdate(type: Type, duration: Duration) {
-
-        captureScreen(
-            type = type,
-            duration = duration
-        )
-            .flatMapConcat { screen ->
-                readText(screen)
-                    .map { result -> screen to result }
-            }
-            .distinctUntilChanged()
-            .collect { (screen, result) ->
-                updateImage(
-                    image = screen,
-                    texts = result,
-                    type = type
-                )
-            }
-    }
-
-    protected fun captureScreen(
+    protected suspend fun updateFromRemote(
         type: Type,
         duration: Duration,
-    ) = flow {
-        val displayProvider = DisplayProvider(Keyboard.robot)
-        while (true) {
-            val state = getStateFromType(type)
-            val screen = displayProvider.capture(state.rectangle)
-            emit(screen)
-            delay(duration)
-        }
-    }.flowOn(Dispatchers.IO)
+    ) = withContext(Dispatchers.IO) {
+        while (isActive) {
+            val screen = DisplayProvider.capture(type)
 
-    private fun readText(image: BufferedImage) = flow {
-        val isRunning = UiStateHolder.state.value.isRunning
-        if(isRunning) {
             ocrClient
-                .readImage(image)
-                .onSuccess { model ->
-                    emit(model.results)
+                .readImage(screen)
+                .onSuccess {
+                    UiStateHolder.update(
+                        type = type,
+                        state = getStateFromType(type).copy(
+                            texts = it.results,
+                            image = screen
+                        )
+                    )
                 }
                 .onError {
-                    emit(listOf("error"))
+                    updateImage(
+                        type = type,
+                        image = screen,
+                        texts = emptyList()
+                    )
                 }
-        } else {
-            emit(listOf("-"))
+            delay(duration)
         }
-    }.flowOn(Dispatchers.IO)
+    }
 
+    protected suspend fun updateFromLocal(
+        type: Type,
+        duration: Duration,
+    ) = withContext(Dispatchers.IO) {
+
+        while (isActive) {
+            val screen = DisplayProvider.capture(type)
+            val text = TextDetecter.detectString(screen)
+
+            updateImage(
+                type = type,
+                image = screen,
+                texts = listOf(text)
+            )
+
+            delay(duration)
+        }
+    }
     private fun getStateFromType(type: Type): UiState.CommonState {
         val state = UiStateHolder.state.value
         return when(type) {
@@ -83,11 +78,11 @@ abstract class BaseViewModel {
         }
     }
 
-    protected suspend fun updateImage(
+    private suspend fun updateImage(
         image: BufferedImage,
         texts: List<String>,
         type: Type
-    ) = updateMutex.withLock {
+    ) {
         val state = getStateFromType(type).copy(
             image = image,
             texts = texts

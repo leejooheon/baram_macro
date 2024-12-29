@@ -1,26 +1,46 @@
 package follower.macro
 
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
-import common.base.UiStateHolder
+import common.UiStateHolder
+import common.display.DisplayProvider
+import common.model.MoveEvent
+import common.model.UiState
 import common.robot.Keyboard
 import follower.model.BuffState
 import follower.model.MagicResultState
 import follower.ocr.TextDetecter
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collectLatest
 import java.awt.event.KeyEvent
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.seconds
 
 object FollowerMacro {
     private val scope = CoroutineScope(SupervisorJob())
 
-    var job: Job? = null
-        private set
+    private var job: Job? = null
+
     private val macroDetailAction = MacroDetailAction()
+    private val moveDetailAction = MoveDetailAction()
 
     private val buffState = AtomicReference(BuffState.NONE)
     private val magicResultState = AtomicReference(MagicResultState.NONE)
+
+    internal val property = AtomicBoolean(false)
+    internal val ctrlToggle = AtomicBoolean(false)
+
+    suspend fun dispatch(event: MoveEvent) {
+        when(event) {
+            is MoveEvent.OnCommanderPositionChanged -> {
+                moveDetailAction.update(event.point)
+            }
+            is MoveEvent.OnMove -> {
+                val point = UiStateHolder.getCoordinates() ?: return
+                moveDetailAction.moveTowards(point)
+            }
+        }
+    }
 
     suspend fun dispatch(keyEvent: Int) {
         when (keyEvent) {
@@ -45,6 +65,31 @@ object FollowerMacro {
             NativeKeyEvent.VC_F4 -> macroDetailAction.invincible()
             NativeKeyEvent.VC_F5 -> macroDetailAction.bomu()
         }
+    }
+
+    internal suspend fun obtainProperty() {
+        property.set(true)
+
+        listOf(
+            KeyEvent.VK_UP,
+            KeyEvent.VK_DOWN,
+            KeyEvent.VK_LEFT,
+            KeyEvent.VK_RIGHT,
+        ).forEach {
+            Keyboard.release(it)
+        }
+
+        withContext(Dispatchers.IO) {
+            launch(Dispatchers.IO) {
+                delay(1.seconds)
+                property.set(false)
+            }
+        }
+    }
+
+    internal fun toggleMoveCtrl() {
+        val toggle = !ctrlToggle.get()
+        ctrlToggle.set(toggle)
     }
 
     private fun heal() {
@@ -86,13 +131,13 @@ object FollowerMacro {
         withContext(Dispatchers.Default) {
             Keyboard.pressAndRelease(KeyEvent.VK_S)
         }
-        val uiState = UiStateHolder.state.value
-        val rect = uiState.buffState.rectangle
 
-        val text = TextDetecter.detectString(rect)
+        val image = DisplayProvider.capture(UiState.Type.BUFF)
+        val text = TextDetecter.detectString(image)
+
         val state = when {
             !text.contains(BuffState.INVINSIBILITY.tag) -> BuffState.INVINSIBILITY
-//            !text.contains(BuffState.BOMU.tag) -> BuffState.BOMU
+            !text.contains(BuffState.BOMU.tag) -> BuffState.BOMU
             else -> BuffState.NONE
         }
 
@@ -108,10 +153,9 @@ object FollowerMacro {
             return
         }
 
-        val uiState = UiStateHolder.state.value
-        val rect = uiState.magicResultState.rectangle
+        val image = DisplayProvider.capture(UiState.Type.MAGIC_RESULT)
+        val text = TextDetecter.detectString(image)
 
-        val text = TextDetecter.detectString(rect)
         val state = when {
             text.contains(MagicResultState.ME_DEAD.tag) -> MagicResultState.ME_DEAD
             text.contains(MagicResultState.OTHER_DEAD.tag) -> MagicResultState.OTHER_DEAD
@@ -132,7 +176,7 @@ object FollowerMacro {
 
         when(state) {
             BuffState.INVINSIBILITY -> macroDetailAction.invincible()
-//            BuffState.BOMU -> macroDetailAction.bomu()
+            BuffState.BOMU -> macroDetailAction.bomu()
             else -> { /** nothing **/ }
         }
 

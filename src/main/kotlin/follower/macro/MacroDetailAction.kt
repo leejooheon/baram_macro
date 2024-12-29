@@ -1,18 +1,16 @@
 package follower.macro
 
-import common.base.UiStateHolder
+import common.display.DisplayProvider
+import common.model.UiState
 import common.robot.Keyboard
-import follower.macro.MoveDetailAction.Companion.releaseAll
 import follower.model.MagicResultState
 import follower.ocr.TextDetecter
 import kotlinx.coroutines.*
 import java.awt.event.KeyEvent
 
 class MacroDetailAction {
-    private val failureTargets = listOf("실패", "심패")
-
     suspend fun honmasul() = withContext(Dispatchers.Default) {
-        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+        escape()
         while (isActive) {
             Keyboard.pressAndRelease(KeyEvent.VK_5)
             Keyboard.pressAndRelease(KeyEvent.VK_UP)
@@ -21,11 +19,13 @@ class MacroDetailAction {
     }
 
     suspend fun gongju() {
+        escape()
         tabTab()
         Keyboard.pressAndRelease(KeyEvent.VK_8)
         eat()
         gongJeung()
     }
+
     suspend fun tryGongJeung() {
         Keyboard.pressAndRelease(KeyEvent.VK_2)
 //        healMe()
@@ -36,17 +36,23 @@ class MacroDetailAction {
         var text: String
         val maxTryCount = 3
         var counter = 0
+
         while (isActive) {
             Keyboard.pressAndRelease(KeyEvent.VK_2)
-            val uiState = UiStateHolder.state.value
-            val rect = uiState.magicResultState.rectangle
+            delay(100)
 
-            text = TextDetecter.detectString(rect)
-            counter += 1
+            val screen = DisplayProvider.capture(UiState.Type.MAGIC_RESULT)
+            text = TextDetecter.detectString(screen)
+
             when {
-                failureTargets.contains(text) -> continue
+                text.contains(MagicResultState.GONGJEUNG.tag) -> {
+                    healMe()
+                    tabTab()
+                    break
+                }
+
                 text.contains(MagicResultState.NO_MP.tag) -> {
-                    if(counter >= maxTryCount) {
+                    if(counter++ >= maxTryCount) {
                         eat()
                         counter = 0
                     }
@@ -55,21 +61,19 @@ class MacroDetailAction {
                     dead(MagicResultState.ME_DEAD)
                     break
                 }
-                text.contains("공력") -> {
-                    healMe()
-                    tabTab()
-                    break
-                }
             }
-            delay(100)
         }
     }
 
     suspend fun bomu() {
-        focusMe(KeyEvent.VK_6)
-        Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
-        Keyboard.pressAndRelease(KeyEvent.VK_7)
-        Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+        focusMe(
+            keyEvent = KeyEvent.VK_6,
+            action = {
+                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+                Keyboard.pressAndRelease(KeyEvent.VK_7)
+                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+            }
+        )
 
         tabTab()
         Keyboard.pressAndRelease(KeyEvent.VK_6)
@@ -79,11 +83,14 @@ class MacroDetailAction {
     suspend fun dead(state: MagicResultState) {
         when(state) {
             MagicResultState.ME_DEAD -> {
-                focusMe(KeyEvent.VK_0)
-                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
-
-                Keyboard.pressAndRelease(KeyEvent.VK_1)
-                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+                focusMe(
+                    keyEvent = KeyEvent.VK_0,
+                    action = {
+                        Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+                        Keyboard.pressAndRelease(KeyEvent.VK_1)
+                        Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+                    }
+                )
 
                 gongJeung()
                 invincible()
@@ -98,8 +105,12 @@ class MacroDetailAction {
 
     private suspend fun healMe() {
         escape()
-        focusMe(KeyEvent.VK_1)
-        Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+        focusMe(
+            keyEvent = KeyEvent.VK_1,
+            action = {
+                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+            }
+        )
     }
 
     private suspend fun eat() {
@@ -109,43 +120,49 @@ class MacroDetailAction {
     }
 
     suspend fun tabTab() {
-        releaseAll()
         escape()
         Keyboard.pressAndRelease(KeyEvent.VK_TAB)
+        delay(20)
         Keyboard.pressAndRelease(KeyEvent.VK_TAB)
     }
 
-    private suspend fun focusMe(keyEvent: Int) {
-        releaseAll()
+    private suspend inline fun focusMe(
+        keyEvent: Int,
+        crossinline action: suspend () -> Unit,
+    ) {
         escape()
         Keyboard.pressAndRelease(keyEvent)
+        delay(20)
         Keyboard.pressAndRelease(KeyEvent.VK_HOME)
         delay(20)
+        action.invoke()
     }
 
     suspend fun escape() {
-        releaseAll()
+        FollowerMacro.obtainProperty()
         Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
         Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+        delay(20)
     }
 
     suspend fun invincible() = withContext(Dispatchers.IO) {
         Keyboard.pressAndRelease(KeyEvent.VK_4)
-//        while (isActive) {
-//            Keyboard.pressAndRelease(KeyEvent.VK_4)
-//            val uiState = UiStateHolder.state.value
-//            val rect = uiState.magicResultState.rectangle
-//
-//            val result = TextDetecter.detectString(rect)
-//            println("invincible: $result")
-//            when {
-//                result.contains("이미") -> break
-//                result.contains(MagicResultState.NO_MP.tag) -> gongJeung()
-//                result.contains(MagicResultState.ME_DEAD.tag) -> {
-//                    dead(MagicResultState.ME_DEAD)
-//                    break
-//                }
-//            }
-//        }
+
+        while (isActive) {
+            Keyboard.pressAndRelease(KeyEvent.VK_4)
+            delay(100)
+
+            val image = DisplayProvider.capture(UiState.Type.MAGIC_RESULT)
+            val result = TextDetecter.detectString(image)
+
+            when {
+                result.contains(MagicResultState.ALREADY.tag) -> break
+                result.contains(MagicResultState.NO_MP.tag) -> gongJeung()
+                result.contains(MagicResultState.ME_DEAD.tag) -> {
+                    dead(MagicResultState.ME_DEAD)
+                    break
+                }
+            }
+        }
     }
 }

@@ -1,21 +1,11 @@
 package commander
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import commander.presentation.ClientList
-import commander.presentation.CommandHistory
-import common.base.UiStateHolder
+import common.UiStateHolder
 import common.event.ObserveKeyEvents
 import common.event.ObserveMouseEvents
-
-const val PORT = "23456"
 
 @Composable
 @Preview
@@ -31,7 +21,7 @@ fun CommanderApp() {
 
     ObserveKeyEvents(
         onReleased = viewModel::dispatchKeyReleaseEvent,
-        onPressed = viewModel::dispatchKeyPressEvent
+        onPressed = {}
     )
 
     MaterialTheme {

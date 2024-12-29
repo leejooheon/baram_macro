@@ -1,47 +1,37 @@
 package follower
 
-import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
-import commander.model.ctrlCommandFilter
+import commander.model.ctrlCommand
 import commander.model.macroCommandFilter
+import common.UiStateHolder
 import common.base.BaseViewModel
-import common.base.UiStateHolder
-import common.display.DisplayProvider
-import common.event.UiEvent
-import common.model.EventModel.Companion.toEventModel
-import common.model.PointModel
+import common.model.MoveEvent
+import common.model.UiEvent
+import common.model.KeyEventModel.Companion.toKeyEventModel
 import common.model.PointModel.Companion.toPointModel
-import common.model.Type
 import common.model.UiState
-import common.network.OcrClient
+import common.model.UiState.Type
 import common.network.commanderPort
-import common.network.createHttpClient
 import common.network.host
-import common.robot.Keyboard
-import common.util.onError
-import common.util.onSuccess
 import follower.macro.FollowerMacro
-import follower.macro.MoveDetailAction
 import follower.model.ConnectionState
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import java.awt.Point
 import java.awt.Rectangle
-import java.awt.event.KeyEvent
 import java.net.Socket
 import java.net.SocketException
 import kotlin.time.Duration.Companion.seconds
 
 class FollowerViewModel: BaseViewModel() {
     private val scope = CoroutineScope(SupervisorJob())
-
-    private val moveDetailAction by lazy { MoveDetailAction(scope) }
-    private val ocrClient = OcrClient(createHttpClient())
     private var connectionJob: Job? = null
 
     init {
+        init()
         observeScreens()
         observeCoordinates()
-        init()
     }
 
     override fun dispatch(event: UiEvent) = scope.launch {
@@ -59,7 +49,7 @@ class FollowerViewModel: BaseViewModel() {
         }
     }
 
-    private fun onRectangleChanged(
+    private suspend fun onRectangleChanged(
         type: Type,
         rectangle: Rectangle,
     ) {
@@ -77,21 +67,7 @@ class FollowerViewModel: BaseViewModel() {
         )
     }
 
-    private suspend fun test() {
-        val image = Keyboard.test(Rectangle(0, 0, 100, 50))
-
-        ocrClient
-            .readImage(image)
-            .onSuccess {
-                println("success: ${it.results}")
-            }
-            .onError {
-                println("error")
-            }
-    }
-
     private fun tryConnect() {
-
         connectionJob?.cancel()
         connectionJob = scope.launch(Dispatchers.IO) {
             val state = UiStateHolder.state.value
@@ -116,17 +92,14 @@ class FollowerViewModel: BaseViewModel() {
                 try {
                     val message = reader.readLine() ?: break // 서버 메시지 읽기
                     launch(Dispatchers.Default) {
-                        message.toEventModel()?.let { model ->
-                            if (model.isPressed) {
-                                dispatchKeyPressEvent(model.keyEvent)
-                            } else {
-                                dispatchKeyReleaseEvent(model.keyEvent)
-                            }
+                        message.toKeyEventModel()?.let { model ->
+                            dispatchKeyReleaseEvent(model.keyEvent)
                         }
                         message.toPointModel()?.let { model ->
-                            println("commander Coordinates: $model")
-                            moveDetailAction.update(Point(model.x, model.y))
-                            moveDetailAction.moveTowards(UiStateHolder.getCoordinates())
+                            FollowerMacro.dispatch(
+                                MoveEvent.OnCommanderPositionChanged(Point(model.x, model.y))
+                            )
+                            FollowerMacro.dispatch(MoveEvent.OnMove)
                         }
                     }
                 } catch (e: SocketException) {
@@ -135,7 +108,8 @@ class FollowerViewModel: BaseViewModel() {
             }
         }
     }
-    private fun onDisconnected() {
+
+    private suspend fun onDisconnected() {
         UiStateHolder.update(
             isRunning = false,
             connectionState = ConnectionState.Disconnected
@@ -144,32 +118,10 @@ class FollowerViewModel: BaseViewModel() {
         connectionJob = null
     }
 
-    private fun dispatchKeyPressEvent(keyEvent: Int) {
-        when {
-            keyEvent in ctrlCommandFilter -> {
-                val event = when (keyEvent) {
-                    NativeKeyEvent.VC_W -> KeyEvent.VK_UP
-                    NativeKeyEvent.VC_A -> KeyEvent.VK_LEFT
-                    NativeKeyEvent.VC_S -> KeyEvent.VK_DOWN
-                    NativeKeyEvent.VC_D -> KeyEvent.VK_RIGHT
-                    else -> return
-                }
-                Keyboard.press(event)
-            }
-        }
-    }
-
     private suspend fun dispatchKeyReleaseEvent(keyEvent: Int) {
         when {
-            keyEvent in ctrlCommandFilter -> {
-                val event = when (keyEvent) {
-                    NativeKeyEvent.VC_W -> KeyEvent.VK_UP
-                    NativeKeyEvent.VC_A -> KeyEvent.VK_LEFT
-                    NativeKeyEvent.VC_S -> KeyEvent.VK_DOWN
-                    NativeKeyEvent.VC_D -> KeyEvent.VK_RIGHT
-                    else -> return
-                }
-                Keyboard.release(event)
+            keyEvent == ctrlCommand -> {
+                FollowerMacro.toggleMoveCtrl()
             }
             keyEvent in macroCommandFilter -> {
                 FollowerMacro.dispatch(keyEvent)
@@ -178,84 +130,31 @@ class FollowerViewModel: BaseViewModel() {
     }
 
     private fun observeScreens() = scope.launch {
-        launch(Dispatchers.IO) {
-            val displayProvider = DisplayProvider(Keyboard.robot)
-            while (isActive) {
-                val rect = UiStateHolder.state.value.xState.rectangle
-                val screen = displayProvider.capture(rect)
-                ocrClient
-                    .readImage(screen)
-                    .onSuccess {
-                        val state = UiStateHolder.state.value
-                        UiStateHolder.update(
-                            type = Type.X,
-                            state.xState.copy(
-                                texts = it.results,
-                                image = screen
-                            )
-                        )
-                    }
-                    .onError {
-                        updateImage(
-                            type = Type.X,
-                            image = screen,
-                            texts = emptyList()
-                        )
-                    }
-                delay(0.5.seconds)
-            }
+        launch {
+            updateFromRemote(
+                type = Type.X,
+                duration = 1.seconds
+            )
         }
         launch {
-            val displayProvider = DisplayProvider(Keyboard.robot)
-            while (isActive) {
-                val rect = UiStateHolder.state.value.yState.rectangle
-                val screen = displayProvider.capture(rect)
-                ocrClient
-                    .readImage(screen)
-                    .onSuccess {
-                        val state = UiStateHolder.state.value
-                        UiStateHolder.update(
-                            type = Type.Y,
-                            state.yState.copy(
-                                texts = it.results,
-                                image = screen
-                            )
-                        )
-                    }
-                    .onError {
-                        updateImage(
-                            type = Type.Y,
-                            image = screen,
-                            texts = emptyList()
-                        )
-                    }
-                delay(0.5.seconds)
-            }
+            updateFromRemote(
+                type = Type.Y,
+                duration = 1.seconds
+            )
         }
-//        launch {
-//            captureScreen(
-//                type = Type.BUFF,
-//                duration = 1.seconds
-//            ).collectLatest {
-//                updateImage(
-//                    image = it,
-//                    texts = emptyList(),
-//                    type = Type.BUFF
-//                )
-//            }
-//        }
-//        launch {
-//            captureScreen(
-//                type = Type.MAGIC_RESULT,
-//                duration = 1.seconds
-//            ).collectLatest {
-//                updateImage(
-//                    image = it,
-//                    texts = emptyList(),
-//                    type = Type.MAGIC_RESULT
-//                )
-//            }
-//        }
+
+        launch {
+            updateFromLocal(
+                type = Type.BUFF,
+                duration = 1.seconds
+            )
+        }
+        launch {
+            updateFromLocal(
+                type = Type.MAGIC_RESULT,
+                duration = 1.seconds
+            )
+        }
     }
 
     private fun observeCoordinates() = scope.launch {
@@ -268,8 +167,8 @@ class FollowerViewModel: BaseViewModel() {
             .distinctUntilChanged { old, new ->
                 old.first == new.first && old.second == new.second
             }
-            .collect {
-                    moveDetailAction.moveTowards(UiStateHolder.getCoordinates())
+            .collectLatest {
+                FollowerMacro.dispatch(MoveEvent.OnMove)
             }
     }
 

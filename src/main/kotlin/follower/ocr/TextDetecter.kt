@@ -1,6 +1,7 @@
 package follower.ocr
 
 import androidx.compose.ui.graphics.toAwtImage
+import androidx.compose.ui.graphics.toComposeImageBitmap
 import common.robot.Keyboard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -8,6 +9,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import net.sourceforge.tess4j.Tesseract
 import java.awt.Rectangle
+import java.awt.image.BufferedImage
 
 object TextDetecter {
     private val tesseract = Tesseract().apply {
@@ -18,12 +20,14 @@ object TextDetecter {
     private val mutex = Mutex()
 
     suspend fun detectString(
-        rectangle: Rectangle
+        image: BufferedImage,
     ): String = withContext(Dispatchers.IO) {
         mutex.withLock {
-            val image = Keyboard.capture(rectangle)
-            val origin = tesseract.doOCR(image.toAwtImage())
-            return@withContext origin
+            try {
+                tesseract.doOCR(image)
+            } catch (e: Exception) {
+                ""
+            }
         }
     }
 }

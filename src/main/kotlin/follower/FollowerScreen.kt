@@ -8,8 +8,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import common.event.UiEvent
-import common.model.Type
+import common.model.UiEvent
 import common.model.UiState
 import common.presentation.ConnectionStateItem
 import common.presentation.DisplaySection

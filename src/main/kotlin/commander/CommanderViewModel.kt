@@ -2,15 +2,13 @@ package commander
 
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
 import commander.model.ctrlCommand
-import commander.model.ctrlCommandFilter
 import commander.model.macroCommandFilter
 import commander.model.oneHandFilter
 import common.base.BaseViewModel
-import common.base.UiStateHolder
-import common.event.UiEvent
-import common.model.EventModel
+import common.UiStateHolder
+import common.model.UiEvent
+import common.model.KeyEventModel
 import common.model.PointModel
-import common.model.Type
 import common.model.UiState
 import common.network.commanderPort
 import common.robot.Keyboard
@@ -23,8 +21,8 @@ import java.io.BufferedWriter
 import java.io.OutputStreamWriter
 import java.net.ServerSocket
 import java.net.Socket
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration.Companion.seconds
+import common.model.UiState.Type
 
 class CommanderViewModel: BaseViewModel() {
     private val scope = CoroutineScope(SupervisorJob())
@@ -32,7 +30,6 @@ class CommanderViewModel: BaseViewModel() {
     private val serverSocket = ServerSocket(commanderPort)
     private var client:Socket? = null
 
-    private var isCtrlPressed = AtomicBoolean(false)
     private var connectionJob: Job? = null
 
     init {
@@ -80,7 +77,7 @@ class CommanderViewModel: BaseViewModel() {
         }
     }
 
-    private fun onRectangleChanged(
+    private suspend fun onRectangleChanged(
         type: Type,
         rectangle: Rectangle,
     ) {
@@ -99,43 +96,10 @@ class CommanderViewModel: BaseViewModel() {
         )
     }
 
-    fun dispatchKeyPressEvent(keyEvent: Int) {
+    fun dispatchKeyReleaseEvent(keyEvent: Int) = scope.launch {
         when {
-            keyEvent == ctrlCommand -> {
-                isCtrlPressed.set(true)
-                return
-            }
-
-            isCtrlPressed.get() && keyEvent in ctrlCommandFilter -> {
-                val model = EventModel(
-                    keyEvent = keyEvent,
-                    isPressed = true,
-                )
-                sendCommand(model.toString())
-            }
-        }
-    }
-
-    fun dispatchKeyReleaseEvent(keyEvent: Int) {
-        when {
-            keyEvent == ctrlCommand -> {
-                isCtrlPressed.set(false)
-                return
-            }
-
-            keyEvent in ctrlCommandFilter -> {
-                val model = EventModel(
-                    keyEvent = keyEvent,
-                    isPressed = false,
-                )
-                sendCommand(model.toString())
-            }
-
-            keyEvent in macroCommandFilter -> {
-                val model = EventModel(
-                    keyEvent = keyEvent,
-                    isPressed = false,
-                )
+            keyEvent in macroCommandFilter.plus(ctrlCommand) -> {
+                val model = KeyEventModel(keyEvent)
                 sendCommand(model.toString())
             }
 
@@ -157,7 +121,7 @@ class CommanderViewModel: BaseViewModel() {
         }
     }
 
-    private fun sendCommand(command: String) {
+    private suspend fun sendCommand(command: String) {
         val client = client ?: return
 
         try {
@@ -170,7 +134,7 @@ class CommanderViewModel: BaseViewModel() {
         }
     }
 
-    private fun handleClient(client: Socket) {
+    private suspend fun handleClient(client: Socket) {
         try {
             val input = client.getInputStream().bufferedReader()
 
@@ -185,7 +149,7 @@ class CommanderViewModel: BaseViewModel() {
         }
     }
 
-    private fun disconnectClient() {
+    private suspend fun disconnectClient() {
         println("클라이언트 연결 해제: ${client?.inetAddress?.hostAddress}")
 
         UiStateHolder.update(
@@ -198,13 +162,13 @@ class CommanderViewModel: BaseViewModel() {
 
     private fun observeScreens() = scope.launch {
         launch {
-            observeAndUpdate(
+            updateFromRemote(
                 type = Type.X,
                 duration = 1.seconds
             )
         }
         launch {
-            observeAndUpdate(
+            updateFromRemote(
                 type = Type.Y,
                 duration = 1.seconds
             )

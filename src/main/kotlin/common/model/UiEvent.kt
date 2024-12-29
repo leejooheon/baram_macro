@@ -1,7 +1,7 @@
-package common.event
+package common.model
 
-import common.model.Type
 import java.awt.Rectangle
+import common.model.UiState.Type
 
 sealed interface UiEvent {
     data object OnTryConnect: UiEvent
