@@ -1,22 +1,15 @@
 package common.network
 
-import androidx.compose.ui.graphics.ImageBitmap
 import common.model.OcrModel
 import common.util.NetworkError
 import common.util.Result
 import io.ktor.client.*
 import io.ktor.client.call.*
-import io.ktor.client.network.sockets.*
-import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.http.*
-import io.ktor.util.*
-import io.ktor.util.network.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.SerializationException
 import java.awt.image.BufferedImage
-import java.io.ByteArrayInputStream
 import java.io.File
 import java.util.*
 import javax.imageio.ImageIO

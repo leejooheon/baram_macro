@@ -2,7 +2,7 @@ package follower.macro
 
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
 import common.UiStateHolder
-import common.display.DisplayProvider
+import common.robot.DisplayProvider
 import common.model.MoveEvent
 import common.model.UiState
 import common.robot.Keyboard

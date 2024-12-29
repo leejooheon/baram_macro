@@ -1,7 +1,7 @@
 package follower
 
-import commander.model.ctrlCommand
-import commander.model.macroCommandFilter
+import common.model.ctrlCommand
+import common.model.macroCommandFilter
 import common.UiStateHolder
 import common.base.BaseViewModel
 import common.model.MoveEvent
@@ -15,9 +15,7 @@ import common.network.host
 import follower.macro.FollowerMacro
 import follower.model.ConnectionState
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.*
 import java.awt.Point
 import java.awt.Rectangle
 import java.net.Socket
@@ -27,6 +25,9 @@ import kotlin.time.Duration.Companion.seconds
 class FollowerViewModel: BaseViewModel() {
     private val scope = CoroutineScope(SupervisorJob())
     private var connectionJob: Job? = null
+
+    private val _commanderPoint = MutableStateFlow(Point(0, 0))
+    internal val commanderPoint = _commanderPoint.asStateFlow()
 
     init {
         init()
@@ -96,9 +97,10 @@ class FollowerViewModel: BaseViewModel() {
                             dispatchKeyReleaseEvent(model.keyEvent)
                         }
                         message.toPointModel()?.let { model ->
-                            FollowerMacro.dispatch(
-                                MoveEvent.OnCommanderPositionChanged(Point(model.x, model.y))
-                            )
+                            val point = Point(model.x, model.y)
+
+                            _commanderPoint.emit(point)
+                            FollowerMacro.dispatch(MoveEvent.OnCommanderPositionChanged(point))
                             FollowerMacro.dispatch(MoveEvent.OnMove)
                         }
                     }

@@ -1,4 +1,4 @@
-package commander.model
+package common.model
 
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
 

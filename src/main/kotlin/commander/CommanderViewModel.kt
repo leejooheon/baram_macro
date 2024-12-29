@@ -1,15 +1,9 @@
 package commander
 
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
-import commander.model.ctrlCommand
-import commander.model.macroCommandFilter
-import commander.model.oneHandFilter
 import common.base.BaseViewModel
 import common.UiStateHolder
-import common.model.UiEvent
-import common.model.KeyEventModel
-import common.model.PointModel
-import common.model.UiState
+import common.model.*
 import common.network.commanderPort
 import common.robot.Keyboard
 import follower.model.ConnectionState
@@ -81,7 +75,6 @@ class CommanderViewModel: BaseViewModel() {
         type: Type,
         rectangle: Rectangle,
     ) {
-
         val state = UiStateHolder.state.value
         val newState = when (type) {
             Type.X -> state.xState.copy(rectangle = rectangle)
@@ -121,8 +114,8 @@ class CommanderViewModel: BaseViewModel() {
         }
     }
 
-    private suspend fun sendCommand(command: String) {
-        val client = client ?: return
+    private suspend fun sendCommand(command: String) = withContext(Dispatchers.IO) {
+        val client = client ?: return@withContext
 
         try {
             val writer = BufferedWriter(OutputStreamWriter(client.getOutputStream()))
@@ -134,7 +127,7 @@ class CommanderViewModel: BaseViewModel() {
         }
     }
 
-    private suspend fun handleClient(client: Socket) {
+    private suspend fun handleClient(client: Socket) = withContext(Dispatchers.IO) {
         try {
             val input = client.getInputStream().bufferedReader()
 

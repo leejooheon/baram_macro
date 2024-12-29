@@ -1,7 +1,7 @@
 package common.base
 
 import common.UiStateHolder
-import common.display.DisplayProvider
+import common.robot.DisplayProvider
 import common.model.UiEvent
 import common.model.UiState
 import common.model.UiState.Type
@@ -11,8 +11,6 @@ import common.util.onError
 import common.util.onSuccess
 import follower.ocr.TextDetecter
 import kotlinx.coroutines.*
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import java.awt.image.BufferedImage
 import kotlin.time.Duration
 

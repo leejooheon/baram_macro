@@ -4,18 +4,24 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import common.model.UiEvent
 import common.model.UiState
 import common.presentation.ConnectionStateItem
 import common.presentation.DisplaySection
+import follower.model.ConnectionState
+import java.awt.Point
 
 @Composable
 internal fun FollowerScreen(
     uiState: UiState,
+    commanderPoint: Point,
     onEvent: (UiEvent) -> Unit,
 ) {
     Column(
@@ -28,6 +34,10 @@ internal fun FollowerScreen(
                 ConnectionStateItem(
                     state = uiState.connectionState
                 )
+            }
+
+            item {
+                PointItem(commanderPoint)
             }
 
             items(
@@ -63,4 +73,27 @@ internal fun FollowerScreen(
             }
         }
     }
+}
+
+@Composable
+private fun PointItem(point: Point) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Point",
+            style = MaterialTheme.typography.h4
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Text(
+            text = "[${point.x}, ${point.y}]",
+            style = MaterialTheme.typography.body1.copy(
+                fontWeight = FontWeight.Bold
+            )
+        )
+    }
+
+    Spacer(modifier = Modifier.height(16.dp))
 }

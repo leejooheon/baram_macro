@@ -1,6 +1,6 @@
 package follower.macro
 
-import common.display.DisplayProvider
+import common.robot.DisplayProvider
 import common.model.UiState
 import common.robot.Keyboard
 import follower.model.MagicResultState
