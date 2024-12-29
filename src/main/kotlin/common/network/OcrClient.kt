@@ -45,12 +45,10 @@ class OcrClient(
                     )
                 }
             )
-        } catch(e: UnresolvedAddressException) {
-            return@withContext Result.Error(NetworkError.NO_INTERNET)
-        } catch(e: SerializationException) {
-            return@withContext Result.Error(NetworkError.SERIALIZATION)
-        } catch (e: SocketTimeoutException) {
-            return@withContext Result.Error(NetworkError.REQUEST_TIMEOUT)}
+        } catch (e: Exception) {
+            file.delete()
+            return@withContext Result.Error(NetworkError.REQUEST_TIMEOUT)
+        }
         finally {
             file.delete()
         }

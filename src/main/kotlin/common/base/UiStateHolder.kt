@@ -12,6 +12,9 @@ object UiStateHolder {
     private val _state = MutableStateFlow(UiState.default)
     internal val state = _state.asStateFlow()
 
+    var ignore = false
+
+
     suspend fun init(uiState: UiState) {
         _state.emit(uiState)
     }

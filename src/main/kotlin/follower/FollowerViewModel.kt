@@ -5,6 +5,7 @@ import commander.model.ctrlCommandFilter
 import commander.model.macroCommandFilter
 import common.base.BaseViewModel
 import common.base.UiStateHolder
+import common.display.DisplayProvider
 import common.event.UiEvent
 import common.model.EventModel.Companion.toEventModel
 import common.model.PointModel
@@ -177,29 +178,83 @@ class FollowerViewModel: BaseViewModel() {
     }
 
     private fun observeScreens() = scope.launch {
-        launch {
-            observeAndUpdate(
-                type = Type.X,
-                duration = (0.25).seconds
-            )
+        launch(Dispatchers.IO) {
+            val displayProvider = DisplayProvider(Keyboard.robot)
+            while (isActive) {
+                val rect = UiStateHolder.state.value.xState.rectangle
+                val screen = displayProvider.capture(rect)
+                ocrClient
+                    .readImage(screen)
+                    .onSuccess {
+                        val state = UiStateHolder.state.value
+                        UiStateHolder.update(
+                            type = Type.X,
+                            state.xState.copy(
+                                texts = it.results,
+                                image = screen
+                            )
+                        )
+                    }
+                    .onError {
+                        updateImage(
+                            type = Type.X,
+                            image = screen,
+                            texts = emptyList()
+                        )
+                    }
+                delay(0.5.seconds)
+            }
         }
         launch {
-            observeAndUpdate(
-                type = Type.Y,
-                duration = (0.25).seconds
-            )
+            val displayProvider = DisplayProvider(Keyboard.robot)
+            while (isActive) {
+                val rect = UiStateHolder.state.value.yState.rectangle
+                val screen = displayProvider.capture(rect)
+                ocrClient
+                    .readImage(screen)
+                    .onSuccess {
+                        val state = UiStateHolder.state.value
+                        UiStateHolder.update(
+                            type = Type.Y,
+                            state.yState.copy(
+                                texts = it.results,
+                                image = screen
+                            )
+                        )
+                    }
+                    .onError {
+                        updateImage(
+                            type = Type.Y,
+                            image = screen,
+                            texts = emptyList()
+                        )
+                    }
+                delay(0.5.seconds)
+            }
         }
 //        launch {
-//            observeAndUpdate(
+//            captureScreen(
 //                type = Type.BUFF,
 //                duration = 1.seconds
-//            )
+//            ).collectLatest {
+//                updateImage(
+//                    image = it,
+//                    texts = emptyList(),
+//                    type = Type.BUFF
+//                )
+//            }
 //        }
 //        launch {
-//            observeAndUpdate(
+//            captureScreen(
 //                type = Type.MAGIC_RESULT,
 //                duration = 1.seconds
-//            )
+//            ).collectLatest {
+//                updateImage(
+//                    image = it,
+//                    texts = emptyList(),
+//                    type = Type.MAGIC_RESULT
+//                )
+//            }
 //        }
     }
 
@@ -213,8 +268,8 @@ class FollowerViewModel: BaseViewModel() {
             .distinctUntilChanged { old, new ->
                 old.first == new.first && old.second == new.second
             }
-            .collect { (x, y) ->
-                moveDetailAction.moveTowards(UiStateHolder.getCoordinates())
+            .collect {
+                    moveDetailAction.moveTowards(UiStateHolder.getCoordinates())
             }
     }
 
@@ -222,19 +277,19 @@ class FollowerViewModel: BaseViewModel() {
         UiStateHolder.init(
             UiState.default.copy(
                 xState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(2070, 1248, 100, 36),
+                    rectangle = Rectangle(2205, 1310, 75, 28),
                     type = Type.X
                 ),
                 yState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(2170, 1248, 100, 36),
+                    rectangle = Rectangle(2285, 1310, 75, 28),
                     type = Type.Y
                 ),
                 buffState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(1886, 670, 256, 128),
+                    rectangle = Rectangle(2070, 890, 256, 128),
                     type = Type.BUFF
                 ),
                 magicResultState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(1852, 999, 256, 64),
+                    rectangle = Rectangle(2050, 1130, 256, 48),
                     type = Type.MAGIC_RESULT
                 ),
             )

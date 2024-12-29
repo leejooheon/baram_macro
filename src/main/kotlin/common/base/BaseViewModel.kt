@@ -25,6 +25,7 @@ abstract class BaseViewModel {
     abstract fun dispatch(event: UiEvent): Job
 
     protected suspend fun observeAndUpdate(type: Type, duration: Duration) {
+
         captureScreen(
             type = type,
             duration = duration
@@ -43,7 +44,7 @@ abstract class BaseViewModel {
             }
     }
 
-    private fun captureScreen(
+    protected fun captureScreen(
         type: Type,
         duration: Duration,
     ) = flow {
@@ -82,7 +83,7 @@ abstract class BaseViewModel {
         }
     }
 
-    private suspend fun updateImage(
+    protected suspend fun updateImage(
         image: BufferedImage,
         texts: List<String>,
         type: Type

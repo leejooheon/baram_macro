@@ -1,5 +1,6 @@
 package follower.macro
 
+import common.base.UiStateHolder
 import common.robot.Keyboard
 import kotlinx.coroutines.*
 import java.awt.Point
@@ -22,6 +23,9 @@ class MoveDetailAction(
 
     fun moveTowards(myPoint: Point?) {
         moveJob?.cancel()
+//        if(FollowerMacro.job?.isActive == true) {
+//            return
+//        }
         moveJob = scope.launch(Dispatchers.IO) {
             myPoint ?: return@launch
             val point = commanderPoint.get() ?: return@launch
@@ -49,6 +53,7 @@ class MoveDetailAction(
     private suspend fun tryMove(
         direction: Direction,
     ) {
+        if(UiStateHolder.ignore) return
         println("tryMove: $direction")
         val keyEvent = when(direction) {
             Direction.UP -> KeyEvent.VK_UP
@@ -57,10 +62,29 @@ class MoveDetailAction(
             Direction.RIGHT -> KeyEvent.VK_RIGHT
         }
         try {
-            Keyboard.pressAndRelease(keyEvent, 500)
+            Keyboard.pressAndRelease(keyEvent, 700)
         } catch (e: CancellationException) {
             Keyboard.release(keyEvent)
         }
-
     }
+    companion object {
+        private var job: Job? = null
+        fun releaseAll() {
+            UiStateHolder.ignore = true
+            listOf(
+                KeyEvent.VK_UP,
+                KeyEvent.VK_DOWN,
+                KeyEvent.VK_LEFT,
+                KeyEvent.VK_RIGHT,
+            ).forEach {
+                Keyboard.release(it)
+            }
+            job?.cancel()
+            job = CoroutineScope(Dispatchers.IO).launch {
+                delay(250)
+                UiStateHolder.ignore = false
+            }
+        }
+    }
+
 }

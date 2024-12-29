@@ -14,11 +14,10 @@ import kotlin.random.Random
 
 object FollowerMacro {
     private val scope = CoroutineScope(SupervisorJob())
-    private var job: Job? = null
 
-    private val macroDetailAction by lazy {
-        MacroDetailAction(scope)
-    }
+    var job: Job? = null
+        private set
+    private val macroDetailAction = MacroDetailAction()
 
     private val buffState = AtomicReference(BuffState.NONE)
     private val magicResultState = AtomicReference(MagicResultState.NONE)
@@ -63,7 +62,10 @@ object FollowerMacro {
 
             macroDetailAction.tabTab()
             while (isActive) {
-                Keyboard.pressAndRelease(KeyEvent.VK_1)
+                Keyboard.pressAndRelease(
+                    keyEvent = KeyEvent.VK_1,
+                    delay = Random.nextLong(30, 50)
+                )
 
                 if(counter > maxCount) {
                     macroDetailAction.tryGongJeung()
@@ -90,7 +92,7 @@ object FollowerMacro {
         val text = TextDetecter.detectString(rect)
         val state = when {
             !text.contains(BuffState.INVINSIBILITY.tag) -> BuffState.INVINSIBILITY
-            !text.contains(BuffState.BOMU.tag) -> BuffState.BOMU
+//            !text.contains(BuffState.BOMU.tag) -> BuffState.BOMU
             else -> BuffState.NONE
         }
 

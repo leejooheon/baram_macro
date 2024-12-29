@@ -2,6 +2,7 @@ package follower.macro
 
 import common.base.UiStateHolder
 import common.robot.Keyboard
+import follower.macro.MoveDetailAction.Companion.releaseAll
 import follower.model.MagicResultState
 import follower.ocr.TextDetecter
 import kotlinx.coroutines.*
@@ -20,7 +21,6 @@ class MacroDetailAction {
     }
 
     suspend fun gongju() {
-        escape()
         tabTab()
         Keyboard.pressAndRelease(KeyEvent.VK_8)
         eat()
@@ -28,8 +28,8 @@ class MacroDetailAction {
     }
     suspend fun tryGongJeung() {
         Keyboard.pressAndRelease(KeyEvent.VK_2)
-        healMe()
-        tabTab()
+//        healMe()
+//        tabTab()
     }
 
     suspend fun gongJeung() = withContext(Dispatchers.IO) {
@@ -61,6 +61,7 @@ class MacroDetailAction {
                     break
                 }
             }
+            delay(100)
         }
     }
 
@@ -103,17 +104,19 @@ class MacroDetailAction {
 
     private suspend fun eat() {
         Keyboard.pressAndRelease(KeyEvent.VK_U)
+        delay(50)
         Keyboard.pressAndRelease(KeyEvent.VK_U)
     }
 
     suspend fun tabTab() {
+        releaseAll()
         escape()
         Keyboard.pressAndRelease(KeyEvent.VK_TAB)
-        delay(20)
         Keyboard.pressAndRelease(KeyEvent.VK_TAB)
     }
 
     private suspend fun focusMe(keyEvent: Int) {
+        releaseAll()
         escape()
         Keyboard.pressAndRelease(keyEvent)
         Keyboard.pressAndRelease(KeyEvent.VK_HOME)
@@ -121,27 +124,28 @@ class MacroDetailAction {
     }
 
     suspend fun escape() {
+        releaseAll()
         Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
         Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
-//        delay(20)
     }
 
     suspend fun invincible() = withContext(Dispatchers.IO) {
-        while (isActive) {
-            Keyboard.pressAndRelease(KeyEvent.VK_4)
-            val uiState = UiStateHolder.state.value
-            val rect = uiState.magicResultState.rectangle
-
-            val result = TextDetecter.detectString(rect)
-            println("invincible: $result")
-            when {
-                result.contains("이미") -> break
-                result.contains(MagicResultState.NO_MP.tag) -> gongJeung()
-                result.contains(MagicResultState.ME_DEAD.tag) -> {
-                    dead(MagicResultState.ME_DEAD)
-                    break
-                }
-            }
-        }
+        Keyboard.pressAndRelease(KeyEvent.VK_4)
+//        while (isActive) {
+//            Keyboard.pressAndRelease(KeyEvent.VK_4)
+//            val uiState = UiStateHolder.state.value
+//            val rect = uiState.magicResultState.rectangle
+//
+//            val result = TextDetecter.detectString(rect)
+//            println("invincible: $result")
+//            when {
+//                result.contains("이미") -> break
+//                result.contains(MagicResultState.NO_MP.tag) -> gongJeung()
+//                result.contains(MagicResultState.ME_DEAD.tag) -> {
+//                    dead(MagicResultState.ME_DEAD)
+//                    break
+//                }
+//            }
+//        }
     }
 }
