@@ -105,9 +105,6 @@ class CommanderViewModel: BaseViewModel() {
                         NativeKeyEvent.VC_PAGE_DOWN -> {
                             Keyboard.pressAndRelease(KeyEvent.VK_F3)
                         }
-                        NativeKeyEvent.VC_KANJI -> {
-                            Keyboard.pressAndRelease(KeyEvent.VK_BACK_QUOTE)
-                        }
                     }
                 }
             }

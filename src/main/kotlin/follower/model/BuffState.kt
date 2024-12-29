@@ -4,6 +4,6 @@ enum class BuffState(
     val tag: String
 ) {
     NONE("NONE"),
-    BOMU("보호"),
+    BOMU("무장"),
     INVINSIBILITY("금강")
 }

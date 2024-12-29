@@ -39,8 +39,22 @@ object UiStateHolder {
     ) = mutex.withLock {
         _state.update {
             when(type) {
-                Type.X -> it.copy(xState =  state)
-                Type.Y -> it.copy(yState = state)
+                Type.X -> {
+                    val xState = if(state.texts.firstOrNull()?.toIntOrNull() != null) {
+                        state
+                    } else {
+                        this.state.value.xState
+                    }
+                    it.copy(xState = xState)
+                }
+                Type.Y -> {
+                    val yState = if(state.texts.firstOrNull()?.toIntOrNull() != null) {
+                        state
+                    } else {
+                        this.state.value.yState
+                    }
+                    it.copy(yState = yState)
+                }
                 Type.BUFF -> it.copy(buffState = state)
                 Type.MAGIC_RESULT -> it.copy(magicResultState = state)
             }

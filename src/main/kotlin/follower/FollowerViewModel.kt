@@ -12,14 +12,17 @@ import common.model.UiState
 import common.model.UiState.Type
 import common.network.commanderPort
 import common.network.host
+import common.robot.DisplayProvider
 import follower.macro.FollowerMacro
 import follower.model.ConnectionState
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import java.awt.Point
 import java.awt.Rectangle
+import java.io.File
 import java.net.Socket
 import java.net.SocketException
+import javax.imageio.ImageIO
 import kotlin.time.Duration.Companion.seconds
 
 class FollowerViewModel: BaseViewModel() {
@@ -38,7 +41,6 @@ class FollowerViewModel: BaseViewModel() {
     override fun dispatch(event: UiEvent) = scope.launch {
         when(event) {
             is UiEvent.OnTryConnect -> {
-//                test()
                 tryConnect()
             }
             is UiEvent.OnRectangleChanged -> {
@@ -135,16 +137,15 @@ class FollowerViewModel: BaseViewModel() {
         launch {
             updateFromRemote(
                 type = Type.X,
-                duration = 1.seconds
+                duration = 0.5.seconds
             )
         }
         launch {
             updateFromRemote(
                 type = Type.Y,
-                duration = 1.seconds
+                duration = 0.5.seconds
             )
         }
-
         launch {
             updateFromLocal(
                 type = Type.BUFF,
@@ -178,19 +179,19 @@ class FollowerViewModel: BaseViewModel() {
         UiStateHolder.init(
             UiState.default.copy(
                 xState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(2205, 1310, 75, 28),
+                    rectangle = Rectangle(2235, 1302, 74, 24),
                     type = Type.X
                 ),
                 yState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(2285, 1310, 75, 28),
+                    rectangle = Rectangle(2303, 1301, 74, 24),
                     type = Type.Y
                 ),
                 buffState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(2070, 890, 256, 128),
+                    rectangle = Rectangle(2118, 920, 200, 90),
                     type = Type.BUFF
                 ),
                 magicResultState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(2050, 1130, 256, 48),
+                    rectangle = Rectangle(2100, 1134, 256, 38),
                     type = Type.MAGIC_RESULT
                 ),
             )
