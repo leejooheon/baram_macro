@@ -74,15 +74,15 @@ object FollowerMacro {
     }
 
     internal fun obtainProperty() {
-        timer?.cancel()
-        timer = null
-
-        property = true
-
-        moveDetailAction.releaseAll()
-        timer = Timer().schedule(500) {
-            property = false
-        }
+//        timer?.cancel()
+//        timer = null
+//
+//        property = true
+//
+//        moveDetailAction.releaseAll()
+//        timer = Timer().schedule(500) {
+//            property = false
+//        }
     }
 
     internal fun toggleMoveCtrl() {

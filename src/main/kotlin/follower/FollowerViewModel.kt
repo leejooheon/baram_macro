@@ -9,6 +9,9 @@ import common.model.UiState.Type
 import common.network.commanderPort
 import common.network.host
 import common.robot.DisplayProvider
+import common.util.Result
+import common.util.onError
+import common.util.onSuccess
 import follower.macro.FollowerMacro
 import follower.model.ConnectionState
 import kotlinx.coroutines.*
@@ -129,24 +132,34 @@ class FollowerViewModel: BaseViewModel() {
     }
 
     private fun observeScreens() = scope.launch {
-        launch {
-            updateFromRemote(
-                type = Type.X,
-                duration = 0.seconds,
-                action = {
-                    FollowerMacro.dispatch(MoveEvent.OnMove)
+        launch(Dispatchers.IO) {
+//            updateFromRemote(
+//                type = Type.X,
+//                duration = 0.seconds,
+//                action = {
+//                    FollowerMacro.dispatch(MoveEvent.OnMove)
+//                }
+//            )
+            while (isActive) {
+                val screen = DisplayProvider.capture(Type.X)
+
+                val result = ocrClient.readImage(screen)
+                if(result is Result.Success) {
+                    val x = result.data.results.first()
+                    val y = result.data.results.last()
+                    UiStateHolder.test(x, y, screen)
                 }
-            )
+            }
         }
-        launch {
-            updateFromRemote(
-                type = Type.Y,
-                duration = 0.seconds,
-                action = {
-                    FollowerMacro.dispatch(MoveEvent.OnMove)
-                }
-            )
-        }
+//        launch {
+//            updateFromRemote(
+//                type = Type.Y,
+//                duration = 0.seconds,
+//                action = {
+//                    FollowerMacro.dispatch(MoveEvent.OnMove)
+//                }
+//            )
+//        }
         launch {
             updateFromLocal(
                 type = Type.BUFF,
@@ -165,7 +178,7 @@ class FollowerViewModel: BaseViewModel() {
         UiStateHolder.init(
             UiState.default.copy(
                 xState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(2235, 1302, 74, 24),
+                    rectangle = Rectangle(2240, 1302, 128, 24),
                     type = Type.X
                 ),
                 yState = UiState.CommonState.default.copy(

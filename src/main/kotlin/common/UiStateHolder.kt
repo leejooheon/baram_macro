@@ -10,6 +10,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.awt.Point
 import java.awt.Rectangle
+import java.awt.image.BufferedImage
 
 object UiStateHolder {
     private val mutex = Mutex()
@@ -31,6 +32,22 @@ object UiStateHolder {
                 connectionState = connectionState
             )
         }
+    }
+    suspend fun test(
+        x: String, y: String, screen: BufferedImage
+    ) {
+        val a = _state.value
+        val b = a.copy(
+            xState = a.xState.copy(
+                texts = listOf(x),
+                image = screen,
+            ),
+            yState = a.yState.copy(
+                texts = listOf(y),
+                image = screen,
+            )
+        )
+        _state.emit(b)
     }
 
     suspend fun update(
