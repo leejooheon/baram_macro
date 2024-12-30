@@ -36,29 +36,30 @@ object UiStateHolder {
     suspend fun update(
         type: Type,
         state: UiState.CommonState
-    ) = mutex.withLock {
-        _state.update {
-            when(type) {
-                Type.X -> {
-                    val xState = if(state.texts.firstOrNull()?.toIntOrNull() != null) {
-                        state
-                    } else {
-                        this.state.value.xState
-                    }
-                    it.copy(xState = xState)
+    ): UiState = mutex.withLock {
+        val uiState = this@UiStateHolder.state.value
+        val value = when(type) {
+            Type.X -> {
+                val xState = if(state.texts.firstOrNull()?.toIntOrNull() != null) {
+                    state
+                } else {
+                    this.state.value.xState
                 }
-                Type.Y -> {
-                    val yState = if(state.texts.firstOrNull()?.toIntOrNull() != null) {
-                        state
-                    } else {
-                        this.state.value.yState
-                    }
-                    it.copy(yState = yState)
-                }
-                Type.BUFF -> it.copy(buffState = state)
-                Type.MAGIC_RESULT -> it.copy(magicResultState = state)
+                uiState.copy(xState = xState)
             }
+            Type.Y -> {
+                val yState = if(state.texts.firstOrNull()?.toIntOrNull() != null) {
+                    state
+                } else {
+                    this.state.value.yState
+                }
+                uiState.copy(yState = yState)
+            }
+            Type.BUFF -> uiState.copy(buffState = state)
+            Type.MAGIC_RESULT -> uiState.copy(magicResultState = state)
         }
+        _state.emit(value)
+        return@withLock value
     }
 
     fun getCoordinates(): Point? {

@@ -1,6 +1,7 @@
 package common.base
 
 import common.UiStateHolder
+import common.model.MoveEvent
 import common.robot.DisplayProvider
 import common.model.UiEvent
 import common.model.UiState
@@ -9,6 +10,7 @@ import common.network.OcrClient
 import common.network.createHttpClient
 import common.util.onError
 import common.util.onSuccess
+import follower.macro.FollowerMacro
 import follower.ocr.TextDetecter
 import kotlinx.coroutines.*
 import java.awt.image.BufferedImage
@@ -36,6 +38,11 @@ abstract class BaseViewModel {
                             image = screen
                         )
                     )
+
+                    if(type == Type.X || type == Type.Y) {
+                        println("onMove!")
+                        FollowerMacro.dispatch(MoveEvent.OnMove)
+                    }
                 }
                 .onError {
                     updateImage(

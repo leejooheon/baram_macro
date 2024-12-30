@@ -35,7 +35,6 @@ class FollowerViewModel: BaseViewModel() {
     init {
         init()
         observeScreens()
-        observeCoordinates()
     }
 
     override fun dispatch(event: UiEvent) = scope.launch {
@@ -137,13 +136,13 @@ class FollowerViewModel: BaseViewModel() {
         launch {
             updateFromRemote(
                 type = Type.X,
-                duration = 0.5.seconds
+                duration = 0.seconds
             )
         }
         launch {
             updateFromRemote(
                 type = Type.Y,
-                duration = 0.5.seconds
+                duration = 0.seconds
             )
         }
         launch {
@@ -160,21 +159,6 @@ class FollowerViewModel: BaseViewModel() {
         }
     }
 
-    private fun observeCoordinates() = scope.launch {
-        UiStateHolder.state
-            .map {
-                val x = it.xState.texts
-                val y = it.yState.texts
-                x to y
-            }
-            .distinctUntilChanged { old, new ->
-                old.first == new.first && old.second == new.second
-            }
-            .collectLatest {
-                FollowerMacro.dispatch(MoveEvent.OnMove)
-            }
-    }
-
     private fun init() = scope.launch {
         UiStateHolder.init(
             UiState.default.copy(
@@ -183,7 +167,7 @@ class FollowerViewModel: BaseViewModel() {
                     type = Type.X
                 ),
                 yState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(2303, 1301, 74, 24),
+                    rectangle = Rectangle(2303, 1302, 74, 24),
                     type = Type.Y
                 ),
                 buffState = UiState.CommonState.default.copy(

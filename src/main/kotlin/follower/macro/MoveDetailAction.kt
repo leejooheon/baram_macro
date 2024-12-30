@@ -12,39 +12,58 @@ import kotlin.math.abs
 
 class MoveDetailAction {
     private enum class Direction { UP, DOWN, LEFT, RIGHT }
+    private var commanderPoint: Point? = null
 
-    private val commanderPoint = AtomicReference<Point?>(null)
-
-    internal suspend fun moveTowards(myPoint: Point) = withContext(Dispatchers.IO) {
-        val point = commanderPoint.get() ?: return@withContext
+    internal suspend fun moveTowards(myPoint: Point) = withContext(Dispatchers.Default) {
+        val point = commanderPoint ?: return@withContext
         var deltaX = point.x - myPoint.x
         var deltaY = point.y - myPoint.y
 
-        releaseAll()
+        var direction = true
         while (isActive) {
 //            println("deltaX: $deltaX, deltaY: $deltaY, ${FollowerMacro.property} $this")
             if(FollowerMacro.property) break
+            releaseAll()
             if (abs(deltaX) <= 1 && abs(deltaY) <= 1) {
                 break
             }
-            if (deltaX > 1) {
-                if(tryMove(Direction.RIGHT)) deltaX -= 1
-                else break
-            } else if (deltaX < -1) {
-                if(tryMove(Direction.LEFT)) deltaX += 1
-                else break
-            } else if (deltaY > 1) {
-                if(tryMove(Direction.DOWN)) deltaY -= 1
-                else break
-            } else if (deltaY < -1) {
-                if(tryMove(Direction.UP)) deltaY += 1
-                else break
+            if(direction) {
+                if (deltaX > 1) {
+                    if (tryMove(Direction.RIGHT)) deltaX -= 2
+                    else break
+                } else if (deltaX < -1) {
+                    if (tryMove(Direction.LEFT)) deltaX += 2
+                    else break
+                }
+                if (deltaY > 1) {
+                    if (tryMove(Direction.DOWN)) deltaY -= 2
+                    else break
+                } else if (deltaY < -1) {
+                    if (tryMove(Direction.UP)) deltaY += 2
+                    else break
+                }
+            } else {
+                if (deltaY > 1) {
+                    if (tryMove(Direction.DOWN)) deltaY -= 2
+                    else break
+                } else if (deltaY < -1) {
+                    if (tryMove(Direction.UP)) deltaY += 2
+                    else break
+                }
+                if (deltaX > 1) {
+                    if (tryMove(Direction.RIGHT)) deltaX -= 2
+                    else break
+                } else if (deltaX < -1) {
+                    if (tryMove(Direction.LEFT)) deltaX += 2
+                    else break
+                }
             }
+            direction = !direction
         }
     }
 
     internal fun update(point: Point) {
-        commanderPoint.set(point)
+        commanderPoint = point
     }
 
     internal fun releaseAll() {
@@ -73,7 +92,7 @@ class MoveDetailAction {
         }
 
         Keyboard.press(keyEvent)
-        delay(250)
+        delay(350)
         Keyboard.release(keyEvent)
 
         return true
