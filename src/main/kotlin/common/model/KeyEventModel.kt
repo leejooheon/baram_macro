@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 @Serializable
-data class KeyEventModel(val keyEvent: Int) {
+data class KeyEventModel(val keyEvent: Int, val isPressed: Boolean) {
     override fun toString(): String {
         return Json.encodeToString(serializer(), this)
     }

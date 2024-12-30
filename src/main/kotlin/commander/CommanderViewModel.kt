@@ -17,6 +17,9 @@ import java.net.ServerSocket
 import java.net.Socket
 import kotlin.time.Duration.Companion.seconds
 import common.model.UiState.Type
+import common.robot.DisplayProvider
+import common.util.Result
+import java.util.concurrent.atomic.AtomicBoolean
 
 class CommanderViewModel: BaseViewModel() {
     private val scope = CoroutineScope(SupervisorJob())
@@ -26,6 +29,7 @@ class CommanderViewModel: BaseViewModel() {
 
     private var connectionJob: Job? = null
 
+    private val movePressed = AtomicBoolean(false)
     init {
         observeScreens()
         init()
@@ -91,10 +95,12 @@ class CommanderViewModel: BaseViewModel() {
     fun dispatchKeyReleaseEvent(keyEvent: Int) = scope.launch {
         when {
             keyEvent in macroCommandFilter.plus(ctrlCommand) -> {
-                val model = KeyEventModel(keyEvent)
+                val model = KeyEventModel(
+                    keyEvent = keyEvent,
+                    isPressed = false
+                )
                 sendCommand(model.toString())
             }
-
             keyEvent in oneHandFilter -> {
                 scope.launch {
                     when(keyEvent) {
@@ -107,9 +113,29 @@ class CommanderViewModel: BaseViewModel() {
                     }
                 }
             }
+            keyEvent == moveCommand -> {
+                movePressed.set(false)
+                moveCommandFilter.forEach {
+                    val model = KeyEventModel(
+                        keyEvent = it,
+                        isPressed = false
+                    )
+                    sendCommand(model.toString())
+                }
+            }
         }
     }
     fun dispatchKeyPressEvent(keyEvent: Int) = scope.launch {
+        when {
+            keyEvent == moveCommand -> movePressed.set(true)
+            keyEvent in moveCommandFilter && movePressed.get() -> {
+                val model = KeyEventModel(
+                    keyEvent = keyEvent,
+                    isPressed = true
+                )
+                sendCommand(model.toString())
+            }
+        }
     }
 
     private suspend fun sendCommand(command: String) = withContext(Dispatchers.IO) {
@@ -152,29 +178,21 @@ class CommanderViewModel: BaseViewModel() {
 
 
     private fun observeScreens() = scope.launch {
-        launch {
-            updateFromRemote(
-                type = Type.X,
-                duration = 0.seconds,
-                action = {
-                    UiStateHolder.getCoordinates()?.let {
-                        val event = PointModel(it.x, it.y)
-                        sendCommand(event.toString())
-                    }
+        launch(Dispatchers.IO) {
+            while(isActive) {
+                val screen = DisplayProvider.capture(Type.X)
+
+                val result = ocrClient.readImage(screen)
+                if(result is Result.Success) {
+                    val x = result.data.results.firstOrNull() ?: continue
+                    val y = result.data.results.lastOrNull() ?: continue
+                    UiStateHolder.test(x, y, screen)
+
+                    val a = x.toIntOrNull() ?: continue
+                    val b = y.toIntOrNull() ?: continue
+                    sendCommand(PointModel(a, b).toString())
                 }
-            )
-        }
-        launch {
-            updateFromRemote(
-                type = Type.Y,
-                duration = 0.seconds,
-                action = {
-                    UiStateHolder.getCoordinates()?.let {
-                        val event = PointModel(it.x, it.y)
-                        sendCommand(event.toString())
-                    }
-                }
-            )
+            }
         }
     }
 
@@ -182,7 +200,7 @@ class CommanderViewModel: BaseViewModel() {
         UiStateHolder.init(
             UiState.default.copy(
                 xState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(1330, 815, 80, 30)
+                    rectangle = Rectangle(1330, 817, 162, 30)
                 ),
                 yState = UiState.CommonState.default.copy(
                     rectangle = Rectangle(1410, 815, 80, 30)

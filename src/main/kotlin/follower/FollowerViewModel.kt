@@ -1,5 +1,6 @@
 package follower
 
+import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
 import common.UiStateHolder
 import common.base.BaseViewModel
 import common.model.*
@@ -9,6 +10,7 @@ import common.model.UiState.Type
 import common.network.commanderPort
 import common.network.host
 import common.robot.DisplayProvider
+import common.robot.Keyboard
 import common.util.Result
 import common.util.onError
 import common.util.onSuccess
@@ -18,6 +20,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import java.awt.Point
 import java.awt.Rectangle
+import java.awt.event.KeyEvent
 import java.io.File
 import java.net.Socket
 import java.net.SocketException
@@ -94,7 +97,11 @@ class FollowerViewModel: BaseViewModel() {
                     val message = reader.readLine() ?: break // 서버 메시지 읽기
                     launch(Dispatchers.Default) {
                         message.toKeyEventModel()?.let { model ->
-                            dispatchKeyReleaseEvent(model.keyEvent)
+                            if(model.isPressed) {
+                                dispatchKeyPressEvent(model.keyEvent)
+                            } else {
+                                dispatchKeyReleaseEvent(model.keyEvent)
+                            }
                         }
                         message.toPointModel()?.let { model ->
                             val point = Point(model.x, model.y)
@@ -127,6 +134,32 @@ class FollowerViewModel: BaseViewModel() {
             }
             keyEvent in macroCommandFilter -> {
                 FollowerMacro.dispatch(keyEvent)
+            }
+
+            keyEvent in moveCommandFilter -> {
+                val event = when (keyEvent) {
+                    NativeKeyEvent.VC_UP -> KeyEvent.VK_UP
+                    NativeKeyEvent.VC_LEFT -> KeyEvent.VK_LEFT
+                    NativeKeyEvent.VC_DOWN -> KeyEvent.VK_DOWN
+                    NativeKeyEvent.VC_RIGHT -> KeyEvent.VK_RIGHT
+                    else -> return
+                }
+                Keyboard.release(event)
+            }
+        }
+    }
+
+    private fun dispatchKeyPressEvent(keyEvent: Int) {
+        when {
+            keyEvent in moveCommandFilter -> {
+                val event = when (keyEvent) {
+                    NativeKeyEvent.VC_UP -> KeyEvent.VK_UP
+                    NativeKeyEvent.VC_LEFT -> KeyEvent.VK_LEFT
+                    NativeKeyEvent.VC_DOWN -> KeyEvent.VK_DOWN
+                    NativeKeyEvent.VC_RIGHT -> KeyEvent.VK_RIGHT
+                    else -> return
+                }
+                Keyboard.press(event)
             }
         }
     }

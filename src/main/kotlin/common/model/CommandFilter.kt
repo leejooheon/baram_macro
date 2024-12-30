@@ -19,3 +19,11 @@ val oneHandFilter = listOf(
     NativeKeyEvent.VC_PAGE_DOWN,
 //    NativeKeyEvent.VC_KANJI,
 )
+
+const val moveCommand = NativeKeyEvent.VC_SHIFT
+val moveCommandFilter = listOf(
+    NativeKeyEvent.VC_UP,
+    NativeKeyEvent.VC_LEFT,
+    NativeKeyEvent.VC_DOWN,
+    NativeKeyEvent.VC_RIGHT,
+)
