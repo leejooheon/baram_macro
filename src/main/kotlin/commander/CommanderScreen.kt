@@ -1,9 +1,11 @@
 package commander
 
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -60,5 +62,17 @@ internal fun CommanderScreen(
                 }
             }
         }
+    }
+}
+
+
+@Preview
+@Composable
+private fun PreviewCommanderScreen() {
+    MaterialTheme {
+        CommanderScreen(
+            uiState = UiState.default,
+            onEvent = {}
+        )
     }
 }

@@ -1,5 +1,6 @@
 package follower
 
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,7 +16,6 @@ import common.model.UiEvent
 import common.model.UiState
 import common.presentation.ConnectionStateItem
 import common.presentation.DisplaySection
-import follower.model.ConnectionState
 import java.awt.Point
 
 @Composable
@@ -96,4 +96,16 @@ private fun PointItem(point: Point) {
     }
 
     Spacer(modifier = Modifier.height(16.dp))
+}
+
+@Preview
+@Composable
+private fun PreviewFollowerScreen() {
+    MaterialTheme {
+        FollowerScreen(
+            uiState = UiState.default,
+            commanderPoint = Point(0, 1),
+            onEvent = {}
+        )
+    }
 }

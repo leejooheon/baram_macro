@@ -8,7 +8,6 @@ import common.event.ObserveKeyEvents
 import common.event.ObserveMouseEvents
 
 @Composable
-@Preview
 fun CommanderApp() {
     val viewModel = remember { CommanderViewModel() }
     val uiState by UiStateHolder.state.collectAsState()

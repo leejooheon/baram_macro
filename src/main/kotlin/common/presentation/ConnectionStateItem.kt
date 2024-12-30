@@ -1,5 +1,6 @@
 package common.presentation
 
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -39,4 +40,15 @@ internal fun ConnectionStateItem(
     }
 
     Spacer(modifier = Modifier.height(16.dp))
+}
+
+
+@Preview
+@Composable
+private fun PreviewConnectionStateItem() {
+    MaterialTheme {
+        ConnectionStateItem(
+            state = ConnectionState.Connected
+        )
+    }
 }

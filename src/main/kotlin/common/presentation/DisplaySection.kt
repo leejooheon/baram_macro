@@ -3,6 +3,7 @@ package common.presentation
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -85,5 +86,19 @@ internal fun DisplaySection(
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewDisplaySection() {
+    MaterialTheme {
+        DisplaySection(
+            model = UiState.CommonState.default,
+            onRectangleChanged = {},
+            modifier = Modifier
+                .width(128.dp)
+                .height(64.dp)
+        )
     }
 }

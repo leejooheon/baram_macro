@@ -1,20 +1,19 @@
 package common.presentation
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.OutlinedTextField
+import androidx.compose.material.Text
+import androidx.compose.material.TextFieldDefaults
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import java.awt.Rectangle
-import javax.swing.tree.DefaultTreeCellEditor.DefaultTextField
 
-@Preview
 @Composable
 internal fun SizeItem(
     rectangle: Rectangle,
@@ -91,4 +90,15 @@ private fun CustomTextField(
         ),
         modifier = Modifier.width(96.dp)
     )
+}
+
+@Preview
+@Composable
+private fun PreviewSizeItem() {
+    MaterialTheme {
+        SizeItem(
+            rectangle = Rectangle(0, 1, 2, 3),
+            onRectangleChanged = {}
+        )
+    }
 }

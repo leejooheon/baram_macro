@@ -13,10 +13,6 @@ repositories {
 }
 
 dependencies {
-    // Note, if you develop a library, you should use compose.desktop.common.
-    // compose.desktop.currentOs should be used in launcher-sourceSet
-    // (in a separate module for demo project and in testMain).
-    // With compose.desktop.common you will also lose @Preview functionality
     implementation(compose.desktop.currentOs)
 
     // Include the Test API
@@ -37,7 +33,6 @@ dependencies {
     implementation("io.ktor:ktor-client-logging:2.3.12")
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.12")
     implementation("io.ktor:ktor-client-auth:2.3.12")
-
 }
 
 compose.desktop {
