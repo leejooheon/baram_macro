@@ -17,13 +17,14 @@ import java.awt.image.BufferedImage
 import kotlin.time.Duration
 
 abstract class BaseViewModel {
-    private val ocrClient = OcrClient(createHttpClient())
+    val ocrClient = OcrClient(createHttpClient())
 
     abstract fun dispatch(event: UiEvent): Job
 
-    protected suspend fun updateFromRemote(
+    suspend inline fun updateFromRemote(
         type: Type,
         duration: Duration,
+        crossinline action: suspend (UiState) -> Unit,
     ) = withContext(Dispatchers.IO) {
         while (isActive) {
             val screen = DisplayProvider.capture(type)
@@ -31,18 +32,14 @@ abstract class BaseViewModel {
             ocrClient
                 .readImage(screen)
                 .onSuccess {
-                    UiStateHolder.update(
+                    val state = UiStateHolder.update(
                         type = type,
                         state = getStateFromType(type).copy(
                             texts = it.results,
                             image = screen
                         )
                     )
-
-                    if(type == Type.X || type == Type.Y) {
-                        println("onMove!")
-                        FollowerMacro.dispatch(MoveEvent.OnMove)
-                    }
+                    action.invoke(state)
                 }
                 .onError {
                     updateImage(
@@ -73,7 +70,7 @@ abstract class BaseViewModel {
             delay(duration)
         }
     }
-    private fun getStateFromType(type: Type): UiState.CommonState {
+    fun getStateFromType(type: Type): UiState.CommonState {
         val state = UiStateHolder.state.value
         return when(type) {
             Type.X -> state.xState
@@ -83,7 +80,7 @@ abstract class BaseViewModel {
         }
     }
 
-    private suspend fun updateImage(
+    suspend fun updateImage(
         image: BufferedImage,
         texts: List<String>,
         type: Type

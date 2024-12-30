@@ -28,7 +28,6 @@ class CommanderViewModel: BaseViewModel() {
 
     init {
         observeScreens()
-        observeCoordinates()
         init()
     }
 
@@ -110,6 +109,8 @@ class CommanderViewModel: BaseViewModel() {
             }
         }
     }
+    fun dispatchKeyPressEvent(keyEvent: Int) = scope.launch {
+    }
 
     private suspend fun sendCommand(command: String) = withContext(Dispatchers.IO) {
         val client = client ?: return@withContext
@@ -154,34 +155,27 @@ class CommanderViewModel: BaseViewModel() {
         launch {
             updateFromRemote(
                 type = Type.X,
-                duration = 1.seconds
+                duration = 0.seconds,
+                action = {
+                    UiStateHolder.getCoordinates()?.let {
+                        val event = PointModel(it.x, it.y)
+                        sendCommand(event.toString())
+                    }
+                }
             )
         }
         launch {
             updateFromRemote(
                 type = Type.Y,
-                duration = 1.seconds
+                duration = 0.seconds,
+                action = {
+                    UiStateHolder.getCoordinates()?.let {
+                        val event = PointModel(it.x, it.y)
+                        sendCommand(event.toString())
+                    }
+                }
             )
         }
-    }
-
-    private fun observeCoordinates() = scope.launch {
-        UiStateHolder.state
-            .map {
-                val x = it.xState.texts.firstOrNull()?.toIntOrNull()
-                val y = it.yState.texts.firstOrNull()?.toIntOrNull()
-                x to y
-            }
-            .distinctUntilChanged { old, new ->
-                old.first == new.first && old.second == new.second
-            }
-            .filter { (x, y) ->
-                x != null && y != null
-            }
-            .collect { (x, y) ->
-                val event = PointModel(x!!, y!!)
-                sendCommand(event.toString())
-            }
     }
 
     private fun init() = scope.launch {

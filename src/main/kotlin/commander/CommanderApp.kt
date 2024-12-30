@@ -20,7 +20,7 @@ fun CommanderApp() {
 
     ObserveKeyEvents(
         onReleased = viewModel::dispatchKeyReleaseEvent,
-        onPressed = {}
+        onPressed = viewModel::dispatchKeyPressEvent
     )
 
     MaterialTheme {

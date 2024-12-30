@@ -1,14 +1,10 @@
 package follower
 
-import common.model.ctrlCommand
-import common.model.macroCommandFilter
 import common.UiStateHolder
 import common.base.BaseViewModel
-import common.model.MoveEvent
-import common.model.UiEvent
+import common.model.*
 import common.model.KeyEventModel.Companion.toKeyEventModel
 import common.model.PointModel.Companion.toPointModel
-import common.model.UiState
 import common.model.UiState.Type
 import common.network.commanderPort
 import common.network.host
@@ -136,13 +132,19 @@ class FollowerViewModel: BaseViewModel() {
         launch {
             updateFromRemote(
                 type = Type.X,
-                duration = 0.seconds
+                duration = 0.seconds,
+                action = {
+                    FollowerMacro.dispatch(MoveEvent.OnMove)
+                }
             )
         }
         launch {
             updateFromRemote(
                 type = Type.Y,
-                duration = 0.seconds
+                duration = 0.seconds,
+                action = {
+                    FollowerMacro.dispatch(MoveEvent.OnMove)
+                }
             )
         }
         launch {
