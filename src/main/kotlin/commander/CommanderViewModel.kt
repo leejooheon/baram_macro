@@ -122,12 +122,27 @@ class CommanderViewModel: BaseViewModel() {
                     )
                     sendCommand(model.toString())
                 }
+
+                val model = KeyEventModel(
+                    keyEvent = KeyEvent.VK_KANJI,
+                    isPressed = false
+                )
+                sendCommand(model.toString())
             }
         }
     }
     fun dispatchKeyPressEvent(keyEvent: Int) = scope.launch {
         when {
-            keyEvent == moveCommand -> movePressed.set(true)
+            keyEvent == moveCommand -> {
+                if(!movePressed.getAndSet(true)) {
+                    val model = KeyEventModel(
+                        keyEvent = KeyEvent.VK_KANJI,
+                        isPressed = false
+                    )
+                    sendCommand(model.toString())
+                }
+                movePressed.set(true)
+            }
             keyEvent in moveCommandFilter && movePressed.get() -> {
                 val model = KeyEventModel(
                     keyEvent = keyEvent,
