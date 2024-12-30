@@ -132,34 +132,6 @@ class FollowerViewModel: BaseViewModel() {
     }
 
     private fun observeScreens() = scope.launch {
-        launch(Dispatchers.IO) {
-//            updateFromRemote(
-//                type = Type.X,
-//                duration = 0.seconds,
-//                action = {
-//                    FollowerMacro.dispatch(MoveEvent.OnMove)
-//                }
-//            )
-            while (isActive) {
-                val screen = DisplayProvider.capture(Type.X)
-
-                val result = ocrClient.readImage(screen)
-                if(result is Result.Success) {
-                    val x = result.data.results.first()
-                    val y = result.data.results.last()
-                    UiStateHolder.test(x, y, screen)
-                }
-            }
-        }
-//        launch {
-//            updateFromRemote(
-//                type = Type.Y,
-//                duration = 0.seconds,
-//                action = {
-//                    FollowerMacro.dispatch(MoveEvent.OnMove)
-//                }
-//            )
-//        }
         launch {
             updateFromLocal(
                 type = Type.BUFF,
@@ -175,10 +147,11 @@ class FollowerViewModel: BaseViewModel() {
     }
 
     private fun init() = scope.launch {
+        FollowerMacro.init(ocrClient)
         UiStateHolder.init(
             UiState.default.copy(
                 xState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(2240, 1302, 128, 24),
+                    rectangle = Rectangle(2230, 1298, 140, 28),
                     type = Type.X
                 ),
                 yState = UiState.CommonState.default.copy(

@@ -4,6 +4,7 @@ import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
 import common.UiStateHolder
 import common.model.MoveEvent
 import common.model.UiState
+import common.network.OcrClient
 import common.robot.DisplayProvider
 import common.robot.Keyboard
 import follower.model.BuffState
@@ -22,7 +23,7 @@ object FollowerMacro {
     private var moveJob: Job? = null
 
     private val macroDetailAction = MacroDetailAction()
-    private val moveDetailAction = MoveDetailAction()
+    private lateinit var moveDetailAction: MoveDetailAction
 
     private var buffState = BuffState.NONE
     private var magicResultState = MagicResultState.NONE
@@ -31,19 +32,23 @@ object FollowerMacro {
     internal var ctrlToggle = false
 
     private var timer: TimerTask? = null
-
+    fun init(
+        ocrClient: OcrClient
+    ) {
+        moveDetailAction = MoveDetailAction(scope, ocrClient)
+    }
     suspend fun dispatch(event: MoveEvent) {
         when(event) {
             is MoveEvent.OnCommanderPositionChanged -> {
                 moveDetailAction.update(event.point)
             }
             is MoveEvent.OnMove -> {
-                val point = UiStateHolder.getCoordinates() ?: return
-                moveJob?.cancel()
-                moveJob = null
-                moveJob =  scope.launch {
-                    moveDetailAction.moveTowards(point)
-                }
+//                val point = UiStateHolder.getCoordinates() ?: return
+//                moveJob?.cancel()
+//                moveJob = null
+//                moveJob =  scope.launch {
+//                    moveDetailAction.moveTowards(point)
+//                }
             }
         }
     }
@@ -74,15 +79,15 @@ object FollowerMacro {
     }
 
     internal fun obtainProperty() {
-//        timer?.cancel()
-//        timer = null
-//
-//        property = true
-//
-//        moveDetailAction.releaseAll()
-//        timer = Timer().schedule(500) {
-//            property = false
-//        }
+        timer?.cancel()
+        timer = null
+
+        property = true
+
+        moveDetailAction.releaseAll()
+        timer = Timer().schedule(500) {
+            property = false
+        }
     }
 
     internal fun toggleMoveCtrl() {
