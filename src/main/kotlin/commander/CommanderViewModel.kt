@@ -115,16 +115,15 @@ class CommanderViewModel: BaseViewModel() {
             }
             keyEvent == moveCommand -> {
                 movePressed.set(false)
-                moveCommandFilter.forEach {
-                    val model = KeyEventModel(
-                        keyEvent = it,
-                        isPressed = false
-                    )
-                    sendCommand(model.toString())
-                }
-
                 val model = KeyEventModel(
-                    keyEvent = KeyEvent.VK_KANJI,
+                    keyEvent = ctrlCommand,
+                    isPressed = false
+                )
+                sendCommand(model.toString())
+            }
+            keyEvent in moveCommandFilter && movePressed.get() -> {
+                val model = KeyEventModel(
+                    keyEvent = keyEvent,
                     isPressed = false
                 )
                 sendCommand(model.toString())
@@ -141,7 +140,6 @@ class CommanderViewModel: BaseViewModel() {
                     )
                     sendCommand(model.toString())
                 }
-                movePressed.set(true)
             }
             keyEvent in moveCommandFilter && movePressed.get() -> {
                 val model = KeyEventModel(
