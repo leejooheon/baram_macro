@@ -184,7 +184,7 @@ class FollowerViewModel: BaseViewModel() {
         UiStateHolder.init(
             UiState.default.copy(
                 xState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(2230, 1298, 140, 28),
+                    rectangle = Rectangle(2237, 1299, 140, 28),
                     type = Type.X
                 ),
                 yState = UiState.CommonState.default.copy(
@@ -196,7 +196,7 @@ class FollowerViewModel: BaseViewModel() {
                     type = Type.BUFF
                 ),
                 magicResultState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(2100, 1134, 256, 38),
+                    rectangle = Rectangle(2100, 1134, 256, 40),
                     type = Type.MAGIC_RESULT
                 ),
             )

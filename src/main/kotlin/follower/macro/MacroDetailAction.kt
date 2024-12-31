@@ -19,7 +19,6 @@ class MacroDetailAction {
     }
 
     suspend fun gongju() {
-        escape()
         tabTab()
         Keyboard.pressAndRelease(KeyEvent.VK_8)
         eat()
@@ -34,10 +33,11 @@ class MacroDetailAction {
 
     suspend fun gongJeung() = withContext(Dispatchers.IO) {
         var text: String
-
+        var counter = 0
+        val maxTryCount = 1
         while (isActive) {
-            Keyboard.pressAndRelease(KeyEvent.VK_2)
-            delay(200)
+            Keyboard.pressKeyRepeatedly(KeyEvent.VK_2, 2)
+
             val screen = DisplayProvider.capture(UiState.Type.MAGIC_RESULT)
             text = TextDetecter.detectString(screen)
 
@@ -49,9 +49,14 @@ class MacroDetailAction {
                 }
 
                 text.contains(MagicResultState.NO_MP.tag) -> {
-                    eat()
+                    if(counter++ > maxTryCount) {
+                        FollowerMacro.obtainProperty()
+                        eat()
+                        counter = 0
+                    }
                 }
                 text.contains(MagicResultState.ME_DEAD.tag) -> {
+                    FollowerMacro.obtainProperty()
                     dead(MagicResultState.ME_DEAD)
                     break
                 }
@@ -111,6 +116,7 @@ class MacroDetailAction {
 
     private suspend fun eat() {
         Keyboard.pressAndRelease(KeyEvent.VK_U,)
+        delay(50)
         Keyboard.pressAndRelease(KeyEvent.VK_U)
     }
 

@@ -18,7 +18,8 @@ class MoveDetailAction(
 ) {
     private enum class Direction { UP, DOWN, LEFT, RIGHT }
     private var commanderPoint: Point? = null
-        private var job: Job? = null
+    private var job: Job? = null
+
     init {
         observePosition()
     }
@@ -26,7 +27,6 @@ class MoveDetailAction(
     internal fun observePosition() {
         scope.launch(Dispatchers.IO) {
             while (isActive) {
-                var consumedTime = System.currentTimeMillis()
                 val screen = DisplayProvider.capture(Type.X)
 
                 val result = ocrClient.readImage(screen)
