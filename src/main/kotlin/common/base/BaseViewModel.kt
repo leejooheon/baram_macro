@@ -17,11 +17,12 @@ import java.awt.image.BufferedImage
 import kotlin.time.Duration
 
 abstract class BaseViewModel {
-    val ocrClient = OcrClient(createHttpClient())
+    private val ocrClient = OcrClient(createHttpClient())
 
     abstract fun dispatch(event: UiEvent): Job
 
     suspend fun updateCoordinates(duration: Duration) {
+        val startTime = System.currentTimeMillis()
         val xScreen = DisplayProvider.capture(Type.X)
         val yScreen = DisplayProvider.capture(Type.Y)
 
@@ -29,9 +30,17 @@ abstract class BaseViewModel {
             val x = it.results.firstOrNull() ?: return
             ocrClient.readImage(yScreen).onSuccess {
                 val y = it.results.firstOrNull() ?: return
-                UiStateHolder.updateCoordinates(x, y, xScreen, yScreen)
+                val endTime = System.currentTimeMillis() - startTime
+                UiStateHolder.updateCoordinates(
+                    x = x,
+                    y = y,
+                    xScreen =xScreen,
+                    yScreen = yScreen,
+                    time = endTime
+                )
 
-                delay(duration)
+                val delayTime = maxOf(duration.inWholeMilliseconds - endTime, 0)
+                delay(delayTime)
             }
         }
     }

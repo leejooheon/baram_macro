@@ -53,6 +53,7 @@ object UiStateHolder {
         y: String,
         xScreen: BufferedImage,
         yScreen: BufferedImage,
+        time: Long,
     ) {
         val model = _state.value
         val newState = model.copy(
@@ -63,7 +64,8 @@ object UiStateHolder {
             yState = model.yState.copy(
                 texts = listOf(y),
                 image = yScreen,
-            )
+            ),
+            ocrDetectionTime = time
         )
         _state.emit(newState)
     }

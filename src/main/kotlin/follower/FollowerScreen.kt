@@ -38,7 +38,10 @@ internal fun FollowerScreen(
             }
 
             item {
-                MacroUiItem(macroUiState)
+                MacroUiItem(
+                    uiState = macroUiState,
+                    detectionTime = uiState.ocrDetectionTime,
+                )
             }
 
             items(
@@ -77,34 +80,51 @@ internal fun FollowerScreen(
 }
 
 @Composable
-private fun MacroUiItem(uiState: MacroUiState) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "이동: ${if(uiState.ctrlToggle) "OFF" else "ON"}",
-            style = MaterialTheme.typography.body1.copy(
-                fontWeight = FontWeight.Bold,
-                color = Color.Red
+private fun MacroUiItem(
+    uiState: MacroUiState,
+    detectionTime: Long,
+) {
+    Column {
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "이동: ${if (uiState.ctrlToggle) "OFF" else "ON"}",
+                style = MaterialTheme.typography.body1.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Red
+                )
             )
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "사이클 시간: ${uiState.cycleTime}",
-            style = MaterialTheme.typography.body1.copy(
-                fontWeight = FontWeight.Bold,
-                color = Color.Blue
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "목표 좌표: [${uiState.point.x}, ${uiState.point.y}]",
+                style = MaterialTheme.typography.body1.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Gray
+                )
             )
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "목표 좌표: [${uiState.point.x}, ${uiState.point.y}]",
-            style = MaterialTheme.typography.body1.copy(
-                fontWeight = FontWeight.Bold,
-                color = Color.Gray
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "통신 시간: $detectionTime",
+                style = MaterialTheme.typography.body1.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Green
+                )
             )
-        )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "사이클 시간: ${uiState.cycleTime}",
+                style = MaterialTheme.typography.body1.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Blue
+                )
+            )
+        }
     }
 
     Spacer(modifier = Modifier.height(16.dp))

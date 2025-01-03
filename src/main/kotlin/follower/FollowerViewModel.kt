@@ -180,6 +180,7 @@ class FollowerViewModel: BaseViewModel() {
             )
         }
     }
+
     private fun observeMacro() = scope.launch {
         combine(
             FollowerMacro.cycleTime,

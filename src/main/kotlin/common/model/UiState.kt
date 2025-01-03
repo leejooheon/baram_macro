@@ -11,6 +11,7 @@ data class UiState(
     val yState: CommonState,
     val buffState: CommonState,
     val magicResultState: CommonState,
+    val ocrDetectionTime: Long,
 ) {
     enum class Type {
         X, Y, BUFF, MAGIC_RESULT
@@ -46,6 +47,7 @@ data class UiState(
             yState = CommonState.default.copy(type = Type.Y),
             buffState = CommonState.default.copy(type = Type.BUFF),
             magicResultState = CommonState.default.copy(type = Type.MAGIC_RESULT),
+            ocrDetectionTime = 0
         )
     }
 }
