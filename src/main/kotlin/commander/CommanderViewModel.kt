@@ -135,7 +135,7 @@ class CommanderViewModel: BaseViewModel() {
             keyEvent == moveCommand -> {
                 if(!movePressed.getAndSet(true)) {
                     val model = KeyEventModel(
-                        keyEvent = KeyEvent.VK_KANJI,
+                        keyEvent = ctrlCommand,
                         isPressed = false
                     )
                     sendCommand(model.toString())
