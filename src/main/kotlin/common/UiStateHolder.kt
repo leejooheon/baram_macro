@@ -40,6 +40,8 @@ object UiStateHolder {
     ): UiState = mutex.withLock {
         val uiState = this@UiStateHolder.state.value
         val value = when(type) {
+            Type.X -> uiState.copy(xState = state)
+            Type.Y -> uiState.copy(yState = state)
             Type.BUFF -> uiState.copy(buffState = state)
             Type.MAGIC_RESULT -> uiState.copy(magicResultState = state)
             else -> throw IllegalArgumentException("잘못된 타입: $type")

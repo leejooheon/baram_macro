@@ -40,8 +40,8 @@ compose.desktop {
         mainClass = "MainKt"
 
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "KotlinJvmComposeDesktopApplication"
+            targetFormats(TargetFormat.Msi)
+            packageName = "baram-macro"
             packageVersion = "1.0.0"
         }
     }

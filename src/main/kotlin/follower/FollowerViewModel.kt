@@ -38,6 +38,7 @@ class FollowerViewModel: BaseViewModel() {
     init {
         init()
         observeScreens()
+        observeMacro()
     }
 
     override fun dispatch(event: UiEvent) = scope.launch {
@@ -96,7 +97,7 @@ class FollowerViewModel: BaseViewModel() {
             while (isActive) {
                 try {
                     val message = reader.readLine() ?: break // 서버 메시지 읽기
-                    launch(Dispatchers.Default) {
+                    launch(Dispatchers.IO) {
                         message.toKeyEventModel()?.let { model ->
                             if(model.isPressed) {
                                 dispatchKeyPressEvent(model.keyEvent)
@@ -165,12 +166,14 @@ class FollowerViewModel: BaseViewModel() {
 
     private fun observeScreens() = scope.launch {
         launch(Dispatchers.IO) {
-            updateCoordinates(
-                duration = 0.5.seconds,
-                action = {
-                    FollowerMacro.dispatch(MoveEvent.OnMove)
-                }
-            )
+            while(isActive) {
+                updateCoordinates(
+                    duration = 0.5.seconds,
+                    action = {
+                        FollowerMacro.dispatch(MoveEvent.OnMove)
+                    }
+                )
+            }
         }
         launch(Dispatchers.IO) {
             updateFromLocal(
@@ -206,11 +209,11 @@ class FollowerViewModel: BaseViewModel() {
         UiStateHolder.init(
             UiState.default.copy(
                 xState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(2237, 1299, 140, 28),
+                    rectangle = Rectangle(2237, 1299, 74, 28),
                     type = Type.X
                 ),
                 yState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(2303, 1302, 74, 24),
+                    rectangle = Rectangle(2303, 1302, 74, 32),
                     type = Type.Y
                 ),
                 buffState = UiState.CommonState.default.copy(

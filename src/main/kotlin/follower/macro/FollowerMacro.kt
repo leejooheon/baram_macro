@@ -117,10 +117,11 @@ object FollowerMacro {
 
             macroDetailAction.tabTab()
             while (isActive) {
+                val startTime = System.currentTimeMillis()
                 Keyboard.pressKeyRepeatedly(
                     keyEvent = KeyEvent.VK_1,
                     time = 2,
-                    delay = Random.nextLong(30, 50)
+                    delay = Random.nextLong(50, 100)
                 )
 
                 if(counter++ > maxCount) {
@@ -130,7 +131,8 @@ object FollowerMacro {
 
                 checkBuff()
                 checkMagicResult()
-                delay(Random.nextLong(100, 200))
+                delay(Random.nextLong(150, 200))
+                _cycleTime.emit(System.currentTimeMillis() - startTime)
             }
         }
     }

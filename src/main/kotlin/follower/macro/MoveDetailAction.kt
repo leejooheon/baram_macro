@@ -25,14 +25,17 @@ class MoveDetailAction(
         var deltaX = point.x - myPoint.x
         var deltaY = point.y - myPoint.y
 
-        println("deltaX: $deltaX, deltaY: $deltaY, ${FollowerMacro.property} $this")
+//        println("deltaX: $deltaX, deltaY: $deltaY, ${FollowerMacro.property} $this")
 
         while (isActive) {
-            if (FollowerMacro.property) return@withContext
+            if(FollowerMacro.property) return@withContext
+            if(FollowerMacro.ctrlToggle.value) return@withContext
+
             releaseAll()
             if (abs(deltaX) <= 1 && abs(deltaY) <= 1) {
                 return@withContext
             }
+
             direction = !direction
             if(direction) {
                 if (deltaX > 1) {
