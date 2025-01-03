@@ -12,11 +12,6 @@ import io.ktor.serialization.kotlinx.json.json
 
 fun createHttpClient(): HttpClient {
     return HttpClient(OkHttp.create()) {
-        install(HttpTimeout) {
-            requestTimeoutMillis = 1000
-            socketTimeoutMillis = 1000
-            connectTimeoutMillis = 1000
-        }
         install(Logging) {
             level = LogLevel.ALL
         }

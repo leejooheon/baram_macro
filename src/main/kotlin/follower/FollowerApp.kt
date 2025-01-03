@@ -8,11 +8,12 @@ import common.UiStateHolder
 fun FollowerApp() {
     val viewModel = remember { FollowerViewModel() }
     val uiState by UiStateHolder.state.collectAsState()
-    val commanderPoint by viewModel.commanderPoint.collectAsState()
+    val macroUiState by viewModel.macroUiState.collectAsState()
+
     MaterialTheme {
         FollowerScreen(
             uiState = uiState,
-            commanderPoint = commanderPoint,
+            macroUiState = macroUiState,
             onEvent = viewModel::dispatch
         )
     }

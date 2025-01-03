@@ -21,34 +21,18 @@ abstract class BaseViewModel {
 
     abstract fun dispatch(event: UiEvent): Job
 
-    suspend inline fun updateFromRemote(
-        type: Type,
-        duration: Duration,
-        crossinline action: suspend (UiState) -> Unit,
-    ) = withContext(Dispatchers.IO) {
-        while (isActive) {
-            val screen = DisplayProvider.capture(type)
+    suspend fun updateCoordinates(duration: Duration) {
+        val xScreen = DisplayProvider.capture(Type.X)
+        val yScreen = DisplayProvider.capture(Type.Y)
 
-            ocrClient
-                .readImage(screen)
-                .onSuccess {
-                    val state = UiStateHolder.update(
-                        type = type,
-                        state = getStateFromType(type).copy(
-                            texts = it.results,
-                            image = screen
-                        )
-                    )
-                    action.invoke(state)
-                }
-                .onError {
-                    updateImage(
-                        type = type,
-                        image = screen,
-                        texts = emptyList()
-                    )
-                }
-            delay(duration)
+        ocrClient.readImage(xScreen).onSuccess {
+            val x = it.results.firstOrNull() ?: return
+            ocrClient.readImage(yScreen).onSuccess {
+                val y = it.results.firstOrNull() ?: return
+                UiStateHolder.updateCoordinates(x, y, xScreen, yScreen)
+
+                delay(duration)
+            }
         }
     }
 
@@ -56,7 +40,6 @@ abstract class BaseViewModel {
         type: Type,
         duration: Duration,
     ) = withContext(Dispatchers.IO) {
-
         while (isActive) {
             val screen = DisplayProvider.capture(type)
             val text = TextDetecter.detectString(screen)
@@ -70,17 +53,8 @@ abstract class BaseViewModel {
             delay(duration)
         }
     }
-    fun getStateFromType(type: Type): UiState.CommonState {
-        val state = UiStateHolder.state.value
-        return when(type) {
-            Type.X -> state.xState
-            Type.Y -> state.yState
-            Type.BUFF -> state.buffState
-            Type.MAGIC_RESULT -> state.magicResultState
-        }
-    }
 
-    suspend fun updateImage(
+    private suspend fun updateImage(
         image: BufferedImage,
         texts: List<String>,
         type: Type
@@ -93,5 +67,15 @@ abstract class BaseViewModel {
             type = type,
             state = state
         )
+    }
+
+    private fun getStateFromType(type: Type): UiState.CommonState {
+        val state = UiStateHolder.state.value
+        return when(type) {
+            Type.X -> state.xState
+            Type.Y -> state.yState
+            Type.BUFF -> state.buffState
+            Type.MAGIC_RESULT -> state.magicResultState
+        }
     }
 }

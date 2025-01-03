@@ -4,13 +4,14 @@ import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
 import common.UiStateHolder
 import common.model.MoveEvent
 import common.model.UiState
-import common.network.OcrClient
 import common.robot.DisplayProvider
 import common.robot.Keyboard
 import follower.model.BuffState
 import follower.model.MagicResultState
 import follower.ocr.TextDetecter
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.awt.event.KeyEvent
 import java.util.*
 import kotlin.concurrent.schedule
@@ -23,32 +24,38 @@ object FollowerMacro {
     private var moveJob: Job? = null
 
     private val macroDetailAction = MacroDetailAction()
-    private lateinit var moveDetailAction: MoveDetailAction
+    private val moveDetailAction = MoveDetailAction()
 
     private var buffState = BuffState.NONE
     private var magicResultState = MagicResultState.NONE
 
     internal var property = false
-    internal var ctrlToggle = false
 
     private var timer: TimerTask? = null
-    fun init(
-        ocrClient: OcrClient
-    ) {
-        moveDetailAction = MoveDetailAction(scope, ocrClient)
-    }
-    suspend fun dispatch(event: MoveEvent) {
+
+    private val _cycleTime = MutableStateFlow<Long>(0)
+    internal val cycleTime = _cycleTime.asStateFlow()
+
+    private val _ctrlToggle = MutableStateFlow(false)
+    internal val ctrlToggle = _ctrlToggle.asStateFlow()
+
+    fun dispatch(event: MoveEvent) {
         when(event) {
             is MoveEvent.OnCommanderPositionChanged -> {
                 moveDetailAction.update(event.point)
             }
             is MoveEvent.OnMove -> {
-//                val point = UiStateHolder.getCoordinates() ?: return
-//                moveJob?.cancel()
-//                moveJob = null
-//                moveJob =  scope.launch {
-//                    moveDetailAction.moveTowards(point)
-//                }
+                val point = UiStateHolder.getCoordinates() ?: return
+
+                moveJob?.cancel()
+                moveJob = null
+                moveJob = scope.launch {
+                    moveDetailAction.moveTowards(point)
+                }.apply {
+                    invokeOnCompletion {
+                        moveDetailAction.releaseAll()
+                    }
+                }
             }
         }
     }
@@ -90,13 +97,13 @@ object FollowerMacro {
         }
     }
 
-    internal fun toggleMoveCtrl() {
-        val toggle = !ctrlToggle
-        ctrlToggle = toggle
+    internal suspend fun toggleMoveCtrl() {
+        val toggle = !ctrlToggle.value
+        _ctrlToggle.emit(toggle)
     }
 
     private fun heal() {
-        val maxCount = 4 // 수시로 조정하자
+        val maxTryCount = 4 // 수시로 조정하자
         var counter = 0
 
         job?.cancel()
@@ -110,20 +117,24 @@ object FollowerMacro {
 
             macroDetailAction.tabTab()
             while (isActive) {
+                val startTime = System.currentTimeMillis()
                 Keyboard.pressKeyRepeatedly(
                     keyEvent = KeyEvent.VK_1,
                     time = 2,
                     delay = Random.nextLong(30, 50)
                 )
 
-                if(counter++ > maxCount) {
+                if(counter++ > maxTryCount) {
                     macroDetailAction.tryGongJeung()
+                    macroDetailAction.honmasulOnce()
                     counter = 0
                 }
 
                 checkBuff()
                 checkMagicResult()
-                delay(Random.nextLong(100, 200))
+
+                dispatch(MoveEvent.OnMove)
+                _cycleTime.emit(System.currentTimeMillis() - startTime)
             }
         }
     }
@@ -176,7 +187,6 @@ object FollowerMacro {
             BuffState.BOMU -> macroDetailAction.bomu()
             else -> { /** nothing **/ }
         }
-        dispatch(MoveEvent.OnMove)
     }
 
     private suspend fun checkMagicResult() {
@@ -186,12 +196,10 @@ object FollowerMacro {
             MagicResultState.OTHER_DEAD -> {
                 obtainProperty()
                 macroDetailAction.dead(state)
-                dispatch(MoveEvent.OnMove)
             }
             MagicResultState.NO_MP -> {
                 obtainProperty()
                 macroDetailAction.gongJeung()
-                dispatch(MoveEvent.OnMove)
             }
             else -> { /** nothing **/ }
         }

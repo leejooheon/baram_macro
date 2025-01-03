@@ -9,7 +9,14 @@ import kotlinx.coroutines.*
 import java.awt.event.KeyEvent
 
 class MacroDetailAction {
-    suspend fun honmasul() = withContext(Dispatchers.Default) {
+    suspend fun honmasulOnce() {
+        escape()
+        Keyboard.pressAndRelease(KeyEvent.VK_5)
+        Keyboard.pressAndRelease(KeyEvent.VK_UP)
+        Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+        tabTab()
+    }
+    suspend fun honmasul() = withContext(Dispatchers.IO) {
         escape()
         while (isActive) {
             Keyboard.pressAndRelease(KeyEvent.VK_5)
@@ -153,7 +160,6 @@ class MacroDetailAction {
 //    suspend fun invincible() = withContext(Dispatchers.IO) {
 //        while (isActive) {
 //            Keyboard.pressAndRelease(KeyEvent.VK_4)
-//            delay(100)
 //
 //            val image = DisplayProvider.capture(UiState.Type.MAGIC_RESULT)
 //            val result = TextDetecter.detectString(image)

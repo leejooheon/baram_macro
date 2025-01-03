@@ -9,34 +9,30 @@ import common.model.PointModel.Companion.toPointModel
 import common.model.UiState.Type
 import common.network.commanderPort
 import common.network.host
-import common.robot.DisplayProvider
 import common.robot.Keyboard
-import common.util.Result
-import common.util.onError
-import common.util.onSuccess
 import follower.macro.FollowerMacro
 import follower.model.ConnectionState
+import follower.model.MacroUiState
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import java.awt.Point
 import java.awt.Rectangle
 import java.awt.event.KeyEvent
-import java.io.File
 import java.net.Socket
 import java.net.SocketException
-import javax.imageio.ImageIO
 import kotlin.time.Duration.Companion.seconds
 
 class FollowerViewModel: BaseViewModel() {
     private val scope = CoroutineScope(SupervisorJob())
     private var connectionJob: Job? = null
 
-    private val _commanderPoint = MutableStateFlow(Point(0, 0))
-    internal val commanderPoint = _commanderPoint.asStateFlow()
+    private val _macroUiState = MutableStateFlow(MacroUiState.default)
+    internal val macroUiState = _macroUiState.asStateFlow()
 
     init {
         init()
         observeScreens()
+        observeMacro()
     }
 
     override fun dispatch(event: UiEvent) = scope.launch {
@@ -105,10 +101,10 @@ class FollowerViewModel: BaseViewModel() {
                         }
                         message.toPointModel()?.let { model ->
                             val point = Point(model.x, model.y)
-
-                            _commanderPoint.emit(point)
+                            _macroUiState.update {
+                                it.copy(point = point)
+                            }
                             FollowerMacro.dispatch(MoveEvent.OnCommanderPositionChanged(point))
-                            FollowerMacro.dispatch(MoveEvent.OnMove)
                         }
                     }
                 } catch (e: SocketException) {
@@ -165,6 +161,12 @@ class FollowerViewModel: BaseViewModel() {
     }
 
     private fun observeScreens() = scope.launch {
+        launch(Dispatchers.IO) {
+            while(isActive) {
+                updateCoordinates((0.5).seconds)
+            }
+        }
+
         launch {
             updateFromLocal(
                 type = Type.BUFF,
@@ -178,9 +180,23 @@ class FollowerViewModel: BaseViewModel() {
             )
         }
     }
+    private fun observeMacro() = scope.launch {
+        combine(
+            FollowerMacro.cycleTime,
+            FollowerMacro.ctrlToggle
+        ) { time, toggle ->
+            time to toggle
+        }.collectLatest { (time, toggle) ->
+            _macroUiState.update {
+                it.copy(
+                    cycleTime = time,
+                    ctrlToggle = toggle,
+                )
+            }
+        }
+    }
 
     private fun init() = scope.launch {
-        FollowerMacro.init(ocrClient)
         UiStateHolder.init(
             UiState.default.copy(
                 xState = UiState.CommonState.default.copy(
