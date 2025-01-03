@@ -16,6 +16,7 @@ import common.util.onError
 import common.util.onSuccess
 import follower.macro.FollowerMacro
 import follower.model.ConnectionState
+import follower.model.MacroUiState
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import java.awt.Point
@@ -31,8 +32,8 @@ class FollowerViewModel: BaseViewModel() {
     private val scope = CoroutineScope(SupervisorJob())
     private var connectionJob: Job? = null
 
-    private val _commanderPoint = MutableStateFlow(Point(0, 0))
-    internal val commanderPoint = _commanderPoint.asStateFlow()
+    private val _macroUiState = MutableStateFlow(MacroUiState.default)
+    internal val macroUiState = _macroUiState.asStateFlow()
 
     init {
         init()
@@ -105,10 +106,8 @@ class FollowerViewModel: BaseViewModel() {
                         }
                         message.toPointModel()?.let { model ->
                             val point = Point(model.x, model.y)
-
-                            _commanderPoint.emit(point)
+                            _macroUiState.update { it.copy(point = point) }
                             FollowerMacro.dispatch(MoveEvent.OnCommanderPositionChanged(point))
-                            FollowerMacro.dispatch(MoveEvent.OnMove)
                         }
                     }
                 } catch (e: SocketException) {
@@ -165,13 +164,21 @@ class FollowerViewModel: BaseViewModel() {
     }
 
     private fun observeScreens() = scope.launch {
-        launch {
+        launch(Dispatchers.IO) {
+            updateCoordinates(
+                duration = 0.5.seconds,
+                action = {
+                    FollowerMacro.dispatch(MoveEvent.OnMove)
+                }
+            )
+        }
+        launch(Dispatchers.IO) {
             updateFromLocal(
                 type = Type.BUFF,
                 duration = 1.seconds
             )
         }
-        launch {
+        launch(Dispatchers.IO) {
             updateFromLocal(
                 type = Type.MAGIC_RESULT,
                 duration = 1.seconds
@@ -179,6 +186,21 @@ class FollowerViewModel: BaseViewModel() {
         }
     }
 
+    private fun observeMacro() = scope.launch(Dispatchers.IO) {
+        combine(
+            FollowerMacro.cycleTime,
+            FollowerMacro.ctrlToggle
+        ) { time, toggle ->
+            time to toggle
+        }.collectLatest { (time, toggle) ->
+            _macroUiState.update {
+                it.copy(
+                    cycleTime = time,
+                    ctrlToggle = toggle,
+                )
+            }
+        }
+    }
     private fun init() = scope.launch {
         FollowerMacro.init(ocrClient)
         UiStateHolder.init(

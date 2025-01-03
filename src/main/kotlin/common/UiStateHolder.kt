@@ -33,22 +33,6 @@ object UiStateHolder {
             )
         }
     }
-    suspend fun test(
-        x: String, y: String, screen: BufferedImage
-    ) {
-        val a = _state.value
-        val b = a.copy(
-            xState = a.xState.copy(
-                texts = listOf(x),
-                image = screen,
-            ),
-            yState = a.yState.copy(
-                texts = listOf(y),
-                image = screen,
-            )
-        )
-        _state.emit(b)
-    }
 
     suspend fun update(
         type: Type,
@@ -56,29 +40,35 @@ object UiStateHolder {
     ): UiState = mutex.withLock {
         val uiState = this@UiStateHolder.state.value
         val value = when(type) {
-            Type.X -> {
-                val xState = if(state.texts.firstOrNull()?.toIntOrNull() != null) {
-                    state
-                } else {
-                    this.state.value.xState
-                }
-                uiState.copy(xState = xState)
-            }
-            Type.Y -> {
-                val yState = if(state.texts.firstOrNull()?.toIntOrNull() != null) {
-                    state
-                } else {
-                    this.state.value.yState
-                }
-                uiState.copy(yState = yState)
-            }
             Type.BUFF -> uiState.copy(buffState = state)
             Type.MAGIC_RESULT -> uiState.copy(magicResultState = state)
+            else -> throw IllegalArgumentException("잘못된 타입: $type")
         }
         _state.emit(value)
         return@withLock value
     }
 
+    suspend fun updateCoordinates(
+        x: String,
+        y: String,
+        xScreen: BufferedImage,
+        yScreen: BufferedImage,
+        time: Long,
+    ) {
+        val model = _state.value
+        val newState = model.copy(
+            xState = model.xState.copy(
+                texts = listOf(x),
+                image = xScreen,
+            ),
+            yState = model.yState.copy(
+                texts = listOf(y),
+                image = yScreen,
+            ),
+            ocrDetectionTime = time
+        )
+        _state.emit(newState)
+    }
     fun getCoordinates(): Point? {
         val state = state.value
         val x = state.xState.texts

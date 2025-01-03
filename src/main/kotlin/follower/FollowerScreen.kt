@@ -10,18 +10,19 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import common.model.UiEvent
 import common.model.UiState
 import common.presentation.ConnectionStateItem
 import common.presentation.DisplaySection
-import java.awt.Point
+import follower.model.MacroUiState
 
 @Composable
 internal fun FollowerScreen(
     uiState: UiState,
-    commanderPoint: Point,
+    macroUiState: MacroUiState,
     onEvent: (UiEvent) -> Unit,
 ) {
     Column(
@@ -37,7 +38,10 @@ internal fun FollowerScreen(
             }
 
             item {
-                PointItem(commanderPoint)
+                MacroUiItem(
+                    uiState = macroUiState,
+                    detectionTime = uiState.ocrDetectionTime,
+                )
             }
 
             items(
@@ -76,23 +80,51 @@ internal fun FollowerScreen(
 }
 
 @Composable
-private fun PointItem(point: Point) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = "Point",
-            style = MaterialTheme.typography.h4
-        )
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        Text(
-            text = "[${point.x}, ${point.y}]",
-            style = MaterialTheme.typography.body1.copy(
-                fontWeight = FontWeight.Bold
+private fun MacroUiItem(
+    uiState: MacroUiState,
+    detectionTime: Long,
+) {
+    Column {
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "이동: ${if (uiState.ctrlToggle) "OFF" else "ON"}",
+                style = MaterialTheme.typography.body1.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Red
+                )
             )
-        )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "목표 좌표: [${uiState.point.x}, ${uiState.point.y}]",
+                style = MaterialTheme.typography.body1.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Gray
+                )
+            )
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "통신 시간: $detectionTime",
+                style = MaterialTheme.typography.body1.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Green
+                )
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "사이클 시간: ${uiState.cycleTime}",
+                style = MaterialTheme.typography.body1.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Blue
+                )
+            )
+        }
     }
 
     Spacer(modifier = Modifier.height(16.dp))
@@ -104,7 +136,7 @@ private fun PreviewFollowerScreen() {
     MaterialTheme {
         FollowerScreen(
             uiState = UiState.default,
-            commanderPoint = Point(0, 1),
+            macroUiState = MacroUiState.default,
             onEvent = {}
         )
     }

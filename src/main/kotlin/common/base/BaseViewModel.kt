@@ -2,6 +2,7 @@ package common.base
 
 import common.UiStateHolder
 import common.model.MoveEvent
+import common.model.PointModel
 import common.robot.DisplayProvider
 import common.model.UiEvent
 import common.model.UiState
@@ -21,6 +22,31 @@ abstract class BaseViewModel {
 
     abstract fun dispatch(event: UiEvent): Job
 
+    suspend inline fun updateCoordinates(
+        duration: Duration,
+        crossinline action: suspend (Pair<String, String>) -> Unit,
+    ) {
+        val startTime = System.currentTimeMillis()
+        val xScreen = DisplayProvider.capture(Type.X)
+        val yScreen = DisplayProvider.capture(Type.Y)
+        ocrClient.readImage(xScreen).onSuccess {
+            val x = it.results.firstOrNull() ?: return
+            ocrClient.readImage(yScreen).onSuccess {
+                val y = it.results.firstOrNull() ?: return
+                val endTime = System.currentTimeMillis() - startTime
+                UiStateHolder.updateCoordinates(
+                    x = x,
+                    y = y,
+                    xScreen =xScreen,
+                    yScreen = yScreen,
+                    time = endTime
+                )
+
+                action.invoke(x to y)
+                delay(duration)
+            }
+        }
+    }
     suspend inline fun updateFromRemote(
         type: Type,
         duration: Duration,

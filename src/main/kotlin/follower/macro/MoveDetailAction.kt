@@ -18,37 +18,9 @@ class MoveDetailAction(
 ) {
     private enum class Direction { UP, DOWN, LEFT, RIGHT }
     private var commanderPoint: Point? = null
-    private var job: Job? = null
 
-    init {
-        observePosition()
-    }
-
-    internal fun observePosition() {
-        scope.launch(Dispatchers.IO) {
-            while (isActive) {
-                val screen = DisplayProvider.capture(Type.X)
-
-                val result = ocrClient.readImage(screen)
-                if (result is Result.Success) {
-                    val x = result.data.results.firstOrNull() ?: continue
-                    val y = result.data.results.lastOrNull() ?: continue
-                    UiStateHolder.test(x, y, screen)
-
-                    val a = x.toIntOrNull() ?: continue
-                    val b = y.toIntOrNull() ?: continue
-                    job?.cancel()
-                    if(!FollowerMacro.ctrlToggle) {
-                        job = launch {
-                            moveTowards(Point(a, b))
-                        }
-                    }
-                }
-            }
-        }
-    }
     var direction = false
-    private suspend fun moveTowards(myPoint: Point) = withContext(Dispatchers.IO) {
+    suspend fun moveTowards(myPoint: Point) = withContext(Dispatchers.IO) {
         val point = commanderPoint ?: return@withContext
         var deltaX = point.x - myPoint.x
         var deltaY = point.y - myPoint.y
@@ -108,7 +80,7 @@ class MoveDetailAction(
         direction: Direction,
     ): Boolean {
         val property = FollowerMacro.property
-        val ctrlToggle = FollowerMacro.ctrlToggle
+        val ctrlToggle = FollowerMacro.ctrlToggle.value
         if(property || ctrlToggle) return false
 
         val keyEvent = when(direction) {

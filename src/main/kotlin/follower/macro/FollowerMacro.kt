@@ -11,6 +11,8 @@ import follower.model.BuffState
 import follower.model.MagicResultState
 import follower.ocr.TextDetecter
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.awt.event.KeyEvent
 import java.util.*
 import kotlin.concurrent.schedule
@@ -29,7 +31,12 @@ object FollowerMacro {
     private var magicResultState = MagicResultState.NONE
 
     internal var property = false
-    internal var ctrlToggle = false
+
+    private val _cycleTime = MutableStateFlow<Long>(0)
+    internal val cycleTime = _cycleTime.asStateFlow()
+
+    private val _ctrlToggle = MutableStateFlow(false)
+    internal val ctrlToggle = _ctrlToggle.asStateFlow()
 
     private var timer: TimerTask? = null
     fun init(
@@ -43,12 +50,12 @@ object FollowerMacro {
                 moveDetailAction.update(event.point)
             }
             is MoveEvent.OnMove -> {
-//                val point = UiStateHolder.getCoordinates() ?: return
-//                moveJob?.cancel()
-//                moveJob = null
-//                moveJob =  scope.launch {
-//                    moveDetailAction.moveTowards(point)
-//                }
+                val point = UiStateHolder.getCoordinates() ?: return
+                moveJob?.cancel()
+                moveJob = null
+                moveJob =  scope.launch {
+                    moveDetailAction.moveTowards(point)
+                }
             }
         }
     }
@@ -90,9 +97,9 @@ object FollowerMacro {
         }
     }
 
-    internal fun toggleMoveCtrl() {
-        val toggle = !ctrlToggle
-        ctrlToggle = toggle
+    internal suspend fun toggleMoveCtrl() {
+        val toggle = !ctrlToggle.value
+        _ctrlToggle.emit(toggle)
     }
 
     private fun heal() {
@@ -176,7 +183,6 @@ object FollowerMacro {
             BuffState.BOMU -> macroDetailAction.bomu()
             else -> { /** nothing **/ }
         }
-        dispatch(MoveEvent.OnMove)
     }
 
     private suspend fun checkMagicResult() {
@@ -186,12 +192,10 @@ object FollowerMacro {
             MagicResultState.OTHER_DEAD -> {
                 obtainProperty()
                 macroDetailAction.dead(state)
-                dispatch(MoveEvent.OnMove)
             }
             MagicResultState.NO_MP -> {
                 obtainProperty()
                 macroDetailAction.gongJeung()
-                dispatch(MoveEvent.OnMove)
             }
             else -> { /** nothing **/ }
         }

@@ -189,26 +189,20 @@ class CommanderViewModel: BaseViewModel() {
         client = null
     }
 
-
     private fun observeScreens() = scope.launch {
         launch(Dispatchers.IO) {
             while(isActive) {
-                val screen = DisplayProvider.capture(Type.X)
-
-                val result = ocrClient.readImage(screen)
-                if(result is Result.Success) {
-                    val x = result.data.results.firstOrNull() ?: continue
-                    val y = result.data.results.lastOrNull() ?: continue
-                    UiStateHolder.test(x, y, screen)
-
-                    val a = x.toIntOrNull() ?: continue
-                    val b = y.toIntOrNull() ?: continue
-                    sendCommand(PointModel(a, b).toString())
-                }
+                updateCoordinates(
+                    duration = 1.seconds,
+                    action = { (x, y) ->
+                        val intX = x.toIntOrNull() ?: return@updateCoordinates
+                        val intY = y.toIntOrNull() ?: return@updateCoordinates
+                        sendCommand(PointModel(intX, intY).toString())
+                    }
+                )
             }
         }
     }
-
     private fun init() = scope.launch {
         UiStateHolder.init(
             UiState.default.copy(
