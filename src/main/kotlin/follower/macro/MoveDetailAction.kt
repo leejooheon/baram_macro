@@ -31,7 +31,6 @@ class MoveDetailAction(
             if(FollowerMacro.property) return@withContext
             if(FollowerMacro.ctrlToggle.value) return@withContext
 
-            releaseAll()
             if (abs(deltaX) <= 1 && abs(deltaY) <= 1) {
                 return@withContext
             }

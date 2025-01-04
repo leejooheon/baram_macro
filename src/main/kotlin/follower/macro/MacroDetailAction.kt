@@ -50,7 +50,7 @@ class MacroDetailAction {
 
                 text.contains(MagicResultState.NO_MP.tag) -> {
                     if(counter++ > maxTryCount) {
-                        FollowerMacro.obtainProperty()
+                        tabTab()
                         eat()
                         counter = 0
                     }

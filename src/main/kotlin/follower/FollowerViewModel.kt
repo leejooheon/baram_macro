@@ -168,7 +168,7 @@ class FollowerViewModel: BaseViewModel() {
         launch(Dispatchers.IO) {
             while(isActive) {
                 updateCoordinates(
-                    duration = 0.5.seconds,
+                    duration = (0.5).seconds,
                     action = {
                         FollowerMacro.dispatch(MoveEvent.OnMove)
                     }

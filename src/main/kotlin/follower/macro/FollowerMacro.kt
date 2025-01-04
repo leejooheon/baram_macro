@@ -55,6 +55,10 @@ object FollowerMacro {
                 moveJob = null
                 moveJob =  scope.launch {
                     moveDetailAction.moveTowards(point)
+                }.apply{
+                    invokeOnCompletion {
+//                        moveDetailAction.releaseAll()
+                    }
                 }
             }
         }
@@ -90,6 +94,7 @@ object FollowerMacro {
         timer = null
 
         property = true
+        moveJob?.cancel()
 
         moveDetailAction.releaseAll()
         timer = Timer().schedule(500) {
@@ -105,7 +110,7 @@ object FollowerMacro {
     private fun heal() {
         val maxCount = 4 // 수시로 조정하자
         var counter = 0
-
+        obtainProperty()
         job?.cancel()
         job = scope.launch(Dispatchers.IO) {
             launch(Dispatchers.IO) {
@@ -120,8 +125,8 @@ object FollowerMacro {
                 val startTime = System.currentTimeMillis()
                 Keyboard.pressKeyRepeatedly(
                     keyEvent = KeyEvent.VK_1,
-                    time = 2,
-                    delay = Random.nextLong(50, 100)
+                    time = 3,
+                    delay = Random.nextLong(20, 50)
                 )
 
                 if(counter++ > maxCount) {
@@ -131,7 +136,7 @@ object FollowerMacro {
 
                 checkBuff()
                 checkMagicResult()
-                delay(Random.nextLong(150, 200))
+                delay(Random.nextLong(200, 300))
                 _cycleTime.emit(System.currentTimeMillis() - startTime)
             }
         }
