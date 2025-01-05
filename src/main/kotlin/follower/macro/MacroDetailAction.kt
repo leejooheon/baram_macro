@@ -36,7 +36,7 @@ class MacroDetailAction {
         var counter = 0
         val maxTryCount = 1
         while (isActive) {
-            Keyboard.pressKeyRepeatedly(KeyEvent.VK_2, 2)
+            Keyboard.pressAndRelease(KeyEvent.VK_2)
 
             val screen = DisplayProvider.capture(UiState.Type.MAGIC_RESULT)
             text = TextDetecter.detectString(screen)
@@ -50,7 +50,8 @@ class MacroDetailAction {
 
                 text.contains(MagicResultState.NO_MP.tag) -> {
                     if(counter++ > maxTryCount) {
-                        tabTab()
+                        FollowerMacro.obtainProperty()
+                        delay(350)
                         eat()
                         counter = 0
                     }
@@ -114,10 +115,10 @@ class MacroDetailAction {
         )
     }
 
-    private suspend fun eat() {
-        Keyboard.pressAndRelease(KeyEvent.VK_U,)
+    suspend fun eat(delay: Long = 100) {
+        Keyboard.pressAndRelease(KeyEvent.VK_U, delay)
         delay(50)
-        Keyboard.pressAndRelease(KeyEvent.VK_U)
+        Keyboard.pressAndRelease(KeyEvent.VK_U, delay)
     }
 
     suspend fun tabTab() {

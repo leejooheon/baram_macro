@@ -1,15 +1,10 @@
 package follower.macro
 
-import common.UiStateHolder
-import common.model.UiState.Type
 import common.network.OcrClient
-import common.robot.DisplayProvider
 import common.robot.Keyboard
-import common.util.Result
 import kotlinx.coroutines.*
 import java.awt.Point
 import java.awt.event.KeyEvent
-import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.abs
 
 class MoveDetailAction(
@@ -18,18 +13,18 @@ class MoveDetailAction(
 ) {
     private enum class Direction { UP, DOWN, LEFT, RIGHT }
     private var commanderPoint: Point? = null
-
+    private var myPoint: Point? = null
     var direction = false
-    suspend fun moveTowards(myPoint: Point) = withContext(Dispatchers.IO) {
-        val point = commanderPoint ?: return@withContext
-        var deltaX = point.x - myPoint.x
-        var deltaY = point.y - myPoint.y
 
-//        println("deltaX: $deltaX, deltaY: $deltaY, ${FollowerMacro.property} $this")
-
+    suspend fun moveTowards() = withContext(Dispatchers.IO) {
         while (isActive) {
             if(FollowerMacro.property) return@withContext
             if(FollowerMacro.ctrlToggle.value) return@withContext
+
+            val point = commanderPoint ?: return@withContext
+            val myPoint = myPoint ?: return@withContext
+            var deltaX = point.x - myPoint.x
+            var deltaY = point.y - myPoint.y
 
             if (abs(deltaX) <= 1 && abs(deltaY) <= 1) {
                 return@withContext
@@ -63,8 +58,11 @@ class MoveDetailAction(
         }
     }
 
-    internal fun update(point: Point) {
+    internal fun updateCommander(point: Point) {
         commanderPoint = point
+    }
+    internal fun updateMe(point: Point) {
+        myPoint = point
     }
 
     internal fun releaseAll() {
@@ -93,7 +91,7 @@ class MoveDetailAction(
         }
 
         Keyboard.press(keyEvent)
-        delay(350)
+        delay(300)
         Keyboard.release(keyEvent)
         delay(20)
 

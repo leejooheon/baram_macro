@@ -47,17 +47,17 @@ object FollowerMacro {
     suspend fun dispatch(event: MoveEvent) {
         when(event) {
             is MoveEvent.OnCommanderPositionChanged -> {
-                moveDetailAction.update(event.point)
+                moveDetailAction.updateCommander(event.point)
             }
             is MoveEvent.OnMove -> {
                 val point = UiStateHolder.getCoordinates() ?: return
-                moveJob?.cancel()
-                moveJob = null
-                moveJob =  scope.launch {
-                    moveDetailAction.moveTowards(point)
-                }.apply{
-                    invokeOnCompletion {
-//                        moveDetailAction.releaseAll()
+                moveDetailAction.updateMe(point)
+
+                if(moveJob?.isActive == null || moveJob?.isActive == false) {
+                    moveJob?.cancel()
+                    moveJob = null
+                    moveJob = scope.launch {
+                        moveDetailAction.moveTowards()
                     }
                 }
             }
@@ -69,8 +69,10 @@ object FollowerMacro {
             NativeKeyEvent.VC_ESCAPE -> {
                 job?.cancel()
                 macroDetailAction.escape()
+                obtainProperty(0)
             }
             NativeKeyEvent.VC_F1 -> heal()
+            NativeKeyEvent.VC_F2 -> macroDetailAction.eat()
             NativeKeyEvent.VC_BACKQUOTE -> {
                 job?.cancel()
                 job = scope.launch {
@@ -89,15 +91,16 @@ object FollowerMacro {
         }
     }
 
-    internal fun obtainProperty() {
+    internal fun obtainProperty(delay: Long = 500) {
         timer?.cancel()
         timer = null
 
         property = true
         moveJob?.cancel()
+        moveJob = null
 
         moveDetailAction.releaseAll()
-        timer = Timer().schedule(500) {
+        timer = Timer().schedule(delay) {
             property = false
         }
     }
@@ -114,6 +117,7 @@ object FollowerMacro {
         job?.cancel()
         job = scope.launch(Dispatchers.IO) {
             launch(Dispatchers.IO) {
+                Keyboard.pressAndRelease(KeyEvent.VK_S)
                 while (isActive) observeBuffState()
             }
             launch(Dispatchers.IO) {
@@ -143,9 +147,6 @@ object FollowerMacro {
     }
 
     private suspend fun observeBuffState() {
-        withContext(Dispatchers.Default) {
-            Keyboard.pressAndRelease(KeyEvent.VK_S)
-        }
 
         val image = DisplayProvider.capture(UiState.Type.BUFF)
         val text = TextDetecter.detectString(image)
@@ -201,7 +202,7 @@ object FollowerMacro {
                 macroDetailAction.dead(state)
             }
             MagicResultState.NO_MP -> {
-                obtainProperty()
+//                obtainProperty()
                 macroDetailAction.gongJeung()
             }
             else -> { /** nothing **/ }
