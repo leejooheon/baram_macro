@@ -14,7 +14,6 @@ class MoveDetailAction(
     private enum class Direction { UP, DOWN, LEFT, RIGHT }
     private var commanderPoint: Point? = null
     private var myPoint: Point? = null
-    var direction = false
 
     suspend fun moveTowards() = withContext(Dispatchers.IO) {
         while (isActive) {
@@ -26,35 +25,15 @@ class MoveDetailAction(
             var deltaX = point.x - myPoint.x
             var deltaY = point.y - myPoint.y
 
-            if (abs(deltaX) <= 1 && abs(deltaY) <= 1) {
+            if (abs(deltaX) <= 0 && abs(deltaY) <= 1 || abs(deltaX) <= 1 && abs(deltaY) <= 0) {
                 return@withContext
             }
 
-            direction = !direction
-            if(direction) {
-                if (deltaX > 1) {
-                    if (tryMove(Direction.RIGHT)) deltaX -= 1
-                } else if (deltaX < -1) {
-                    if (tryMove(Direction.LEFT)) deltaX += 1
-                }
-                if (deltaY > 1) {
-                    if (tryMove(Direction.DOWN)) deltaY -= 1
-                } else if (deltaY < -1) {
-                    if (tryMove(Direction.UP)) deltaY += 1
-                }
-            } else {
-                if (deltaY > 1) {
-                    if (tryMove(Direction.DOWN)) deltaY -= 1
-                } else if (deltaY < -1) {
-                    if (tryMove(Direction.UP)) deltaY += 1
-                }
-                if (deltaX > 1) {
-                    if (tryMove(Direction.RIGHT)) deltaX -= 1
-                } else if (deltaX < -1) {
-                    if (tryMove(Direction.LEFT)) deltaX += 1
-                }
-            }
+            if (deltaX > 0) tryMove(Direction.RIGHT)
+            else if (deltaX < 0) tryMove(Direction.LEFT)
 
+            if (deltaY > 0) tryMove(Direction.DOWN)
+            else if (deltaY < 0) tryMove(Direction.UP)
         }
     }
 
@@ -78,10 +57,10 @@ class MoveDetailAction(
 
     private suspend fun tryMove(
         direction: Direction,
-    ): Boolean {
+    ) {
         val property = FollowerMacro.property
         val ctrlToggle = FollowerMacro.ctrlToggle.value
-        if(property || ctrlToggle) return false
+        if(property || ctrlToggle) return
 
         val keyEvent = when(direction) {
             Direction.UP -> KeyEvent.VK_UP
@@ -94,7 +73,5 @@ class MoveDetailAction(
         delay(300)
         Keyboard.release(keyEvent)
         delay(20)
-
-        return true
     }
 }

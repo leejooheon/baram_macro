@@ -72,7 +72,7 @@ object FollowerMacro {
                 obtainProperty(0)
             }
             NativeKeyEvent.VC_F1 -> heal()
-            NativeKeyEvent.VC_F2 -> macroDetailAction.eat()
+            NativeKeyEvent.VC_F2 -> {}
             NativeKeyEvent.VC_BACKQUOTE -> {
                 job?.cancel()
                 job = scope.launch {
@@ -82,12 +82,20 @@ object FollowerMacro {
             }
             NativeKeyEvent.VC_F3 -> {
                 job?.cancel()
-                job = scope.launch {
-                    macroDetailAction.honmasul()
+                job = scope.launch(Dispatchers.IO) {
+                    macroDetailAction.escape()
+
+                    launch(Dispatchers.IO) {
+                        while (isActive) observeMagicResult()
+                    }
+                    while (isActive) {
+                        macroDetailAction.honmasul()
+                        checkMagicResult()
+                    }
                 }
             }
             NativeKeyEvent.VC_F4 -> macroDetailAction.invincible()
-            NativeKeyEvent.VC_F5 -> macroDetailAction.bomu()
+            NativeKeyEvent.VC_F5 -> macroDetailAction.run()
         }
     }
 
@@ -135,6 +143,7 @@ object FollowerMacro {
 
                 if(counter++ > maxCount) {
                     macroDetailAction.tryGongJeung()
+                    Keyboard.pressAndRelease(KeyEvent.VK_3)
                     counter = 0
                 }
 
