@@ -7,6 +7,8 @@ import follower.model.MagicResultState
 import follower.ocr.TextDetecter
 import kotlinx.coroutines.*
 import java.awt.event.KeyEvent
+import kotlin.random.Random
+import kotlin.time.Duration
 
 class MacroDetailAction {
     suspend fun honmasul() = withContext(Dispatchers.Default) {
@@ -16,6 +18,19 @@ class MacroDetailAction {
             Keyboard.pressAndRelease(KeyEvent.VK_UP)
             Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
         }
+    }
+
+    suspend fun honmasul(duration: Duration) = withContext(Dispatchers.IO) {
+        withTimeout(duration) {
+            escape()
+            while (isActive) {
+                Keyboard.pressAndRelease(KeyEvent.VK_5)
+                Keyboard.pressAndRelease(KeyEvent.VK_UP)
+                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+            }
+        }
+        escape()
+        tabTab()
     }
 
     suspend fun gongju() {
@@ -29,40 +44,6 @@ class MacroDetailAction {
         Keyboard.pressAndRelease(KeyEvent.VK_2)
 //        healMe()
 //        tabTab()
-    }
-
-    suspend fun gongJeung() = withContext(Dispatchers.IO) {
-        var text: String
-        var counter = 0
-        val maxTryCount = 1
-        while (isActive) {
-            Keyboard.pressAndRelease(KeyEvent.VK_2)
-
-            val screen = DisplayProvider.capture(UiState.Type.MAGIC_RESULT)
-            text = TextDetecter.detectString(screen)
-
-            when {
-                text.contains(MagicResultState.GONGJEUNG.tag) -> {
-                    healMe()
-                    tabTab()
-                    break
-                }
-
-                text.contains(MagicResultState.NO_MP.tag) -> {
-                    if(counter++ > maxTryCount) {
-                        FollowerMacro.obtainProperty()
-                        delay(350)
-                        eat()
-                        counter = 0
-                    }
-                }
-                text.contains(MagicResultState.ME_DEAD.tag) -> {
-                    FollowerMacro.obtainProperty()
-                    dead(MagicResultState.ME_DEAD)
-                    break
-                }
-            }
-        }
     }
 
     suspend fun bomu() {
@@ -116,17 +97,27 @@ class MacroDetailAction {
     }
 
     suspend fun eat(delay: Long = 100) {
+        FollowerMacro.obtainProperty()
+
+        delay(60)
         Keyboard.pressAndRelease(KeyEvent.VK_U, delay)
-        delay(50)
+        delay(60)
         Keyboard.pressAndRelease(KeyEvent.VK_U, delay)
     }
 
     suspend fun tabTab() {
         escape()
         Keyboard.pressAndRelease(KeyEvent.VK_TAB)
-        delay(50)
+        delay(60)
         Keyboard.pressAndRelease(KeyEvent.VK_TAB)
-        delay(50)
+        delay(60)
+    }
+    suspend fun heal(time: Int) {
+        Keyboard.pressKeyRepeatedly(
+            keyEvent = KeyEvent.VK_1,
+            time = time,
+            delay = Random.nextLong(20, 60)
+        )
     }
 
     private suspend inline fun focusMe(
@@ -148,25 +139,54 @@ class MacroDetailAction {
         delay(20)
     }
 
-    suspend fun invincible() {
-        Keyboard.pressAndRelease(KeyEvent.VK_4)
-    }
-//    suspend fun invincible() = withContext(Dispatchers.IO) {
-//        while (isActive) {
-//            Keyboard.pressAndRelease(KeyEvent.VK_4)
-//            delay(100)
-//
-//            val image = DisplayProvider.capture(UiState.Type.MAGIC_RESULT)
-//            val result = TextDetecter.detectString(image)
-//
-//            when {
-//                result.contains(MagicResultState.ALREADY.tag) -> break
-//                result.contains(MagicResultState.NO_MP.tag) -> gongJeung()
-//                result.contains(MagicResultState.ME_DEAD.tag) -> {
-//                    dead(MagicResultState.ME_DEAD)
-//                    break
-//                }
-//            }
-//        }
+//    suspend fun invincible() {
+//        Keyboard.pressAndRelease(KeyEvent.VK_4)
 //    }
+    suspend fun invincible() = withContext(Dispatchers.IO) {
+        while (isActive) {
+            Keyboard.pressAndRelease(KeyEvent.VK_4)
+            delay(250)
+
+            val image = DisplayProvider.capture(UiState.Type.MAGIC_RESULT)
+            val result = TextDetecter.detectString(image)
+
+            when {
+                result.contains(MagicResultState.ALREADY.tag) -> break
+            }
+        }
+    }
+
+    suspend fun gongJeung() = withContext(Dispatchers.IO) {
+        var text: String
+        var counter = 0
+        val maxTryCount = 1
+        while (isActive) {
+            Keyboard.pressAndRelease(KeyEvent.VK_2)
+            delay(250)
+
+            val screen = DisplayProvider.capture(UiState.Type.MAGIC_RESULT)
+            text = TextDetecter.detectStringRemote(screen)
+
+            when {
+                text.contains(MagicResultState.GONGJEUNG.tag) -> {
+                    healMe()
+                    tabTab()
+                    break
+                }
+
+                text.contains(MagicResultState.NO_MP.tag) -> {
+                    if(counter++ > maxTryCount) {
+                        FollowerMacro.obtainProperty()
+                        eat()
+                        counter = 0
+                    }
+                }
+                text.contains(MagicResultState.ME_DEAD.tag) -> {
+                    FollowerMacro.obtainProperty()
+                    dead(MagicResultState.ME_DEAD)
+                    break
+                }
+            }
+        }
+    }
 }

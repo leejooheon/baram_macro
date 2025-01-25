@@ -7,10 +7,7 @@ import java.awt.Point
 import java.awt.event.KeyEvent
 import kotlin.math.abs
 
-class MoveDetailAction(
-    private val scope: CoroutineScope,
-    private val ocrClient: OcrClient,
-) {
+class MoveDetailAction {
     private enum class Direction { UP, DOWN, LEFT, RIGHT }
     private var commanderPoint: Point? = null
     private var myPoint: Point? = null

@@ -4,7 +4,6 @@ import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
 import common.UiStateHolder
 import common.model.MoveEvent
 import common.model.UiState
-import common.network.OcrClient
 import common.robot.DisplayProvider
 import common.robot.Keyboard
 import follower.model.BuffState
@@ -16,18 +15,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.awt.event.KeyEvent
 import java.util.*
 import kotlin.concurrent.schedule
-import kotlin.random.Random
+import kotlin.time.Duration.Companion.seconds
 
 object FollowerMacro {
     private val scope = CoroutineScope(SupervisorJob())
 
-    private var job: Job? = null
+    private var healJob: Job? = null
     private var moveJob: Job? = null
 
     private val macroDetailAction = MacroDetailAction()
     private lateinit var moveDetailAction: MoveDetailAction
 
-    private var buffState = BuffState.NONE
     private var magicResultState = MagicResultState.NONE
 
     internal var property = false
@@ -39,12 +37,13 @@ object FollowerMacro {
     internal val ctrlToggle = _ctrlToggle.asStateFlow()
 
     private var timer: TimerTask? = null
-    fun init(
-        ocrClient: OcrClient
-    ) {
-        moveDetailAction = MoveDetailAction(scope, ocrClient)
+    private var invokeHonmasul = false
+
+    fun init() {
+        moveDetailAction = MoveDetailAction()
     }
-    suspend fun dispatch(event: MoveEvent) {
+
+    fun dispatch(event: MoveEvent) {
         when(event) {
             is MoveEvent.OnCommanderPositionChanged -> {
                 moveDetailAction.updateCommander(event.point)
@@ -67,22 +66,22 @@ object FollowerMacro {
     suspend fun dispatch(keyEvent: Int) {
         when (keyEvent) {
             NativeKeyEvent.VC_ESCAPE -> {
-                job?.cancel()
+                healJob?.cancel()
                 macroDetailAction.escape()
                 obtainProperty(0)
             }
             NativeKeyEvent.VC_F1 -> heal()
-            NativeKeyEvent.VC_F2 -> macroDetailAction.eat()
+            NativeKeyEvent.VC_F2 -> invokeHonmasul = true
             NativeKeyEvent.VC_BACKQUOTE -> {
-                job?.cancel()
-                job = scope.launch {
+                healJob?.cancel()
+                healJob = scope.launch {
                     macroDetailAction.gongju()
                     heal()
                 }
             }
             NativeKeyEvent.VC_F3 -> {
-                job?.cancel()
-                job = scope.launch {
+                healJob?.cancel()
+                healJob = scope.launch {
                     macroDetailAction.honmasul()
                 }
             }
@@ -111,60 +110,68 @@ object FollowerMacro {
     }
 
     private fun heal() {
-        val maxCount = 4 // 수시로 조정하자
-        var counter = 0
         obtainProperty()
-        job?.cancel()
-        job = scope.launch(Dispatchers.IO) {
-            launch(Dispatchers.IO) {
-                Keyboard.pressAndRelease(KeyEvent.VK_S)
-                while (isActive) observeBuffState()
-            }
-            launch(Dispatchers.IO) {
-                while (isActive) observeMagicResult()
-            }
+        healJob?.cancel()
+        healJob = scope.launch(Dispatchers.IO) {
+            var running = true
 
-            macroDetailAction.tabTab()
-            while (isActive) {
-                val startTime = System.currentTimeMillis()
-                Keyboard.pressKeyRepeatedly(
-                    keyEvent = KeyEvent.VK_1,
-                    time = 3,
-                    delay = Random.nextLong(20, 50)
-                )
-
-                if(counter++ > maxCount) {
-                    macroDetailAction.tryGongJeung()
-                    counter = 0
+            launch(Dispatchers.IO) { // healJob
+                val maxCount = 4 // 수시로 조정하자
+                var counter = 0
+                macroDetailAction.tabTab()
+                while (isActive) {
+                    if(!running) {
+                        delay(1.seconds)
+                        continue
+                    }
+                    if(invokeHonmasul) {
+                        invokeHonmasul = false
+                        macroDetailAction.honmasul(1.seconds)
+                    }
+                    macroDetailAction.heal(5)
+                    if(counter++ > maxCount) {
+                        Keyboard.pressAndRelease(KeyEvent.VK_2) // 공증
+                        Keyboard.pressAndRelease(KeyEvent.VK_3) // 희원
+                        counter = 0
+                    }
                 }
+            }
 
-                checkBuff()
-                checkMagicResult()
-                delay(Random.nextLong(200, 300))
-                _cycleTime.emit(System.currentTimeMillis() - startTime)
+            launch(Dispatchers.IO) { // buffJob
+                Keyboard.pressAndRelease(KeyEvent.VK_S)
+                while (isActive) {
+                    if(running) observeBuffState()
+                    delay(1.seconds)
+                }
+            }
+
+            launch(Dispatchers.IO) { // magicResultJob
+                while (isActive) {
+                    observeMagicResult(
+                        onStart = { running = true },
+                        onStop = { running = false },
+                    )
+                    delay(0.5.seconds)
+                }
             }
         }
     }
 
     private suspend fun observeBuffState() {
-
         val image = DisplayProvider.capture(UiState.Type.BUFF)
         val text = TextDetecter.detectString(image)
 
-        val state = when {
-            !text.contains(BuffState.INVINSIBILITY.tag) -> BuffState.INVINSIBILITY
-            !text.contains(BuffState.BOMU.tag) -> BuffState.BOMU
-            else -> BuffState.NONE
+        when {
+            !text.contains(BuffState.INVINSIBILITY.tag) -> macroDetailAction.invincible()
+//            !text.contains(BuffState.BOMU.tag) -> macroDetailAction.bomu()
+            else -> { /** nothing **/ }
         }
-
-        if(state != buffState) {
-            println("buffState: $state")
-        }
-
-        buffState = state
     }
 
-    private suspend fun observeMagicResult() {
+    private suspend fun observeMagicResult(
+        onStart: () -> Unit,
+        onStop: () -> Unit,
+    ) {
         val image = DisplayProvider.capture(UiState.Type.MAGIC_RESULT)
         val text = TextDetecter.detectString(image)
 
@@ -179,31 +186,18 @@ object FollowerMacro {
             println("magicResultState: $state")
         }
 
-        magicResultState = state
-    }
-
-    private suspend fun checkBuff() {
-        val state = buffState
-        if(state == BuffState.NONE) return
-
-        when(state) {
-            BuffState.INVINSIBILITY -> macroDetailAction.invincible()
-            BuffState.BOMU -> macroDetailAction.bomu()
-            else -> { /** nothing **/ }
-        }
-    }
-
-    private suspend fun checkMagicResult() {
-        val state = magicResultState
         when(state) {
             MagicResultState.ME_DEAD,
             MagicResultState.OTHER_DEAD -> {
+                onStop.invoke()
                 obtainProperty()
                 macroDetailAction.dead(state)
+                onStart.invoke()
             }
             MagicResultState.NO_MP -> {
-//                obtainProperty()
+                onStop.invoke()
                 macroDetailAction.gongJeung()
+                onStart.invoke()
             }
             else -> { /** nothing **/ }
         }

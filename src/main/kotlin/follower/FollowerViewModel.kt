@@ -205,7 +205,7 @@ class FollowerViewModel: BaseViewModel() {
         }
     }
     private fun init() = scope.launch {
-        FollowerMacro.init(ocrClient)
+        FollowerMacro.init()
         UiStateHolder.init(
             UiState.default.copy(
                 xState = UiState.CommonState.default.copy(
