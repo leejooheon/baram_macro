@@ -60,11 +60,11 @@ object UiStateHolder {
         val model = _state.value
         val newState = model.copy(
             xState = model.xState.copy(
-                texts = listOf(x),
+                texts = if(x.isEmpty()) model.xState.texts else listOf(x),
                 image = xScreen,
             ),
             yState = model.yState.copy(
-                texts = listOf(y),
+                texts = if(y.isEmpty()) model.yState.texts else listOf(y),
                 image = yScreen,
             ),
             ocrDetectionTime = time

@@ -22,6 +22,13 @@ abstract class BaseViewModel {
         val xScreen = DisplayProvider.capture(Type.X)
         val yScreen = DisplayProvider.capture(Type.Y)
 
+        UiStateHolder.updateCoordinates(
+            x = "",
+            y = "",
+            xScreen =xScreen,
+            yScreen = yScreen,
+            time = 0L
+        )
         TextDetecter
             .detectStringRemoteRaw(xScreen)
             .onSuccess {

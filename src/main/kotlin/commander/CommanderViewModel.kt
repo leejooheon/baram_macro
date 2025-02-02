@@ -207,11 +207,11 @@ class CommanderViewModel: BaseViewModel() {
         UiStateHolder.init(
             UiState.default.copy(
                 xState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(1330, 817, 80, 30),
+                    rectangle = Rectangle(1280, 954, 80, 30),
                     type = Type.X,
                 ),
                 yState = UiState.CommonState.default.copy(
-                    rectangle = Rectangle(1410, 815, 80, 30),
+                    rectangle = Rectangle(1370, 954, 80, 30),
                     type = Type.Y,
                 ),
             )

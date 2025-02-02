@@ -37,7 +37,8 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "MainKt"
+        mainClass = "CommanderKt"
+//        mainClass = "JusulsaKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Msi)

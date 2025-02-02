@@ -11,12 +11,33 @@ import kotlin.random.Random
 import kotlin.time.Duration
 
 class MacroDetailAction {
+    suspend fun loop(keyEvent: Int) = withContext(Dispatchers.IO) {
+//        escape()
+        try {
+            while (isActive) {
+                Keyboard.pressAndRelease(keyEvent)
+                Keyboard.pressAndRelease(KeyEvent.VK_UP)
+                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+                delay(20)
+            }
+        } catch (e: Exception) {
+            delay(60)
+            Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+            delay(60)
+            Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+        }
+    }
     suspend fun honmasul() = withContext(Dispatchers.Default) {
         escape()
-        while (isActive) {
-            Keyboard.pressAndRelease(KeyEvent.VK_5)
-            Keyboard.pressAndRelease(KeyEvent.VK_UP)
-            Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+        try {
+            while (isActive) {
+                Keyboard.pressAndRelease(KeyEvent.VK_5)
+                delay(55)
+                Keyboard.pressAndRelease(KeyEvent.VK_UP)
+                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+            }
+        } catch (e: Exception) {
+            Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
         }
     }
 
@@ -84,13 +105,11 @@ class MacroDetailAction {
         }
     }
 
-    private suspend fun healMe() {
+    suspend fun healMe() {
         escape()
         focusMe(
             keyEvent = KeyEvent.VK_1,
             action = {
-                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
-                Keyboard.pressAndRelease(KeyEvent.VK_1)
                 Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
             }
         )
@@ -133,10 +152,10 @@ class MacroDetailAction {
     }
 
     suspend fun escape() {
-        FollowerMacro.obtainProperty()
+//        FollowerMacro.obtainProperty()
         Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
         Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
-        delay(20)
+        delay(60)
     }
 
 //    suspend fun invincible() {
@@ -166,7 +185,7 @@ class MacroDetailAction {
 
             val screen = DisplayProvider.capture(UiState.Type.MAGIC_RESULT)
             text = TextDetecter.detectStringRemote(screen)
-
+            println("gongJeung: $text")
             when {
                 text.contains(MagicResultState.GONGJEUNG.tag) -> {
                     healMe()

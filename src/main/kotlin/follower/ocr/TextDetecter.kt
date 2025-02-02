@@ -42,4 +42,7 @@ object TextDetecter {
     suspend fun detectStringRemoteRaw(
         image: BufferedImage
     ) = ocrClient.readImage(image)
+
+    suspend fun findKing() = ocrClient.findKing()
+    suspend fun conversationWithKing() = ocrClient.conversationWithKing()
 }

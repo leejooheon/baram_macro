@@ -1,4 +1,4 @@
-package common.model
+package common.model.api
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -6,5 +6,4 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class OcrModel(
     @SerialName("result") val results: List<String>,
-    @SerialName("confidence") val confidence: Double,
 )
