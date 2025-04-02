@@ -7,6 +7,7 @@ import common.model.UiState.Type
 import common.robot.DisplayProvider
 import common.util.onSuccess
 import follower.ocr.TextDetecter
+import jusulsa.model.JusulsaUiState
 import kotlinx.coroutines.*
 import java.awt.image.BufferedImage
 import kotlin.time.Duration

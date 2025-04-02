@@ -12,11 +12,8 @@ fun CommanderApp() {
     val viewModel = remember { CommanderViewModel() }
     val uiState by UiStateHolder.state.collectAsState()
 
-    ObserveMouseEvents(
-        onClicked = {
-            println("nativeMouseClicked: $it")
-        }
-    )
+    ObserveMouseEvents{ _,_ ->
+    }
 
     ObserveKeyEvents(
         onReleased = viewModel::dispatchKeyReleaseEvent,

@@ -23,7 +23,7 @@ import common.model.UiState
 import java.awt.Rectangle
 
 @Composable
-internal fun DisplaySection(
+fun DisplaySection(
     model: UiState.CommonState,
     onRectangleChanged: (Rectangle) -> Unit,
     modifier: Modifier = Modifier

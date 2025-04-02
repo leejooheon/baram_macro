@@ -9,7 +9,7 @@ import java.awt.Point
 
 @Composable
 fun ObserveMouseEvents(
-    onClicked: (point: Point) -> Unit
+    onClicked: (point: Point, button: Int) -> Unit
 ) {
 
     DisposableEffect(Unit) {
@@ -17,9 +17,8 @@ fun ObserveMouseEvents(
             override fun nativeMouseClicked(nativeEvent: NativeMouseEvent?) {
                 super.nativeMouseClicked(nativeEvent)
                 val event = nativeEvent ?: return
-
                 println("nativeMouseClicked: ${event.point}, ${event.button}, ${event.clickCount}")
-                onClicked.invoke(event.point)
+                onClicked.invoke(event.point, event.button)
             }
         }
         GlobalScreen.addNativeMouseListener(listener)

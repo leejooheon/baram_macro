@@ -27,14 +27,75 @@ class MacroDetailAction {
             Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
         }
     }
-    suspend fun honmasul() = withContext(Dispatchers.Default) {
-        escape()
+    suspend fun chumchum() {
+
+        Keyboard.pressAndRelease(KeyEvent.VK_TAB)
+        delay(60)
+        Keyboard.pressAndRelease(KeyEvent.VK_TAB)
+        delay(60)
+
+    }
+    suspend fun mabeAroundMe() {
+        listOf(
+            KeyEvent.VK_UP,
+            KeyEvent.VK_LEFT,
+            KeyEvent.VK_DOWN,
+            KeyEvent.VK_RIGHT
+        ).forEach {
+            val duration = 20L
+            Keyboard.pressAndRelease(KeyEvent.VK_8)
+            delay(duration)
+            Keyboard.pressAndRelease(KeyEvent.VK_HOME)
+            delay(duration)
+            Keyboard.pressAndRelease(it)
+            delay(duration)
+            Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+            delay(duration)
+        }
+    }
+    suspend fun honmasul() = withContext(Dispatchers.IO) {
+        val duration = 33L
+//        escape()
         try {
             while (isActive) {
-                Keyboard.pressAndRelease(KeyEvent.VK_5)
-                delay(55)
+                Keyboard.pressAndRelease(KeyEvent.VK_8)
                 Keyboard.pressAndRelease(KeyEvent.VK_UP)
                 Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+                delay(120)
+//                Keyboard.pressAndRelease(KeyEvent.VK_7)
+//                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+//                delay(125)
+            }
+        } catch (e: Exception) {
+            Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+        }
+    }
+    suspend fun julmang() = withContext(Dispatchers.IO) {
+        val directions = listOf(
+            KeyEvent.VK_UP,
+            KeyEvent.VK_LEFT,
+            KeyEvent.VK_DOWN,
+            KeyEvent.VK_RIGHT
+        )
+        try {
+            var cnt = 0
+            var directionIndex = 0
+            while (isActive) {
+                if(cnt %16 == 3) {
+                    directionIndex = (directionIndex + 1) % directions.size
+                }
+                if (cnt % 16 > 8) {
+                    Keyboard.pressAndRelease(KeyEvent.VK_3)
+                    Keyboard.pressAndRelease(KeyEvent.VK_HOME)
+                    Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+                    delay(300)
+                } else {
+                    Keyboard.pressAndRelease(KeyEvent.VK_7)
+                    Keyboard.pressAndRelease(directions[directionIndex])
+                    Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+                    delay(120)
+                }
+                cnt++
             }
         } catch (e: Exception) {
             Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
@@ -105,6 +166,30 @@ class MacroDetailAction {
         }
     }
 
+    suspend fun test() {
+//        Keyboard.pressAndRelease(KeyEvent.VK_2)
+//        delay(20)
+//        Keyboard.pressAndRelease(KeyEvent.VK_SPACE)
+//        delay(20)
+//        Keyboard.pressAndRelease(KeyEvent.VK_3)
+//        delay(20)
+//        Keyboard.pressAndRelease(KeyEvent.VK_1)
+
+        Keyboard.pressAndRelease(KeyEvent.VK_2)
+        delay(20)
+        Keyboard.pressAndRelease(KeyEvent.VK_3)
+        delay(20)
+        Keyboard.pressAndRelease(KeyEvent.VK_SPACE)
+        delay(20)
+        Keyboard.pressAndRelease(KeyEvent.VK_3)
+        delay(450)
+        Keyboard.pressAndRelease(KeyEvent.VK_SPACE)
+    }
+    suspend fun test2() {
+
+        Keyboard.pressAndRelease(KeyEvent.VK_TAB)
+    }
+
     suspend fun healMe() {
         escape()
         focusMe(
@@ -125,11 +210,29 @@ class MacroDetailAction {
     }
 
     suspend fun tabTab() {
-        escape()
+//        escape()
         Keyboard.pressAndRelease(KeyEvent.VK_TAB)
-        delay(60)
+        delay(30)
+        Keyboard.pressAndRelease(KeyEvent.VK_HOME)
+        delay(30)
         Keyboard.pressAndRelease(KeyEvent.VK_TAB)
+        delay(30)
+    }
+    suspend fun bomuMe() {
+        Keyboard.pressAndRelease(KeyEvent.VK_9)
         delay(60)
+        Keyboard.pressAndRelease(KeyEvent.VK_HOME)
+        delay(60)
+        Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+        delay(60)
+        Keyboard.press(KeyEvent.VK_SHIFT)
+        delay(60)
+        Keyboard.pressAndRelease(KeyEvent.VK_Z)
+        Keyboard.release(KeyEvent.VK_SHIFT)
+        delay(60)
+        Keyboard.pressAndRelease(KeyEvent.VK_V)
+        delay(60)
+        Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
     }
     suspend fun heal(time: Int) {
         Keyboard.pressKeyRepeatedly(
@@ -154,8 +257,7 @@ class MacroDetailAction {
     suspend fun escape() {
 //        FollowerMacro.obtainProperty()
         Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
-        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
-        delay(60)
+        delay(66)
     }
 
 //    suspend fun invincible() {
