@@ -20,6 +20,7 @@ dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     implementation("com.github.kwhat:jnativehook:2.2.2")
+    implementation("net.java.dev.jna:jna:5.13.0")
 
 //    implementation(files("libs/tess4j-5.10.0.jar"))
     implementation("net.sourceforge.tess4j:tess4j:5.10.0") {

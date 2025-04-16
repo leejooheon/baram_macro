@@ -1,69 +1,67 @@
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.awt.ComposePanel
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import keyboard.KeyboardApp
-import kotlinx.coroutines.awaitCancellation
-import java.awt.AWTEvent
 import java.awt.Toolkit
-import java.awt.Window
-import javax.swing.JWindow
-import javax.swing.SwingUtilities
-import javax.swing.Timer
-import kotlin.system.exitProcess
+import com.sun.jna.*
+import com.sun.jna.win32.*
 
-//fun main() = application {
-//    val screenSize = Toolkit.getDefaultToolkit().screenSize
-//    val screenWidth = screenSize.width
-//    Window(
-//        onCloseRequest = ::exitApplication,
-//        state = rememberWindowState(
-//            size = DpSize((screenWidth - 50).dp, 300.dp),
-////            position = WindowPosition(1267.dp, 260.dp) // 화면 상단 좌측 고정
-//        ),
-//
-//        alwaysOnTop = true,
-//        undecorated = true,
-//        transparent = true,
-//        visible = true,
-//        focusable = false
-//    ) {
-//        LaunchedEffect(Unit) {
-//            window.type = Window.Type.UTILITY
-//            window.focusableWindowState = false
-//            println("test: ${window.isFocusableWindow}")
-//        }
-//        KeyboardApp()
-//    }
-//}
-fun main() {
+fun main() = application {
     val screenSize = Toolkit.getDefaultToolkit().screenSize
     val screenWidth = screenSize.width
-    SwingUtilities.invokeLater {
-        val panel = ComposePanel().apply {
-            setContent { KeyboardApp() }
-            isFocusable = false
-            isRequestFocusEnabled = false
-        }
+    Window(
+        onCloseRequest = ::exitApplication,
+        state = rememberWindowState(
+            size = DpSize((screenWidth - 50).dp, 300.dp),
+//            position = WindowPosition(1267.dp, 260.dp) // 화면 상단 좌측 고정
+        ),
 
-        val window = JWindow().apply {
-            type = Window.Type.UTILITY
-            isFocusable = false
-            focusableWindowState = false
-            isAutoRequestFocus = false
-            rootPane.isFocusable = false
-            isAlwaysOnTop = true
-            setSize(screenSize.width - 50, 300) // 크기 설정
-            setLocation(25, screenSize.height - 320) // 화면 하단 위치
-            contentPane.add(panel)
+        alwaysOnTop = true,
+        undecorated = true,
+        transparent = true,
+        visible = true,
+        focusable = false
+    ) {
+        LaunchedEffect(Unit) {
+            window.focusableWindowState = false
+            println("test: ${window.isFocusableWindow}")
         }
+        KeyboardApp()
+    }
+}
+// --- Win32 native 인터페이스 ---
+interface User32 : StdCallLibrary {
+    companion object {
+        val INSTANCE: User32 = Native.load("user32", User32::class.java)
+        const val SWP_NOMOVE = 0x0001
+        const val SWP_NOSIZE = 0x0002
+        const val SWP_NOZORDER = 0x0004
+        const val SWP_FRAMECHANGED = 0x0020
+    }
 
-        window.isVisible = true
-    }
-    while (true) {
-        Thread.sleep(1000)
-    }
+    fun GetWindowLong(hWnd: HWND, nIndex: Int): Int
+    fun SetWindowLong(hWnd: HWND, nIndex: Int, dwNewLong: Int): Int
+    fun SetWindowPos(hWnd: HWND, hWndInsertAfter: HWND?, X: Int, Y: Int, cx: Int, cy: Int, uFlags: Int): Boolean
+}
+class HWND(p: Pointer) : WinNT.HANDLE(p)
+fun applyNoActivateStyle(window: java.awt.Window) {
+    val hwnd = HWND(Native.getComponentPointer(window))
+
+    val user32 = User32.INSTANCE
+    val GWL_EXSTYLE = -20
+    val WS_EX_NOACTIVATE = 0x08000000
+    val WS_EX_TOOLWINDOW = 0x00000080
+    val WS_EX_TOPMOST = 0x00000008
+
+    val currentStyle = user32.GetWindowLong(hwnd, GWL_EXSTYLE)
+    val newStyle = currentStyle or WS_EX_NOACTIVATE or WS_EX_TOOLWINDOW or WS_EX_TOPMOST
+
+    user32.SetWindowLong(hwnd, GWL_EXSTYLE, newStyle)
+    user32.SetWindowPos(
+        hwnd, null, 0, 0, 0, 0,
+        User32.SWP_NOMOVE or User32.SWP_NOSIZE or User32.SWP_NOZORDER or User32.SWP_FRAMECHANGED
+    )
 }
