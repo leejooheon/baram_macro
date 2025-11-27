@@ -24,13 +24,15 @@ fun KeyboardButton(
     modifier: Modifier = Modifier,
 ) {
     var isPressed by remember { mutableStateOf(false) }
-
+    LaunchedEffect(isPressed) {
+        println("isPressed: $isPressed")
+    }
     Box(
         modifier = modifier
-            .size(128.dp)
+            .size(192.dp)
             .shadow(8.dp, shape = RoundedCornerShape(12.dp), clip = false)
             .background(
-                color = if (isPressed) Color(0xFFDDDDDD) else Color.White,
+                color = if (isPressed) Color(0xFFDDDDDD).copy(alpha = 0.5f) else Color.White.copy(alpha = 0.5f),
                 shape = RoundedCornerShape(12.dp)
             )
             .pointerInput(Unit) {

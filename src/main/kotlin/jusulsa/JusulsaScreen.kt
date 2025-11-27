@@ -26,7 +26,7 @@ internal fun JusulsaScreen(
         ) {
             item {
                 Text(
-                    text = "HellFire: ${uiState.count}",
+                    text = "${uiState.count}",
                     style = MaterialTheme.typography.h3,
                     color = Color.White
                 )

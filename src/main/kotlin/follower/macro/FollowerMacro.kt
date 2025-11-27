@@ -82,7 +82,7 @@ object FollowerMacro {
             NativeKeyEvent.VC_F3 -> {
                 healJob?.cancel()
                 healJob = scope.launch {
-                    macroDetailAction.honmasul()
+                    macroDetailAction.jeoju()
                 }
             }
             NativeKeyEvent.VC_F4 -> macroDetailAction.invincible()
@@ -126,7 +126,7 @@ object FollowerMacro {
                     }
                     if(invokeHonmasul) {
                         invokeHonmasul = false
-                        macroDetailAction.honmasul(1.seconds)
+                        macroDetailAction.jeoju(1.seconds)
                     }
                     macroDetailAction.heal(5)
                     if(counter++ > maxCount) {

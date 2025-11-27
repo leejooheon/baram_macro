@@ -38,7 +38,7 @@ data class JusulsaUiState(
             count = 0,
             addOnState = State.default.copy(
                 type = JusulsaType.AddOn,
-                rectangle = Rectangle(1267, 60, 170, 60)
+                rectangle = Rectangle(1267, 60, 170, 120)
             ),
             resultState = State.default.copy(
                 type = JusulsaType.Result,

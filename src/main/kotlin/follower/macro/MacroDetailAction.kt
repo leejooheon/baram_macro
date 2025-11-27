@@ -9,41 +9,44 @@ import kotlinx.coroutines.*
 import java.awt.event.KeyEvent
 import kotlin.random.Random
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 class MacroDetailAction {
-    suspend fun loop(keyEvent: Int) = withContext(Dispatchers.IO) {
-//        escape()
-        try {
-            while (isActive) {
-                Keyboard.pressAndRelease(keyEvent)
-                Keyboard.pressAndRelease(KeyEvent.VK_UP)
-                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
-                delay(20)
-            }
-        } catch (e: Exception) {
-            delay(60)
-            Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
-            delay(60)
-            Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+    companion object {
+        const val HELLFIRE = KeyEvent.VK_1
+        const val GONGJEUNG = KeyEvent.VK_2
+        const val MABEE = KeyEvent.VK_3
+        const val HWALRYUCK = KeyEvent.VK_4
+        const val CHUM1 = KeyEvent.VK_5
+        const val JULMANG = KeyEvent.VK_6
+        const val JUNGDOK = KeyEvent.VK_7
+        const val JEOJU = KeyEvent.VK_8
+        const val HEAL = KeyEvent.VK_9
+        const val JIPOK = KeyEvent.VK_0
+    }
+    suspend fun test() = withContext(Dispatchers.IO){
+        while (isActive) {
+            val key = listOf(
+                KeyEvent.VK_UP,
+                KeyEvent.VK_LEFT,
+                KeyEvent.VK_DOWN,
+                KeyEvent.VK_RIGHT
+            ).random()
+            Keyboard.pressAndRelease(key)
+            delay(15.seconds)
         }
     }
-    suspend fun chumchum() {
 
-        Keyboard.pressAndRelease(KeyEvent.VK_TAB)
-        delay(60)
-        Keyboard.pressAndRelease(KeyEvent.VK_TAB)
-        delay(60)
-
-    }
     suspend fun mabeAroundMe() {
+
         listOf(
             KeyEvent.VK_UP,
             KeyEvent.VK_LEFT,
             KeyEvent.VK_DOWN,
             KeyEvent.VK_RIGHT
         ).forEach {
-            val duration = 20L
-            Keyboard.pressAndRelease(KeyEvent.VK_8)
+            val duration = 30L
+            Keyboard.pressAndRelease(MABEE)
             delay(duration)
             Keyboard.pressAndRelease(KeyEvent.VK_HOME)
             delay(duration)
@@ -53,24 +56,48 @@ class MacroDetailAction {
             delay(duration)
         }
     }
-    suspend fun honmasul() = withContext(Dispatchers.IO) {
-        val duration = 33L
-//        escape()
+
+    suspend fun mabee() = withContext(Dispatchers.IO) {
         try {
             while (isActive) {
-                Keyboard.pressAndRelease(KeyEvent.VK_8)
-                Keyboard.pressAndRelease(KeyEvent.VK_UP)
-                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
-                delay(120)
-//                Keyboard.pressAndRelease(KeyEvent.VK_7)
-//                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
-//                delay(125)
+                Keyboard.pressAndRelease(MABEE, 10)
+                Keyboard.pressAndRelease(KeyEvent.VK_UP, 10)
+                Keyboard.pressAndRelease(KeyEvent.VK_ENTER, 20)
+                Keyboard.pressAndRelease(JEOJU, 10)
+                Keyboard.pressAndRelease(KeyEvent.VK_ENTER, 10)
+                delay(20)
             }
         } catch (e: Exception) {
             Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
         }
     }
+    suspend fun jeoju() = withContext(Dispatchers.IO) {
+        try {
+            while (isActive) {
+                Keyboard.pressAndRelease(JEOJU)
+                Keyboard.pressAndRelease(KeyEvent.VK_UP)
+                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+                delay(80)
+            }
+        } catch (e: Exception) {
+            Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+        }
+    }
+
     suspend fun julmang() = withContext(Dispatchers.IO) {
+        try {
+            while (isActive) {
+                Keyboard.pressAndRelease(JULMANG)
+                Keyboard.pressAndRelease(KeyEvent.VK_UP)
+                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+                delay(80)
+            }
+        } catch (e: Exception) {
+            Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+        }
+    }
+
+    suspend fun jungdok() = withContext(Dispatchers.IO) {
         val directions = listOf(
             KeyEvent.VK_UP,
             KeyEvent.VK_LEFT,
@@ -85,12 +112,12 @@ class MacroDetailAction {
                     directionIndex = (directionIndex + 1) % directions.size
                 }
                 if (cnt % 16 > 8) {
-                    Keyboard.pressAndRelease(KeyEvent.VK_3)
+                    Keyboard.pressAndRelease(HEAL)
                     Keyboard.pressAndRelease(KeyEvent.VK_HOME)
                     Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
                     delay(300)
                 } else {
-                    Keyboard.pressAndRelease(KeyEvent.VK_7)
+                    Keyboard.pressAndRelease(JUNGDOK)
                     Keyboard.pressAndRelease(directions[directionIndex])
                     Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
                     delay(120)
@@ -102,11 +129,11 @@ class MacroDetailAction {
         }
     }
 
-    suspend fun honmasul(duration: Duration) = withContext(Dispatchers.IO) {
+    suspend fun jeoju(duration: Duration) = withContext(Dispatchers.IO) {
         withTimeout(duration) {
             escape()
             while (isActive) {
-                Keyboard.pressAndRelease(KeyEvent.VK_5)
+                Keyboard.pressAndRelease(JEOJU)
                 Keyboard.pressAndRelease(KeyEvent.VK_UP)
                 Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
             }
@@ -120,12 +147,6 @@ class MacroDetailAction {
         Keyboard.pressAndRelease(KeyEvent.VK_8)
         eat()
         gongJeung()
-    }
-
-    suspend fun tryGongJeung() {
-        Keyboard.pressAndRelease(KeyEvent.VK_2)
-//        healMe()
-//        tabTab()
     }
 
     suspend fun bomu() {
@@ -166,30 +187,6 @@ class MacroDetailAction {
         }
     }
 
-    suspend fun test() {
-//        Keyboard.pressAndRelease(KeyEvent.VK_2)
-//        delay(20)
-//        Keyboard.pressAndRelease(KeyEvent.VK_SPACE)
-//        delay(20)
-//        Keyboard.pressAndRelease(KeyEvent.VK_3)
-//        delay(20)
-//        Keyboard.pressAndRelease(KeyEvent.VK_1)
-
-        Keyboard.pressAndRelease(KeyEvent.VK_2)
-        delay(20)
-        Keyboard.pressAndRelease(KeyEvent.VK_3)
-        delay(20)
-        Keyboard.pressAndRelease(KeyEvent.VK_SPACE)
-        delay(20)
-        Keyboard.pressAndRelease(KeyEvent.VK_3)
-        delay(450)
-        Keyboard.pressAndRelease(KeyEvent.VK_SPACE)
-    }
-    suspend fun test2() {
-
-        Keyboard.pressAndRelease(KeyEvent.VK_TAB)
-    }
-
     suspend fun healMe() {
         escape()
         focusMe(
@@ -211,27 +208,30 @@ class MacroDetailAction {
 
     suspend fun tabTab() {
 //        escape()
+        val duration = 0L
         Keyboard.pressAndRelease(KeyEvent.VK_TAB)
-        delay(30)
+        delay(duration)
         Keyboard.pressAndRelease(KeyEvent.VK_HOME)
-        delay(30)
+        delay(duration)
         Keyboard.pressAndRelease(KeyEvent.VK_TAB)
-        delay(30)
+        delay(duration)
     }
     suspend fun bomuMe() {
-        Keyboard.pressAndRelease(KeyEvent.VK_9)
-        delay(60)
-        Keyboard.pressAndRelease(KeyEvent.VK_HOME)
-        delay(60)
-        Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
-        delay(60)
+        val duration = 30L
         Keyboard.press(KeyEvent.VK_SHIFT)
-        delay(60)
+        delay(duration)
         Keyboard.pressAndRelease(KeyEvent.VK_Z)
         Keyboard.release(KeyEvent.VK_SHIFT)
-        delay(60)
+        delay(duration)
+        Keyboard.pressAndRelease(KeyEvent.VK_K)
+        Keyboard.pressAndRelease(KeyEvent.VK_HOME)
+        Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+        Keyboard.press(KeyEvent.VK_SHIFT)
+        delay(duration)
+        Keyboard.pressAndRelease(KeyEvent.VK_Z)
+        Keyboard.release(KeyEvent.VK_SHIFT)
+        delay(duration)
         Keyboard.pressAndRelease(KeyEvent.VK_V)
-        delay(60)
         Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
     }
     suspend fun heal(time: Int) {

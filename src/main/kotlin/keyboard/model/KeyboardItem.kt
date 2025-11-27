@@ -27,11 +27,27 @@ enum class KeyboardItem(
     ),
     PageUp(
         event = KeyEvent.VK_PAGE_UP,
-        icon = Icons.Default.PlayArrow,
+        icon = Icons.Default.Check,
     ),
     PageDown(
         event = KeyEvent.VK_PAGE_DOWN,
-        icon = Icons.Default.ArrowDropDown,
+        icon = Icons.Default.Clear,
+    ),
+    MABEE(
+        event = KeyEvent.VK_F1,
+        icon = Icons.Default.Menu,
+    ),
+    HEAL(
+        event = KeyEvent.VK_F2,
+        icon = Icons.Default.MoreVert,
+    ),
+    JUPGI(
+        event = KeyEvent.VK_SLASH,
+        icon = Icons.Default.Add,
+    ),
+    ENTER(
+        event = KeyEvent.VK_ENTER,
+        icon = Icons.Default.Add,
     ),
     ;
 }

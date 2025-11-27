@@ -3,10 +3,14 @@ package jusulsa
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
 import common.base.BaseViewModel
 import common.model.UiEvent
-import common.model.UiState.Type
 import common.robot.DisplayProvider
 import common.robot.Keyboard
 import follower.macro.MacroDetailAction
+import follower.macro.MacroDetailAction.Companion.CHUM1
+import follower.macro.MacroDetailAction.Companion.GONGJEUNG
+import follower.macro.MacroDetailAction.Companion.HEAL
+import follower.macro.MacroDetailAction.Companion.HELLFIRE
+import follower.macro.MacroDetailAction.Companion.JEOJU
 import follower.model.MagicResultState
 import follower.ocr.TextDetecter
 import jusulsa.model.JusulsaUiState
@@ -16,7 +20,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import java.awt.Point
-import java.awt.Rectangle
 import java.awt.event.KeyEvent
 import java.awt.image.BufferedImage
 import java.util.concurrent.atomic.AtomicInteger
@@ -30,6 +33,7 @@ class JusulsaViewModel: BaseViewModel() {
     private val macroDetailAction = MacroDetailAction()
     private val kingHelper = KingHelper(scope)
     private val moveHelper = MoveHelper()
+    private var bomuTime = 0L
 
     private val _uiState = MutableStateFlow(JusulsaUiState.default)
     internal val uiState = _uiState.asStateFlow()
@@ -48,62 +52,67 @@ class JusulsaViewModel: BaseViewModel() {
         observeScreens()
     }
 
-
+    private var latestDirection: Int = KeyEvent.VK_LEFT
     fun dispatchKeyReleaseEvent(keyEvent: Int) = scope.launch {
-        println("dispatch:$keyEvent")
+//        println("dispatch:$keyEvent")
         when(keyEvent) {
+            NativeKeyEvent.VC_UP,
+            NativeKeyEvent.VC_LEFT,
+            NativeKeyEvent.VC_DOWN,
+            NativeKeyEvent.VC_RIGHT -> {
+                latestDirection = when(keyEvent) {
+                    NativeKeyEvent.VC_UP -> KeyEvent.VK_UP
+                    NativeKeyEvent.VC_LEFT -> KeyEvent.VK_LEFT
+                    NativeKeyEvent.VC_DOWN -> KeyEvent.VK_DOWN
+                    NativeKeyEvent.VC_RIGHT -> KeyEvent.VK_RIGHT
+                    else -> KeyEvent.VK_LEFT
+                }
+            }
             NativeKeyEvent.VC_PAGE_DOWN -> {
                 job?.cancel()
                 job2?.cancel()
                 kingHelper.cancel()
                 Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+                Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
             }
             NativeKeyEvent.VC_F1 -> {
                 job?.cancel()
                 job = scope.launch(Dispatchers.IO) {
-                    macroDetailAction.bomuMe()
-                    launch {
-                        while (isActive) {
-                            Keyboard.pressAndRelease(KeyEvent.VK_A)
-                            delay(140)
-                        }
-                    }
-                    launch {
-                        while (isActive) {
-                            withTimeoutOrNull(5.seconds) {
-                                macroDetailAction.honmasul()
-                            }
-                            withTimeoutOrNull(30.seconds) {
-                                macroDetailAction.julmang()
-                            }
-                            delay(60)
-                            Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
-                        }
-                    }
-                    launch {
-                        while (isActive) {
-                            Keyboard.pressAndRelease(KeyEvent.VK_5)
-                            delay(400)
-                            Keyboard.pressAndRelease(KeyEvent.VK_6)
-                            delay(520)
-                        }
-                    }
+                    heal()
+//                    chumchum()
                 }
             }
-
+            NativeKeyEvent.VC_F4 -> {
+                job?.cancel()
+                job = scope.launch(Dispatchers.IO) {
+                    chumchum()
+                    macroDetailAction.test()
+                }
+            }
             NativeKeyEvent.VC_F2 -> {
                 job?.cancel()
                 job = scope.launch(Dispatchers.IO) {
-                    macroDetailAction.tabTab()
-                    delay(65)
-                    while (isActive) {
-                        Keyboard.pressAndRelease(KeyEvent.VK_3)
-                        delay(333)
+                    try {
+                        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+                        delay(65)
+                        macroDetailAction.mabee()
+                    } catch (e: Exception) {
+                        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+                        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
                     }
                 }
             }
 
             NativeKeyEvent.VC_PAGE_UP -> {
+//                job?.cancel()
+//                job = scope.launch(Dispatchers.IO) {
+//                    macroDetailAction.tabTab()
+//                    delay(65)
+//                    while (isActive) {
+//                        Keyboard.pressAndRelease(HEAL)
+//                        delay(320)
+//                    }
+//                }
                 cnt.getAndIncrement()
                 updateState()
                 if (job?.isActive == true) return@launch
@@ -125,16 +134,24 @@ class JusulsaViewModel: BaseViewModel() {
 
             NativeKeyEvent.VC_KANJI -> {
                 job?.cancel()
-                job = scope.launch(Dispatchers.IO) {
-                    while (isActive) {
-                        withTimeoutOrNull(1.seconds) {
-                            macroDetailAction.honmasul()
-                        }
+                job = scope.launch {
+                    try {
+                        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+                        delay(65)
+                        macroDetailAction.julmang()
+                    } catch (e: Exception) {
+                        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
                     }
                 }
             }
             NativeKeyEvent.VC_BACKQUOTE -> {
-                Keyboard.pressAndRelease(KeyEvent.VK_0)
+                val duration = 20L
+                Keyboard.press(KeyEvent.VK_SHIFT)
+                delay(duration)
+                Keyboard.pressAndRelease(KeyEvent.VK_Z)
+                delay(duration)
+                Keyboard.pressAndRelease(KeyEvent.VK_C)
+                Keyboard.release(KeyEvent.VK_SHIFT)
             }
             NativeKeyEvent.VC_SLASH -> {
                 Keyboard.press(KeyEvent.VK_SHIFT)
@@ -146,50 +163,20 @@ class JusulsaViewModel: BaseViewModel() {
             3638 -> {
                 job?.cancel()
                 job = scope.launch(Dispatchers.IO) {
-                    delay(20)
                     Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
-                    delay(60)
-                    Keyboard.pressAndRelease(KeyEvent.VK_4)
-                    delay(60)
-                    Keyboard.mouseClick()
-                    Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
-
                     delay(20)
                     Keyboard.pressAndRelease(KeyEvent.VK_U)
                     delay(20)
                     Keyboard.pressAndRelease(KeyEvent.VK_U)
                     tryGongjeung()
                     hellfire()
-                    }
-            }
-            null -> {
-
+                }
             }
         }
     }
 
     fun dispatchMouse(point: Point, button: Int) {
-        if(button == 2) {
-            job?.cancel()
-            job = scope.launch(Dispatchers.IO) {
-                delay(20)
-                Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
-                delay(60)
-                Keyboard.pressAndRelease(KeyEvent.VK_4)
-                delay(60)
-                Keyboard.mouseClick()
-                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
 
-                delay(20)
-                Keyboard.pressAndRelease(KeyEvent.VK_U)
-                delay(20)
-                Keyboard.pressAndRelease(KeyEvent.VK_U)
-                tryGongjeung()
-//                hellfire()
-                Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
-                dispatchKeyReleaseEvent(NativeKeyEvent.VC_F1)
-            }
-        }
     }
 
     fun dispatchKeyPressEvent(keyEvent: Int) = scope.launch {
@@ -216,47 +203,124 @@ class JusulsaViewModel: BaseViewModel() {
     }
 
     private suspend fun hellfire() {
-        Keyboard.pressAndRelease(KeyEvent.VK_1)
-        Keyboard.pressAndRelease(KeyEvent.VK_LEFT)
+        Keyboard.pressAndRelease(JEOJU)
+        Keyboard.pressAndRelease(KeyEvent.VK_HOME, 50)
+        Keyboard.pressAndRelease(latestDirection)
+        Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+        Keyboard.pressAndRelease(HELLFIRE)
         Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
         val startTime = System.currentTimeMillis()
         if (checkDelay()) {
             tryGongjeung()
-            macroDetailAction.tabTab()
             val consumedTime = System.currentTimeMillis() - startTime
+            macroDetailAction.tabTab()
             withTimeoutOrNull(7.seconds.inWholeMilliseconds - consumedTime) {
-                while (isActive) {
-                    Keyboard.pressAndRelease(KeyEvent.VK_3)
-                    delay(300)
-                }
+                heal()
             }
             delay(65)
             Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
         }
     }
+    private suspend fun chumchum() = withContext(Dispatchers.IO) {
+//        launch {
+//            while (isActive) {
+//                Keyboard.pressAndRelease(KeyEvent.VK_A)
+//                delay(140)
+//            }
+//        }
 
-    private suspend fun checkDelay(): Boolean = withContext(Dispatchers.IO) {
-        delay(250)
+        macroDetailAction.bomuMe()
+//        launch {
+//            while (isActive) {
+//                withTimeoutOrNull(5.seconds) {
+//                    macroDetailAction.jeoju()
+//                }
+//                withTimeoutOrNull(30.seconds) {
+//                    macroDetailAction.jungdok()
+//                }
+//                delay(60)
+//                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+//            }
+//        }
+//        launch {
+//            while (isActive) {
+//                val duration = 20L
+//                Keyboard.press(KeyEvent.VK_SHIFT)
+//                delay(duration)
+//                Keyboard.pressAndRelease(KeyEvent.VK_Z)
+//                Keyboard.release(KeyEvent.VK_SHIFT)
+//                delay(duration)
+//                Keyboard.pressAndRelease(KeyEvent.VK_L)
+//                delay(400)
+//
+//                Keyboard.press(KeyEvent.VK_SHIFT)
+//                delay(duration)
+//                Keyboard.pressAndRelease(KeyEvent.VK_Z)
+//                Keyboard.release(KeyEvent.VK_SHIFT)
+//                delay(duration)
+//                Keyboard.pressAndRelease(KeyEvent.VK_M)
+//                delay(400)
+//        }
+//    }
+}
+
+private suspend fun checkDelay(): Boolean = withContext(Dispatchers.IO) {
+    delay(200)
+    repeat(2) {
         val screen = DisplayProvider.capture2(uiState.value.addOnState.rectangle)
         val text = TextDetecter.detectString(screen)
         updateScreen(uiState.value.addOnState, screen, text)
-        return@withContext text.contains("헬")
+        if (text.contains("헬")) return@withContext true
     }
+    return@withContext false
+}
 
-    private suspend fun tryGongjeung() = withContext(Dispatchers.IO) {
+private suspend fun tryGongjeung() = withContext(Dispatchers.IO) {
+    while (isActive) {
+        val startTime = System.currentTimeMillis()
+        Keyboard.pressAndRelease(GONGJEUNG)
+        delay(200)
+        val screen = DisplayProvider.capture2(uiState.value.resultState.rectangle)
+
+        val healAsync = async {
+            Keyboard.pressAndRelease(HEAL)
+            Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+        }
+        val textAsync =  async {
+            TextDetecter.detectString(screen)
+        }
+        val text = listOf(textAsync, healAsync).awaitAll().firstOrNull() as? String ?: return@withContext
+
+        updateScreen(uiState.value.resultState, screen, text)
+        when {
+            text.contains("곰력") -> break
+            text.contains(MagicResultState.GONGJEUNG.tag) -> break
+        }
+        val duration = (startTime + 500L) - System.currentTimeMillis()
+        println("duration: $duration: $text")
+        if(duration > 0) delay(duration)
+    }
+}
+
+    private suspend fun heal() = withContext(Dispatchers.IO) {
+        repeat(3) {
+            Keyboard.pressAndRelease(HEAL)
+            if(it == 0) Keyboard.pressAndRelease(KeyEvent.VK_HOME)
+            Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+            delay(40)
+        }
+        if(System.currentTimeMillis() > bomuTime + 150.seconds.inWholeMilliseconds) {
+            macroDetailAction.bomuMe()
+            bomuTime = System.currentTimeMillis()
+        }
+        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+        macroDetailAction.tabTab()
+        delay(50)
         while (isActive) {
-            Keyboard.pressAndRelease(KeyEvent.VK_2)
-            delay(150)
-            val screen = DisplayProvider.capture2(uiState.value.resultState.rectangle)
-            val text = TextDetecter.detectString(screen)
-
-            updateScreen(uiState.value.resultState, screen, text)
-            when {
-                text.contains(MagicResultState.GONGJEUNG.tag) -> break
-            }
+            Keyboard.pressAndRelease(HEAL)
+            delay(70)
         }
     }
-
 
     private suspend fun updateFromLocal2(
         state: JusulsaUiState.State,
