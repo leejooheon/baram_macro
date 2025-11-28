@@ -10,15 +10,12 @@ import common.event.ObserveMouseEvents
 
 @Composable
 fun JusulsaApp() {
-    val viewModel = remember { JusulsaViewModel() }
+    val viewModel = remember { JusulsaViewModel2() }
     val uiState by viewModel.uiState.collectAsState()
 
     ObserveKeyEvents(
         onReleased = viewModel::dispatchKeyReleaseEvent,
         onPressed = viewModel::dispatchKeyPressEvent
-    )
-    ObserveMouseEvents(
-        onClicked = viewModel::dispatchMouse
     )
 
     MaterialTheme {
