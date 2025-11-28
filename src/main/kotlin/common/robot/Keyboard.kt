@@ -13,14 +13,15 @@ object Keyboard {
         }
     }
 
-    suspend fun pressAndRelease(keyEvent: Int, delay: Long = 10) = withContext(Dispatchers.IO) {
+    suspend fun pressAndRelease(keyEvent: Int, delay: Long = 10) {
         try {
             press(keyEvent)
             delay(delay)
-            release(keyEvent)
-            delay(delay)
-        } catch (e: CancellationException) {
-            release(keyEvent)
+        } finally {
+            withContext(NonCancellable) {
+                release(keyEvent)
+                delay(delay)
+            }
         }
     }
     fun press(keyEvent: Int) {

@@ -26,7 +26,7 @@ class JusulsaViewModel2 : BaseViewModel() {
             }
         }
     }
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined + exceptionHandler)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + exceptionHandler)
     private val macroDetailAction = MacroDetailAction2()
     private var actionJob: Job? = null
     private val _uiState = MutableStateFlow(JusulsaUiState.default)

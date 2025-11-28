@@ -1,9 +1,14 @@
 package follower.macro
 
 import common.robot.Keyboard
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.awt.event.KeyEvent
 import kotlin.time.Duration.Companion.seconds
 
@@ -28,8 +33,13 @@ class MacroDetailAction2 {
     }
 
     suspend fun heal() {
-        healMe()
-        heal(3)
+        focusMe(
+            keyEvent = HEAL,
+            action = {
+                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+                heal(2)
+            }
+        )
 
         if(System.currentTimeMillis() > bomuTime + 160.seconds.inWholeMilliseconds) {
             bomu(false)
@@ -69,13 +79,20 @@ class MacroDetailAction2 {
         while (true) {
             currentCoroutineContext().ensureActive()
             Keyboard.pressAndRelease(JEOJU)
+//            Keyboard.pressAndRelease(latestDirection)
+//            Keyboard.pressAndRelease(KeyEvent.VK_ENTER, DELAY)
+        }
+    }
+    suspend fun jeoju2() {
+        while (true) {
+            currentCoroutineContext().ensureActive()
+            Keyboard.pressAndRelease(JEOJU)
             Keyboard.pressAndRelease(latestDirection)
-            Keyboard.pressAndRelease(KeyEvent.VK_ENTER, DELAY)
+            Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
         }
     }
 
     suspend fun mabee() {
-        healMe()
         while (true) {
             currentCoroutineContext().ensureActive()
             Keyboard.pressAndRelease(MABEE)
@@ -85,10 +102,18 @@ class MacroDetailAction2 {
     }
 
     suspend fun julmang() {
-        tabTab()
         while (true) {
             currentCoroutineContext().ensureActive()
             Keyboard.pressAndRelease(JULMANG)
+            Keyboard.pressAndRelease(latestDirection)
+            Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+        }
+    }
+
+    suspend fun jungDok() {
+        while (true) {
+            currentCoroutineContext().ensureActive()
+            Keyboard.pressAndRelease(JUNGDOK)
             Keyboard.pressAndRelease(latestDirection)
             Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
         }
@@ -112,6 +137,27 @@ class MacroDetailAction2 {
 
     suspend fun hondon() {
         executeAlphabetMagic(Triple(HONDON, false, false))
+    }
+
+    suspend fun chumChum() = withContext(Dispatchers.Default) {
+        launch {
+            while (isActive) {
+                withTimeoutOrNull(5.seconds) {
+                    jeoju2()
+                }
+                withTimeoutOrNull(30.seconds) {
+                    jungDok()
+                }
+            }
+        }
+        launch {
+            while (isActive) {
+                executeAlphabetMagic(Triple(CHUM1, false, false))
+                delay(400)
+                executeAlphabetMagic(Triple(CHUM2, false, false))
+                delay(400)
+            }
+        }
     }
 
     private suspend fun bomu(focusMe: Boolean) {
@@ -163,8 +209,8 @@ class MacroDetailAction2 {
             Keyboard.pressAndRelease(KeyEvent.VK_Z)
             Keyboard.release(KeyEvent.VK_SHIFT)
             delay(DELAY)
-
             Keyboard.pressAndRelease(magic)
+
             if(forMe) {
                 delay(DELAY)
                 Keyboard.pressAndRelease(KeyEvent.VK_HOME)
@@ -190,6 +236,7 @@ class MacroDetailAction2 {
         private const val HELLFIRE = KeyEvent.VK_0
         private const val MABEE = KeyEvent.VK_6
         private const val JULMANG = KeyEvent.VK_7
+        private const val JUNGDOK = KeyEvent.VK_7
         private const val JEOJU = KeyEvent.VK_8
         private const val HEAL = KeyEvent.VK_9
         private const val SAMME = KeyEvent.VK_K
@@ -198,5 +245,8 @@ class MacroDetailAction2 {
         private const val MUJANG = KeyEvent.VK_N
         private const val MAGII = KeyEvent.VK_O
         private const val HONDON = KeyEvent.VK_P
+        private const val CHUM1 = KeyEvent.VK_Q
+        private const val CHUM2 = KeyEvent.VK_R
+        // A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z
     }
 }
