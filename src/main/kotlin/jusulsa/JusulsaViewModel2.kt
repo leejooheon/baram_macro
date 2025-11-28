@@ -58,7 +58,7 @@ class JusulsaViewModel2 : BaseViewModel() {
             NativeKeyEvent.VC_UP,
             NativeKeyEvent.VC_LEFT,
             NativeKeyEvent.VC_DOWN,
-            NativeKeyEvent.VC_RIGHT -> macroDetailAction.changeDirection(keyEvent)
+            NativeKeyEvent.VC_RIGHT -> macroDetailAction.onDirectionChanged(keyEvent)
 
             NativeKeyEvent.VC_ESCAPE -> actionJob?.cancel()
         }

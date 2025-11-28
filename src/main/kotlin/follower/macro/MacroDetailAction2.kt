@@ -11,17 +11,20 @@ class MacroDetailAction2 {
     private var bomuTime = 0L
     private var latestDirection: Int = KeyEvent.VK_LEFT
 
-    fun changeDirection(event: Int) {
+    fun onDirectionChanged(event: Int) {
         latestDirection = event
     }
 
     suspend fun hellfire() {
-        Keyboard.pressAndRelease(JEOJU)
-        Keyboard.pressAndRelease(KeyEvent.VK_HOME, DELAY)
-        Keyboard.pressAndRelease(latestDirection)
-        Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
-        Keyboard.pressAndRelease(HELLFIRE)
-        Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+        focusMe(
+            keyEvent = JEOJU,
+            action = {
+                Keyboard.pressAndRelease(latestDirection)
+                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+                Keyboard.pressAndRelease(HELLFIRE)
+                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+            }
+        )
     }
 
     suspend fun heal() {
@@ -42,21 +45,22 @@ class MacroDetailAction2 {
     }
 
     suspend fun mabeAroundMe() {
+        val duration = 20L
         listOf(
             KeyEvent.VK_UP,
             KeyEvent.VK_LEFT,
             KeyEvent.VK_DOWN,
             KeyEvent.VK_RIGHT
         ).forEach {
-            val duration = 20L
-            Keyboard.pressAndRelease(MABEE)
-            delay(duration)
-            Keyboard.pressAndRelease(KeyEvent.VK_HOME)
-            delay(duration)
-            Keyboard.pressAndRelease(it)
-            delay(duration)
-            Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
-            delay(duration)
+            focusMe(
+                keyEvent = MABEE,
+                action = {
+                    Keyboard.pressAndRelease(it)
+                    delay(duration)
+                    Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+                    delay(duration)
+                }
+            )
         }
     }
 
@@ -133,26 +137,19 @@ class MacroDetailAction2 {
         )
     }
 
-    private suspend fun escape() {
-        Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
-        delay(66)
-    }
-
     suspend fun tabTab() {
-        Keyboard.pressAndRelease(KeyEvent.VK_TAB, 30)
-        Keyboard.pressAndRelease(KeyEvent.VK_HOME, 30)
-        Keyboard.pressAndRelease(KeyEvent.VK_TAB, 30)
+        val duration = 30L
+        Keyboard.pressAndRelease(KeyEvent.VK_TAB, duration)
+        Keyboard.pressAndRelease(KeyEvent.VK_HOME, duration)
+        Keyboard.pressAndRelease(KeyEvent.VK_TAB, duration)
     }
 
     private suspend inline fun focusMe(
         keyEvent: Int,
         crossinline action: suspend () -> Unit,
     ) {
-        escape()
         Keyboard.pressAndRelease(keyEvent)
-        delay(20)
         Keyboard.pressAndRelease(KeyEvent.VK_HOME)
-        delay(20)
         action.invoke()
     }
 
