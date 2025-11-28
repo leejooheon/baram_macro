@@ -49,7 +49,7 @@ class MacroDetailAction2 {
             KeyEvent.VK_RIGHT
         ).forEach {
             val duration = 20L
-            Keyboard.pressAndRelease(KeyEvent.VK_8)
+            Keyboard.pressAndRelease(MABEE)
             delay(duration)
             Keyboard.pressAndRelease(KeyEvent.VK_HOME)
             delay(duration)
@@ -62,52 +62,52 @@ class MacroDetailAction2 {
 
     suspend fun jeoju() {
         tabTab()
-        var count = 0
         while (true) {
             currentCoroutineContext().ensureActive()
             Keyboard.pressAndRelease(JEOJU)
             Keyboard.pressAndRelease(latestDirection)
             Keyboard.pressAndRelease(KeyEvent.VK_ENTER, DELAY)
-            if (++count % 8 == 0) delay(1.seconds)
         }
     }
 
     suspend fun mabee() {
         healMe()
-        var count = 0
         while (true) {
             currentCoroutineContext().ensureActive()
             Keyboard.pressAndRelease(MABEE)
             Keyboard.pressAndRelease(latestDirection)
             Keyboard.pressAndRelease(KeyEvent.VK_ENTER, DELAY)
-            if (++count % 8 == 0) delay(1.seconds)
         }
     }
 
     suspend fun julmang() {
         tabTab()
-        var count = 0
         while (true) {
             currentCoroutineContext().ensureActive()
             Keyboard.pressAndRelease(JULMANG)
             Keyboard.pressAndRelease(latestDirection)
             Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
-            if (++count % 8 == 0) delay(1.seconds)
         }
     }
 
     suspend fun maagi() {
         executeAlphabetMagic(
-            Triple(KeyEvent.VK_B, false, false)
+            Triple(MAGII, false, false)
         )
     }
 
     suspend fun samme() {
-        Keyboard.pressAndRelease(SAMME) // 삼매진화
+        executeAlphabetMagic(
+            Triple(SAMME, false, false)
+        )
     }
 
     suspend fun gongjeung() {
         Keyboard.pressAndRelease(GONGJEUNG)
+    }
+
+    suspend fun hondon() {
+        executeAlphabetMagic(Triple(HONDON, false, false))
     }
 
     private suspend fun bomu(focusMe: Boolean) {
@@ -168,32 +168,38 @@ class MacroDetailAction2 {
             delay(DELAY)
 
             Keyboard.pressAndRelease(magic)
-            delay(DELAY)
-
             if(forMe) {
-                Keyboard.pressAndRelease(KeyEvent.VK_HOME)
                 delay(DELAY)
+                Keyboard.pressAndRelease(KeyEvent.VK_HOME)
             }
             
             if(enter) {
+                delay(DELAY)
                 Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
             }
         }
     }
 
     companion object {
+        // a(1), b(2), c(3) 비움,
+        // d(4): 활력,
+        // e(5): 공증,
+        // f(6): 마비,
+        // g(7): 절망,
+        // h(8): 저주,
+        // i(9): 기원,
+        // j(0): 헬파,
         private const val DELAY = 60L
-        const val HELLFIRE = KeyEvent.VK_1
-        const val GONGJEUNG = KeyEvent.VK_2
-        const val MABEE = KeyEvent.VK_3
-        const val HWALRYUCK = KeyEvent.VK_4
-        const val CHUM1 = KeyEvent.VK_5
-        const val JULMANG = KeyEvent.VK_6
-        const val JUNGDOK = KeyEvent.VK_7
-        const val JEOJU = KeyEvent.VK_8
-        const val HEAL = KeyEvent.VK_9
-        const val SAMME = KeyEvent.VK_0
-        private const val BOHO = KeyEvent.VK_G
-        private const val MUJANG = KeyEvent.VK_H
+        private const val HELLFIRE = KeyEvent.VK_0
+        private const val MABEE = KeyEvent.VK_6
+        private const val JULMANG = KeyEvent.VK_7
+        private const val JEOJU = KeyEvent.VK_8
+        private const val HEAL = KeyEvent.VK_9
+        private const val SAMME = KeyEvent.VK_K
+        private const val GONGJEUNG = KeyEvent.VK_5
+        private const val BOHO = KeyEvent.VK_M
+        private const val MUJANG = KeyEvent.VK_N
+        private const val MAGII = KeyEvent.VK_O
+        private const val HONDON = KeyEvent.VK_P
     }
 }

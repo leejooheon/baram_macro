@@ -5,7 +5,6 @@ import common.base.BaseViewModel
 import common.model.UiEvent
 import common.robot.DisplayProvider
 import common.robot.Keyboard
-import follower.macro.MacroDetailAction
 import follower.macro.MacroDetailAction2
 import follower.ocr.TextDetecter
 import jusulsa.model.JusulsaUiState
@@ -16,7 +15,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import java.awt.event.KeyEvent
 import java.awt.image.BufferedImage
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -39,27 +37,30 @@ class JusulsaViewModel2 : BaseViewModel() {
         observeScreens()
     }
 
-    override fun dispatch(event: UiEvent): Job {
-        TODO("Not yet implemented")
-    }
-    fun dispatchKeyPressEvent(keyEvent: Int) = scope.launch {}
-    fun dispatchKeyReleaseEvent(keyEvent: Int) = scope.launch {
+    fun dispatchKeyReleaseEvent(keyEvent: Int) {
         println("dispatch:$keyEvent")
+
         when(keyEvent) {
-            NativeKeyEvent.VC_PAGE_DOWN -> actionJob?.cancel()
             NativeKeyEvent.VC_PAGE_UP -> hellfire()
+            NativeKeyEvent.VC_PAGE_DOWN -> execute { macroDetailAction.mabeAroundMe() }
+
             NativeKeyEvent.VC_BACKQUOTE -> execute { macroDetailAction.samme() }
             NativeKeyEvent.VC_SLASH -> execute { macroDetailAction.mabeAroundMe() }
             NativeKeyEvent.VC_BACK_SLASH -> execute { macroDetailAction.maagi() }
             NativeKeyEvent.VC_KANJI -> execute { macroDetailAction.jeoju() }
-            NativeKeyEvent.VC_F1 -> execute { macroDetailAction.heal() } // heal
-            NativeKeyEvent.VC_F2 -> execute { macroDetailAction.mabee() }
-            NativeKeyEvent.VC_F3 -> execute { macroDetailAction.julmang() }
+
+            NativeKeyEvent.VC_1 -> execute { macroDetailAction.heal() }
+            NativeKeyEvent.VC_2 -> execute { macroDetailAction.mabee() }
+            NativeKeyEvent.VC_3 -> execute { macroDetailAction.julmang() }
+
+            NativeKeyEvent.VC_F1 -> execute { macroDetailAction.hondon() }
 
             NativeKeyEvent.VC_UP,
             NativeKeyEvent.VC_LEFT,
             NativeKeyEvent.VC_DOWN,
             NativeKeyEvent.VC_RIGHT -> macroDetailAction.changeDirection(keyEvent)
+
+            NativeKeyEvent.VC_ESCAPE -> actionJob?.cancel()
         }
     }
 
@@ -80,7 +81,7 @@ class JusulsaViewModel2 : BaseViewModel() {
     private suspend fun hellfireInternal() {
         macroDetailAction.hellfire()
         val startTime = System.currentTimeMillis()
-        if (checkDelay()) {
+        if (checkHellfireDelay()) {
             macroDetailAction.gongjeung()
             val consumedTime = System.currentTimeMillis() - startTime
             val healTime = 7.seconds.inWholeMilliseconds - consumedTime
@@ -107,7 +108,7 @@ class JusulsaViewModel2 : BaseViewModel() {
         }
     }
 
-    private suspend fun checkDelay(): Boolean {
+    private suspend fun checkHellfireDelay(): Boolean {
         delay(200)
         repeat(2) {
             val screen = DisplayProvider.capture2(uiState.value.addOnState.rectangle)
@@ -159,4 +160,7 @@ class JusulsaViewModel2 : BaseViewModel() {
         actionJob?.cancel()
         scope.launch { block() }
     }
+
+    override fun dispatch(event: UiEvent): Job { throw IllegalAccessException("not implementation") }
+    fun dispatchKeyPressEvent(keyEvent: Int) = scope.launch {}
 }
