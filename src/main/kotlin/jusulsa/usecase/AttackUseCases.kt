@@ -27,21 +27,31 @@ class ChumUseCase : MacroUseCase {
 }
 
 /**
- * 저주는 내 사방 4칸에만 건다. 매번 HOME으로 나를 잡고 방향키를 눌러 바로 옆 몹에 건다.
- * 칸마다 [REFRESH_MILLIS]마다 다시 걸고, 가장 오래된 칸부터 건다.
+ * 저주는 내 사방 4칸에만 건다. [REFRESH_MILLIS]마다 한 번, 4칸을 한 차례에 몰아서 건다.
+ * 칸마다 HOME으로 나를 잡고 방향키를 눌러 바로 옆 몹에 건다.
+ * 이동키나 한도 때문에 일부만 걸었으면 남은 칸만 다음 차례에 이어서 건다.
  */
 class CurseAroundUseCase(
     private val now: () -> Long = System::currentTimeMillis,
 ) : MacroUseCase {
     override val name = "저주(사방)"
-    private val lastAt = DIRECTIONS.associateWith { 0L }.toMutableMap()
+    private var roundStartedAt = 0L
+    private val pending = ArrayDeque<Int>()
 
-    override fun isReady(now: Long) =
-        SkillCaster.readyIn(Skill.JEOJU) == 0L && lastAt.values.any { now - it >= REFRESH_MILLIS }
+    override fun isReady(now: Long): Boolean {
+        if (pending.isEmpty() && now - roundStartedAt >= REFRESH_MILLIS) {
+            pending.addAll(DIRECTIONS)
+            roundStartedAt = now
+        }
+        return pending.isNotEmpty() && SkillCaster.readyIn(Skill.JEOJU) == 0L
+    }
 
     override suspend fun execute() {
-        val direction = lastAt.minBy { it.value }.key
-        if (SkillCaster.tryCast(Skill.JEOJU, Target.Direction(direction, fromMe = true))) lastAt[direction] = now()
+        while (pending.isNotEmpty()) {
+            if (SkillCaster.readyIn(Skill.JEOJU) > 0L) return
+            if (!SkillCaster.tryCast(Skill.JEOJU, Target.Direction(pending.first(), fromMe = true))) return
+            pending.removeFirst()
+        }
     }
 
     companion object {
