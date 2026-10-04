@@ -46,11 +46,11 @@ class FiveCrossUseCaseTest {
     }
 
     @Test
-    fun `각이 덜 찼으면 중심과 붙은 몹부터 묶는다`() {
+    fun `각이 덜 찼으면 중심은 두고 붙은 몹부터 묶는다`() {
         val c = Tile(3, 0)
         val action = useCase(c, Tile(3, -1), Tile(4, 0)).plan(NOW)
         assertIs<Action.Hold>(action)
-        assertEquals(c, action.tile)
+        assertEquals(Tile(3, -1), action.tile)
     }
 
     @Test

@@ -32,8 +32,11 @@ class MacroDetailAction2(
     private val selfHeal: HealUseCase = HealUseCase(),
     private val mana: ManaUseCase = ManaUseCase(),
     private val sammeUseCase: SammeUseCase = SammeUseCase(),
-    private val fiveCross: FiveCrossUseCase = FiveCrossUseCase(),
 ) {
+    // 마비와 5매각은 서로의 상태(마비 건 몹, 만들고 있는 각)를 본다
+    private val mabee: MabeeUseCase = MabeeUseCase(reserved = { fiveCross.reserved })
+    private val fiveCross: FiveCrossUseCase = FiveCrossUseCase(paralyzed = { mabee.paralyzedTiles })
+
     @Volatile
     private var latestDirection: Int = KeyEvent.VK_LEFT
 
@@ -92,13 +95,13 @@ class MacroDetailAction2(
     /**
      * 첨첨. 할 일은 전부 UseCase이고, [MacroEngine]이 상태를 보고 하나씩 골라 실행한다.
      *
-     * 우선(앞에서부터, 할 일이 있으면 바로): 공증 > 자힐 > 몹 피하기(몹 탐지 중) > 보무 > 마기지체 > 5매각(몹 탐지 중) > 마비 뿌리기(몹 탐지 중) > 삼매진화 > 헬파이어
+     * 우선(앞에서부터, 할 일이 있으면 바로): 공증 > 자힐 > 마비 뿌리기 > 몹 피하기(마비 안 걸린 몹만) > 보무 > 마기지체 > 5매각 > 삼매진화 (마비~5매각은 몹 탐지 중에만) > 헬파이어
      * 공격(번갈아 가며): 저주 > 평타 (사냥용 마법칸에는 첨, 중독이 없다)
      * 사용자가 방향키로 이동 중이면 아무것도 안 한다.
      */
     suspend fun chumChum() = withContext(Dispatchers.Default) {
         MacroEngine(
-            priority = listOf(mana, selfHeal, EvadeUseCase(), bomu, magi, fiveCross, MabeeUseCase({ fiveCross.reserved }), sammeUseCase, HellfireUseCase({ latestDirection })),
+            priority = listOf(mana, selfHeal, mabee, EvadeUseCase({ mabee.paralyzedTiles }), bomu, magi, fiveCross, sammeUseCase, HellfireUseCase({ latestDirection })),
             rotation = listOf(CurseUseCase({ latestDirection }), BasicAttackUseCase()),
         ).run()
     }

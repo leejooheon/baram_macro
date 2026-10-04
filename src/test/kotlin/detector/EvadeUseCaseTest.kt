@@ -13,7 +13,8 @@ class EvadeUseCaseTest {
 
     private fun box(t: Tile) = Rectangle(500 + t.x * tile - tile / 2, 300 + t.y * tile - tile / 2, tile, tile)
 
-    private fun useCase(vararg tiles: Tile) = EvadeUseCase(
+    private fun useCase(vararg tiles: Tile, ignore: Set<Tile> = emptySet()) = EvadeUseCase(
+        ignore = { ignore },
         detection = {
             Detection(HWND(), 1000, 600, box(Tile(0, 0)), tiles.map { box(it) }, capturedAt = NOW, latencyMillis = 0)
         },
@@ -39,6 +40,11 @@ class EvadeUseCaseTest {
     @Test
     fun `사방이 막혔으면 안 움직인다`() {
         assertNull(useCase(Tile(1, 0), Tile(-1, 0), Tile(0, 1), Tile(0, -1)).plan(NOW))
+    }
+
+    @Test
+    fun `마비 걸린 몹은 무시한다`() {
+        assertNull(useCase(Tile(1, 0), ignore = setOf(Tile(1, 0))).plan(NOW))
     }
 
     companion object {

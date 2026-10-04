@@ -20,14 +20,16 @@ import ocr.model.TimerRegion
  * 각을 만드는 순서 (한 번에 하나씩, 탐지 결과를 보고 고른다)
  * 1. 상하좌우가 다 찼으면 중심에 삼매진화
  * 2. 상하좌우에 몹이 가장 많은 몹을 중심으로 잡는다 ([MIN_NEIGHBORS]마리 이상일 때만)
- * 3. 중심과 이미 붙어 있는 몹 중 아직 안 묶은 몹을 절망으로 묶는다 (움직이지 못하게)
- * 4. 각 밖에서 묶어 둔 몹은 활력으로 풀어 빈 칸으로 오게 한다
+ * 3. 중심의 상하좌우에 붙은 몹 중 아직 안 묶은 몹을 절망으로 묶는다. 중심은 안 묶는다 (클릭 하나 아끼기, 사냥 영상 방식)
+ * 4. 빈 칸 근처([RELEASE_RANGE]칸 안)에 묶여 있는 몹(절망, 마비 뿌리기로 건 마비)은 활력으로 풀어 빈 칸으로 오게 한다
  * 5. 그래도 빈 칸이 있으면 빈 칸에 가장 가까운 안 묶인 몹에 혼돈을 건다 (다른 몹 쪽으로 오게)
  *
  * 몹이 묶였는지는 화면에 안 보이므로 "어느 칸 몹에 언제 무엇을 걸었는지"를 직접 기억한다.
  * 그 칸에서 몹이 사라지면(죽거나 풀려서 움직임) 기록을 지운다.
  */
 class FiveCrossUseCase(
+    /** 마비 뿌리기로 마비를 건 칸 */
+    private val paralyzed: () -> Set<Tile> = { emptySet() },
     private val detection: (now: Long) -> Detection? = { DetectionStateHolder.state.value?.takeIf { d -> d.isFresh(it) } },
     private val ocr: OcrStateHolder = OcrStateHolder,
     private val now: () -> Long = System::currentTimeMillis,
@@ -108,20 +110,22 @@ class FiveCrossUseCase(
         }
 
         val cross = listOf(center) + filled
-        cross.firstOrNull { it !in held }?.let {
+        filled.firstOrNull { it !in held }?.let {
             reason.log("각 ${filled.size + 1}마리, $it 묶기")
             return Action.Hold(aim(it), it)
         }
 
+        val empty = center.neighbors.filter { it !in monsters && it != ME }
+        fun nearEmpty(tile: Tile) = empty.any { e -> (e.x - tile.x) * (e.x - tile.x) + (e.y - tile.y) * (e.y - tile.y) <= RELEASE_RANGE * RELEASE_RANGE }
         if (now - lastReleaseAt >= RELEASE_INTERVAL_MILLIS) {
-            held.keys.firstOrNull { it !in cross && now - held.getValue(it) >= RELEASE_AFTER_MILLIS }?.let {
+            val stuck = held.keys.filter { now - held.getValue(it) >= RELEASE_AFTER_MILLIS } + paralyzed()
+            stuck.firstOrNull { it in monsters && it !in cross && nearEmpty(it) }?.let {
                 reason.log("각 밖에 묶인 몹 $it 풀기")
                 return Action.Release(aim(it), it)
             }
         }
 
         if (now - lastHondonAt >= HONDON_INTERVAL_MILLIS) {
-            val empty = center.neighbors.filter { it !in monsters && it != ME }
             val free = monsters.keys.filter { it !in held && it !in cross }
             val pick = free.minByOrNull { tile -> empty.minOf { (it.x - tile.x) * (it.x - tile.x) + (it.y - tile.y) * (it.y - tile.y) } }
             if (pick != null && empty.isNotEmpty()) {
@@ -155,6 +159,8 @@ class FiveCrossUseCase(
         /** 묶은 지 이만큼 지났는데 각 밖에 있으면 활력으로 푼다 */
         const val RELEASE_AFTER_MILLIS = 2_000L
         const val RELEASE_INTERVAL_MILLIS = 1_000L
+        /** 빈 칸에서 이 칸 수 안에 묶인 몹만 풀어 준다 (멀리 있는 몹은 풀어도 각으로 안 온다) */
+        const val RELEASE_RANGE = 2
         /** 혼돈 지속시간(5초) 동안은 다시 걸지 않는다 */
         const val HONDON_INTERVAL_MILLIS = 5_000L
     }

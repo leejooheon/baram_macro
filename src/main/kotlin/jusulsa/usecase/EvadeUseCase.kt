@@ -14,9 +14,13 @@ import java.awt.event.KeyEvent
  * 갈 칸은 "그 칸 옆에 붙는 몹 수"가 가장 적은 곳, 같으면 가장 가까운 몹에서 먼 곳.
  * 지금 자리보다 나아지지 않으면 움직이지 않는다 (벽, 몹에 둘러싸임).
  *
+ * 마비를 걸어 둔 몹([ignore])은 못 움직이고 못 때리니 무시한다. 붙은 몹은 먼저 마비를 걸고([MabeeUseCase]가 앞 순서),
+ * 마비가 안 먹었거나 쿨일 때만 피한다.
+ *
  * 몹 탐지가 꺼져 있거나 결과가 오래됐으면 아무것도 안 한다. 맵 이동은 사용자가 한다.
  */
 class EvadeUseCase(
+    private val ignore: () -> Set<Tile> = { emptySet() },
     private val detection: (now: Long) -> Detection? = { DetectionStateHolder.state.value?.takeIf { d -> d.isFresh(it) } },
     private val now: () -> Long = System::currentTimeMillis,
 ) : MacroUseCase {
@@ -43,7 +47,8 @@ class EvadeUseCase(
         // 이동한 뒤의 화면으로 다시 판단해야 하므로, 움직인 다음에 찍은 결과만 쓴다
         if (detection.capturedAt <= lastMoveAt) return null
         val grid = TileGrid.of(detection) ?: return null
-        val monsters = detection.monsters.map { grid.tileOf(it) }.toSet()
+        val all = detection.monsters.map { grid.tileOf(it) }.toSet()
+        val monsters = all - ignore()
 
         fun adjacent(tile: Tile) = tile.neighbors.count { it in monsters }
         fun nearest(tile: Tile) = monsters.minOfOrNull { (it.x - tile.x) * (it.x - tile.x) + (it.y - tile.y) * (it.y - tile.y) } ?: Int.MAX_VALUE
@@ -52,7 +57,7 @@ class EvadeUseCase(
         if (here == 0) return null
 
         val best = MOVES.entries
-            .filter { (tile, _) -> tile !in monsters }
+            .filter { (tile, _) -> tile !in all }
             .minWithOrNull(compareBy<Map.Entry<Tile, Int>> { adjacent(it.key) }.thenByDescending { nearest(it.key) })
         if (best == null || adjacent(best.key) >= here) {
             reason.log("몹 ${here}마리 붙음, 피할 곳 없음")
