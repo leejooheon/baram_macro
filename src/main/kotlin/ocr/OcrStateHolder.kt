@@ -33,7 +33,7 @@ object OcrStateHolder {
     @Synchronized
     fun updateVitals(vitals: Vitals) {
         _state.update { it.copy(vitals = vitals) }
-        val mp = vitals.mpPercent
+        val mp = vitals.mpPercent ?: return
         if (!manaLowSent && mp <= MANA_LOW_PERCENT) {
             manaLowSent = true
             _events.tryEmit(OcrEvent.ManaLow(percent = mp, at = vitals.capturedAt))

@@ -1,9 +1,9 @@
 package ocr.model
 
-/** 체력/마력 막대가 찬 비율 (0~100) */
+/** 체력/마력 막대가 찬 비율 (0~100). 마력 막대를 못 찾으면 mpPercent는 null */
 data class Vitals(
     val hpPercent: Int,
-    val mpPercent: Int,
+    val mpPercent: Int?,
     val capturedAt: Long,
 ) {
     fun isFresh(now: Long = System.currentTimeMillis()): Boolean = now - capturedAt <= MAX_AGE_MILLIS

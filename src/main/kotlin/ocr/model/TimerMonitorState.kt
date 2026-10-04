@@ -46,8 +46,6 @@ data class TimerMonitorState(
         val vitals: Vitals? = null,
         /** 체력/마력 영역만: 찾은 막대 위치 (썸네일에 그린다) */
         val bars: VitalsReader.BarReading? = null,
-        /** 체력/마력 영역만: 100%로 삼은 막대 폭 */
-        val fullWidth: Int = 0,
     )
 
     /**

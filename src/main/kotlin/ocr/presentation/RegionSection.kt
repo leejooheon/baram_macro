@@ -47,7 +47,7 @@ internal fun RegionSection(
             Text(
                 text = state.error ?: when {
                     state.capturedAt == 0L -> ""
-                    !region.usesOcr -> "${state.latencyMillis}ms · 100% = ${state.fullWidth}px"
+                    !region.usesOcr -> "${state.latencyMillis}ms · 막대 색으로 계산"
                     state.cached -> "${state.latencyMillis}ms · 변화 없음"
                     else -> "${state.latencyMillis}ms · OCR ${state.ocrMillis.roundToInt()}ms"
                 },
@@ -103,12 +103,12 @@ private fun Thumbnail(state: RegionState) {
             dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()),
         )
         state.bars?.let { bars ->
-            // 찾은 막대가 찬 부분
-            listOfNotNull(bars.hpRows to bars.hpWidth, bars.mpRows?.let { it to bars.mpWidth }).forEach { (rows, width) ->
+            // 찾은 막대 칸 전체
+            listOfNotNull(bars.hpBox, bars.mpBox).forEach { box ->
                 drawRect(
                     color = ParsedColor,
-                    topLeft = Offset(bars.left * scale - 1, rows.first * scale - 1),
-                    size = Size(width.coerceAtLeast(0) * scale + 2, rows.count() * scale + 2),
+                    topLeft = Offset(box.x * scale - 1, box.y * scale - 1),
+                    size = Size(box.width * scale + 2, box.height * scale + 2),
                     style = Stroke(width = 1.5f),
                 )
             }

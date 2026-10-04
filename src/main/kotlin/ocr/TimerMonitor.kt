@@ -19,7 +19,6 @@ import ocr.model.TimerMonitorState.WindowState
 import ocr.model.TimerLineModel
 import ocr.model.TimerRegion
 import ocr.model.Vitals
-import ocr.vitals.VitalsGauge
 import ocr.vitals.VitalsReader
 import java.awt.Rectangle
 import java.awt.geom.Rectangle2D
@@ -38,7 +37,6 @@ object TimerMonitor {
     private val client = OcrClient(createHttpClient(logLevel = LogLevel.NONE))
     private var job: Job? = null
     private var window: GameWindowCapture.GameWindow? = null
-    private val gauge = VitalsGauge()
 
     private val _state = MutableStateFlow(
         RegionStore.load().let { saved ->
@@ -91,7 +89,6 @@ object TimerMonitor {
             state.copy(regions = state.regions + (region to regionState.copy(fraction = fraction)))
         }
         save()
-        if (region == TimerRegion.VITALS) gauge.reset()
         // 바뀐 영역을 바로 한 번 읽어서 보여준다
         scope.launch { tick() }
     }
@@ -197,10 +194,7 @@ object TimerMonitor {
 
     private fun readVitals(region: TimerRegion, image: BufferedImage, capturedAt: Long) {
         val bars = VitalsReader.read(image)
-        val vitals = bars?.let {
-            val (hp, mp) = gauge.percents(it)
-            Vitals(hpPercent = hp, mpPercent = mp, capturedAt = capturedAt)
-        }
+        val vitals = bars?.let { Vitals(hpPercent = it.hpPercent, mpPercent = it.mpPercent, capturedAt = capturedAt) }
         if (vitals != null) OcrStateHolder.updateVitals(vitals)
 
         _state.update { state ->
@@ -210,7 +204,6 @@ object TimerMonitor {
                 latencyMillis = System.currentTimeMillis() - capturedAt,
                 vitals = vitals,
                 bars = bars,
-                fullWidth = gauge.fullWidth,
                 error = if (bars == null) "막대를 못 찾았어요" else null,
             )
             state.copy(regions = state.regions + (region to next))
