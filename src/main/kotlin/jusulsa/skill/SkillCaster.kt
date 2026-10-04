@@ -71,6 +71,9 @@ object SkillCaster {
     /** 지금 바로 쓸 수 있으면 0, 아니면 기다려야 할 시간(ms). 매크로가 기다리지 않고 다른 마법을 고를 때 쓴다 */
     fun readyIn(skill: Skill): Long = waitMillis(skill, now())
 
+    /** 마지막으로 시전한 시각. 쓴 적 없으면 null */
+    fun lastCastAt(skill: Skill): Long? = lastCastAt[skill]
+
     /** 이 묶음을 지금 바로 몇 번 더 쓸 수 있는지 */
     fun remaining(group: RateGroup): Int = limiters.getValue(group).remaining(now())
 

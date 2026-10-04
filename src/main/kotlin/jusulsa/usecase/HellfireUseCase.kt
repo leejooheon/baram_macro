@@ -29,11 +29,7 @@ class HellfireUseCase(
         // 쓴 직후에는 쿨타임 박스에 아직 안 잡힌다
         lastCastAt?.let { if (now - it < RECAST_GUARD_MILLIS) return false }
 
-        val mp = ocr.state.value.freshVitals(now)?.mpPercent
-        if (mp == null || mp <= OcrStateHolder.MANA_LOW_PERCENT) {
-            reason.log("마력 ${mp ?: "?"}% 라서 안 씀 (공증 기준 이하)")
-            return false
-        }
+        if (!ManaReading.isEnough(ocr, now, reason::log)) return false
         val cooldown = ocr.state.value.fresh(TimerRegion.COOLDOWN, now)
         if (cooldown == null) {
             reason.log("쿨타임 박스 읽기 실패라 안 씀")

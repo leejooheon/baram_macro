@@ -70,8 +70,8 @@ class ManaUseCase(
                 Keyboard.pressAndRelease(KeyEvent.VK_U, U_PRESS_MILLIS)
             }
         }
-        SkillCaster.tryCast(Skill.GONGJEUNG)
-        lastGongjeungAt = now()
+        // 이동키 등으로 못 썼으면 대기 없이 다음 차례에 바로 다시 쓴다
+        if (SkillCaster.tryCast(Skill.GONGJEUNG)) lastGongjeungAt = now()
     }
 
     companion object {

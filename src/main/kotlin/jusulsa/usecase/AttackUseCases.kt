@@ -45,7 +45,7 @@ class CurseAroundUseCase(
     }
 
     companion object {
-        const val REFRESH_MILLIS = 2_000L
+        const val REFRESH_MILLIS = 5_000L
         private val DIRECTIONS = listOf(KeyEvent.VK_UP, KeyEvent.VK_LEFT, KeyEvent.VK_DOWN, KeyEvent.VK_RIGHT)
     }
 }
