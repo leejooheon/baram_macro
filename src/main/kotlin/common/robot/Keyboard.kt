@@ -59,18 +59,22 @@ object Keyboard {
 
     fun press(keyEvent: Int) {
         synchronized(robot) {
-            InjectedKeys.register(keyEvent, pressed = true)
-            robot.keyPress(keyEvent)
+            send(keyEvent, pressed = true)
             heldKeys.add(keyEvent)
         }
     }
 
     fun release(keyEvent: Int) {
         synchronized(robot) {
-            InjectedKeys.register(keyEvent, pressed = false)
-            robot.keyRelease(keyEvent)
+            send(keyEvent, pressed = false)
             heldKeys.remove(keyEvent)
         }
+    }
+
+    // Windows에서는 스캔코드 SendInput, 그 외(개발 환경)에서는 Robot
+    private fun send(keyEvent: Int, pressed: Boolean) {
+        if (WinInput.isAvailable && WinInput.sendKey(keyEvent, pressed)) return
+        if (pressed) robot.keyPress(keyEvent) else robot.keyRelease(keyEvent)
     }
 
     /** 매크로가 중간에 취소돼도 shift 같은 키가 눌린 채로 남지 않게 한다 */

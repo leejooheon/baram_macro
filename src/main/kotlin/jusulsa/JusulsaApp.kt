@@ -15,7 +15,8 @@ fun JusulsaApp() {
 
     ObserveKeyEvents(
         onReleased = viewModel::dispatchKeyReleaseEvent,
-        onPressed = viewModel::dispatchKeyPressEvent
+        onPressed = viewModel::dispatchKeyPressEvent,
+        consumeKeys = JusulsaViewModel2.MACRO_KEYS,
     )
 
     MaterialTheme {
