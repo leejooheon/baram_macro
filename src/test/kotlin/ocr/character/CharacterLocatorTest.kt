@@ -36,4 +36,12 @@ class CharacterLocatorTest {
         field.graphics.drawImage(field.getSubimage(150, 200, 120, 160), 300, 200, null)
         assertNull(CharacterLocator.locate(load("character_portrait.png"), field))
     }
+
+    @Test
+    fun `몬스터가 없으면 옆 네 칸이 비어 있다`() {
+        val field = load("character_field.png")
+        val character = assertNotNull(CharacterLocator.locate(load("character_portrait.png"), field))
+        val monsters = AdjacentMonsterDetector.detect(field, character, tileSize = 72)
+        assertTrue(monsters.occupied.isEmpty(), "ratios ${monsters.ratios}")
+    }
 }

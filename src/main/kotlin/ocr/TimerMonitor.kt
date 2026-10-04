@@ -11,8 +11,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import ocr.capture.GameWindowCapture
+import ocr.character.AdjacentMonsterDetector
 import ocr.character.CharacterLocator
-import ocr.model.CharacterPosition
+import ocr.character.CoordinateReader
 import ocr.model.TimerMonitorState
 import ocr.model.TimerMonitorState.RegionState
 import ocr.model.TimerMonitorState.ServerState
@@ -25,15 +26,19 @@ import ocr.vitals.VitalsReader
 import java.awt.Rectangle
 import java.awt.geom.Rectangle2D
 import java.awt.image.BufferedImage
+import kotlin.math.roundToInt
 
 /**
  * 게임 창을 주기적으로 한 장 찍고, 그 안의 쿨타임 박스와 버프 패널을 잘라 OCR 서버로 읽는다.
- * 체력/마력 막대와 내 캐릭터 위치는 서버로 보내지 않고 여기서 색으로 잰다.
+ * 체력/마력 막대, 내 캐릭터 위치/주변 몬스터/좌표는 서버로 보내지 않고 여기서 읽는다 ([CharacterStateHolder]).
  * 다른 매크로에서는 [state]의 remaining(...)으로 남은 초를 읽어 쓰면 된다.
  *
  * 남은 초는 읽은 시점 기준으로 계속 줄어들게 계산하므로, OCR 주기를 길게 잡아도 표시는 매초 갱신된다.
  */
 object TimerMonitor {
+    /** 맵 한 칸 크기 / 게임 창 폭. 클라이언트 영역 2554px 폭 창에서 한 칸이 72px였다 */
+    private const val TILE_PER_WINDOW_WIDTH = 72.0 / 2554
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     // 매 요청마다 PNG 본문을 로그로 찍지 않도록 로그를 끈 클라이언트를 따로 쓴다
     private val client = OcrClient(createHttpClient(logLevel = LogLevel.NONE))
@@ -128,6 +133,8 @@ object TimerMonitor {
         readCharacter(
             portrait = capture.images[regions.indexOf(TimerRegion.PORTRAIT)],
             field = capture.images[regions.indexOf(TimerRegion.FIELD)],
+            coords = capture.images[regions.indexOf(TimerRegion.COORDS)],
+            windowWidth = capture.windowSize.width,
             capturedAt = capturedAt,
         )
         regions.forEachIndexed { i, region ->
@@ -221,40 +228,47 @@ object TimerMonitor {
         }
     }
 
-    private fun readCharacter(portrait: BufferedImage, field: BufferedImage, capturedAt: Long) {
+    private fun readCharacter(
+        portrait: BufferedImage,
+        field: BufferedImage,
+        coords: BufferedImage,
+        windowWidth: Int,
+        capturedAt: Long,
+    ) {
         val found = CharacterLocator.locate(portrait, field)
-        OcrStateHolder.updateCharacter(
-            found?.let {
-                val center = it.center
-                CharacterPosition(
-                    x = center.x.toDouble() / field.width,
-                    y = center.y.toDouble() / field.height,
-                    dx = center.x - field.width / 2,
-                    dy = center.y - field.height / 2,
-                    score = it.score,
-                    capturedAt = capturedAt,
-                )
-            }
+        val tileSize = (windowWidth * TILE_PER_WINDOW_WIDTH).roundToInt().coerceAtLeast(8)
+        val monsters = found?.let { AdjacentMonsterDetector.detect(field, it, tileSize) }
+        val coordinate = CoordinateReader.read(coords)
+        CharacterStateHolder.update(
+            CharacterState(
+                mapX = coordinate?.x,
+                mapY = coordinate?.y,
+                screenX = found?.let { it.center.x.toDouble() / field.width },
+                screenY = found?.let { it.center.y.toDouble() / field.height },
+                adjacent = monsters?.occupied.orEmpty(),
+                capturedAt = capturedAt,
+            )
         )
 
         val latency = System.currentTimeMillis() - capturedAt
         _state.update { state ->
-            val portraitState = state.regions.getValue(TimerRegion.PORTRAIT).copy(
-                image = portrait,
-                capturedAt = capturedAt,
-                latencyMillis = latency,
-                character = found,
-                error = null,
-            )
             val fieldState = state.regions.getValue(TimerRegion.FIELD).copy(
                 image = field,
                 capturedAt = capturedAt,
                 latencyMillis = latency,
                 character = found,
+                monsters = monsters,
                 error = if (found == null) "캐릭터를 못 찾았어요" else null,
             )
+            val coordsState = state.regions.getValue(TimerRegion.COORDS).copy(
+                image = coords,
+                capturedAt = capturedAt,
+                latencyMillis = latency,
+                coordinate = coordinate,
+                error = if (coordinate == null) "좌표를 못 읽었어요" else null,
+            )
             state.copy(
-                regions = state.regions + (TimerRegion.PORTRAIT to portraitState) + (TimerRegion.FIELD to fieldState)
+                regions = state.regions + (TimerRegion.FIELD to fieldState) + (TimerRegion.COORDS to coordsState)
             )
         }
     }

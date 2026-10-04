@@ -15,7 +15,7 @@ import java.awt.image.BufferedImage
 object CharacterLocator {
     /** 색을 채널마다 이 폭으로 묶는다 (8단계 x 3채널 = 512칸) */
     private const val STEP = 32
-    private const val BINS = 512
+    const val BINS = 512
 
     /** 장비창 그림에서 이 비율 이상 나오는 색만 캐릭터 색 후보로 본다 */
     private const val MIN_PORTRAIT_SHARE = 0.003
@@ -33,6 +33,8 @@ object CharacterLocator {
         val score: Double,
         /** 고른 캐릭터 색 개수 (색 칸 기준) */
         val colorCount: Int,
+        /** 캐릭터 색인 색 칸 번호 ([bin]으로 구한다). 주변 몬스터를 셀 때 내 캐릭터 픽셀을 빼는 데 쓴다 */
+        val colorBins: Set<Int>,
     ) {
         val center: Point get() = Point(box.x + box.width / 2, box.y + box.height / 2)
     }
@@ -106,17 +108,25 @@ object CharacterLocator {
         }
         val score = best.toDouble() / expected
         if (score < MIN_SCORE) return null
-        return Reading(box = Rectangle(bestX, bestY, w, h), score = score, colorCount = colorCount)
+        return Reading(
+            box = Rectangle(bestX, bestY, w, h),
+            score = score,
+            colorCount = colorCount,
+            colorBins = (0 until BINS).filter { isKey[it] }.toSet(),
+        )
     }
 
-    private fun bins(image: BufferedImage): IntArray {
+    /** 이미지의 모든 픽셀을 색 칸 번호로 */
+    fun bins(image: BufferedImage): IntArray {
         val pixels = image.getRGB(0, 0, image.width, image.height, null, 0, image.width)
-        return IntArray(pixels.size) { i ->
-            val rgb = pixels[i]
-            val r = (rgb shr 16 and 0xFF) / STEP
-            val g = (rgb shr 8 and 0xFF) / STEP
-            val b = (rgb and 0xFF) / STEP
-            r * 64 + g * 8 + b
-        }
+        return IntArray(pixels.size) { bin(pixels[it]) }
+    }
+
+    /** 색을 채널마다 [STEP] 폭으로 묶은 칸 번호 (0 until [BINS]) */
+    fun bin(rgb: Int): Int {
+        val r = (rgb shr 16 and 0xFF) / STEP
+        val g = (rgb shr 8 and 0xFF) / STEP
+        val b = (rgb and 0xFF) / STEP
+        return r * 64 + g * 8 + b
     }
 }

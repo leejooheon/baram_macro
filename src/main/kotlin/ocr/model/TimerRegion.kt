@@ -29,7 +29,7 @@ enum class TimerRegion(
     ),
 
     /**
-     * 장비창 가운데에 서 있는 내 캐릭터 그림. 여기 있는 색으로 맵에서 캐릭터를 찾는다.
+     * 장비창 가운데에 서 있는 내 캐릭터 그림. 여기 있는 색으로 맵에서 캐릭터를 찾는다. 모니터 화면에는 보이지 않는다.
      * 기본값은 클라이언트 영역 2554x1491 게임 창에서 잰 값이다.
      */
     PORTRAIT(
@@ -39,8 +39,14 @@ enum class TimerRegion(
 
     /** 캐릭터가 돌아다니는 맵 화면 전체 (테두리와 채팅창 제외). 기본값은 [PORTRAIT]와 같은 창에서 잰 값이다 */
     FIELD(
-        "맵 화면", Rectangle2D.Double(0.0274, 0.0423, 0.7068, 0.7257), Reader.CHARACTER,
+        "내 캐릭터", Rectangle2D.Double(0.0274, 0.0423, 0.7068, 0.7257), Reader.CHARACTER,
         pickHint = "맵이 보이는 곳 전체를 드래그하세요. 테두리와 채팅창은 빼 주세요.",
+    ),
+
+    /** 우하단 맨 아래 좌표 줄 (예: 0039 0144). 기본값은 [PORTRAIT]와 같은 창에서 잰 값이다 */
+    COORDS(
+        "좌표", Rectangle2D.Double(0.8614, 0.9310, 0.1135, 0.0349), Reader.CHARACTER,
+        pickHint = "우하단 맨 아래 좌표 숫자 줄만 드래그하세요.",
     );
 
     enum class Reader {
@@ -48,7 +54,7 @@ enum class TimerRegion(
         OCR,
         /** 앱에서 체력/마력 막대 색으로 잰다 */
         BARS,
-        /** 앱에서 장비창 그림 색으로 맵의 내 캐릭터를 찾는다 ([PORTRAIT]와 [FIELD]를 같이 쓴다) */
+        /** 앱에서 내 캐릭터 위치, 주변 몬스터, 좌표를 읽는다 ([PORTRAIT], [FIELD], [COORDS]를 같이 쓴다) */
         CHARACTER,
     }
 }

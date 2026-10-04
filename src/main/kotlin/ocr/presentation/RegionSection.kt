@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ocr.OcrStateHolder
+import ocr.model.Direction
 import ocr.model.TimerMonitorState.RegionState
 import ocr.model.TimerMonitorState.TimerEntry
 import ocr.model.TimerRegion
@@ -48,7 +49,7 @@ internal fun RegionSection(
                 text = state.error ?: when {
                     state.capturedAt == 0L -> ""
                     region.reader == TimerRegion.Reader.BARS -> "${state.latencyMillis}ms · 막대 색으로 계산"
-                    region.reader == TimerRegion.Reader.CHARACTER -> "${state.latencyMillis}ms · 장비창 색으로 찾음"
+                    region.reader == TimerRegion.Reader.CHARACTER -> "${state.latencyMillis}ms · 앱에서 계산"
                     state.cached -> "${state.latencyMillis}ms · 변화 없음"
                     else -> "${state.latencyMillis}ms · OCR ${state.ocrMillis.roundToInt()}ms"
                 },
@@ -125,6 +126,17 @@ private fun Thumbnail(region: TimerRegion, state: RegionState) {
                 size = Size(box.width * scale + 4, box.height * scale + 4),
                 style = Stroke(width = 2f),
             )
+            // 옆 네 칸: 몬스터가 있으면 주황, 없으면 회색
+            state.monsters?.let { monsters ->
+                monsters.cells.forEach { (direction, cell) ->
+                    drawRect(
+                        color = if (direction in monsters.occupied) UnparsedColor else Color.LightGray,
+                        topLeft = Offset(cell.x * scale, cell.y * scale),
+                        size = Size(cell.width * scale, cell.height * scale),
+                        style = Stroke(width = 1.5f),
+                    )
+                }
+            }
         }
         state.entries.forEach { entry ->
             drawRect(
@@ -137,23 +149,28 @@ private fun Thumbnail(region: TimerRegion, state: RegionState) {
     }
 }
 
-/** 내 캐릭터: 장비창은 고른 색 개수, 맵은 찾은 위치 */
+/** 내 캐릭터: 맵 영역은 찾은 위치와 붙은 몬스터, 좌표 영역은 읽은 좌표 */
 @Composable
 private fun CharacterRows(region: TimerRegion, state: RegionState) {
-    val found = state.character
-    val image = state.image
     val text = when {
-        image == null -> "캡처 없음"
-        found == null -> "못 찾음"
-        region == TimerRegion.PORTRAIT -> "캐릭터 색 ${found.colorCount}가지"
+        state.image == null -> "캡처 없음"
+        region == TimerRegion.COORDS -> state.coordinate?.let { "(${it.x}, ${it.y})" } ?: "못 읽음"
+        state.character == null -> "못 찾음"
         else -> {
-            val center = found.center
-            "가운데에서 (${center.x - image.width / 2}, ${center.y - image.height / 2})"
+            val occupied = state.monsters?.occupied.orEmpty()
+            "붙은 몬스터 ${occupied.size}" + Direction.entries.filter { it in occupied }.joinToString("", " ") { it.arrow }
         }
     }
     Text(text, fontSize = 13.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
-    if (found != null && region == TimerRegion.FIELD) {
-        Text("일치 ${(found.score * 100).roundToInt()}%", style = SmallText, color = Color.Gray)
+    val found = state.character
+    if (region == TimerRegion.FIELD && found != null) {
+        val ratios = state.monsters?.ratios.orEmpty()
+        Text(
+            text = "일치 ${(found.score * 100).roundToInt()}% · " +
+                Direction.entries.joinToString(" ") { "${it.arrow}${((ratios[it] ?: 0.0) * 100).roundToInt()}%" },
+            style = SmallText,
+            color = Color.Gray,
+        )
     }
 }
 

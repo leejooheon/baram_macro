@@ -1,6 +1,8 @@
 package ocr.model
 
+import ocr.character.AdjacentMonsterDetector
 import ocr.character.CharacterLocator
+import ocr.character.CoordinateReader
 import ocr.vitals.VitalsReader
 import java.awt.Rectangle
 import java.awt.geom.Rectangle2D
@@ -49,6 +51,10 @@ data class TimerMonitorState(
         val bars: VitalsReader.BarReading? = null,
         /** 내 캐릭터 영역만: 맵에서 찾은 캐릭터 (썸네일에 그린다) */
         val character: CharacterLocator.Reading? = null,
+        /** 내 캐릭터 영역만: 옆 네 칸 (썸네일에 그린다) */
+        val monsters: AdjacentMonsterDetector.Reading? = null,
+        /** 좌표 영역만: 읽은 좌표 */
+        val coordinate: CoordinateReader.Coordinate? = null,
     )
 
     /**

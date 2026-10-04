@@ -62,7 +62,8 @@ fun OcrMonitorScreen(
     ) {
         header()
         ControlBar(state, onEvent)
-        TimerRegion.entries.forEach { region ->
+        // 장비창 캐릭터 그림은 내부에서만 쓴다
+        TimerRegion.entries.filter { it != TimerRegion.PORTRAIT }.forEach { region ->
             Divider()
             RegionSection(
                 region = region,
