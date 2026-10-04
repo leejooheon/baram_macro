@@ -204,9 +204,10 @@ class TimerOcr:
         """
         crop = self._crop(clean, y0, y1, x0, x1)
         text, conf = self._recognize("name", crop)
+        # 알려진 이름과 글자까지 똑같으면 신뢰도가 조금 낮아도 믿는다 (PC마다 인식기 신뢰도가 다르게 나온다)
+        if text in self.names and conf >= 0.2:
+            return text, text, max(conf, 0.5)
         if conf >= 0.5:
-            if text in self.names:
-                return text, text, conf
             best = difflib.get_close_matches(text, self.names, n=1, cutoff=0.75)
             if best:
                 return best[0], text, conf
