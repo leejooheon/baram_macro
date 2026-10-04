@@ -6,6 +6,7 @@ import jusulsa.skill.SkillCaster.cast
 import jusulsa.skill.Target
 import jusulsa.usecase.BomuUseCase
 import jusulsa.usecase.MagiUseCase
+import jusulsa.usecase.ManaUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -24,6 +25,7 @@ import kotlin.time.Duration.Companion.seconds
 class MacroDetailAction2(
     private val bomu: BomuUseCase = BomuUseCase(),
     private val magi: MagiUseCase = MagiUseCase(),
+    private val mana: ManaUseCase = ManaUseCase(),
 ) {
     private var latestDirection: Int = KeyEvent.VK_LEFT
 
@@ -86,23 +88,18 @@ class MacroDetailAction2(
         }
     }
 
-    // 4방향으로 중독을 돌리고 사이사이 자힐
+    // 4방향으로 중독을 돌린다. 자힐은 마력이 떨어졌을 때 ManaUseCase가 한다
     private suspend fun jungDok(duration: Duration) {
         val endTime = System.currentTimeMillis() + duration.inWholeMilliseconds
         var cnt = 0
         var directionIndex = 0
         while (System.currentTimeMillis() < endTime) {
             currentCoroutineContext().ensureActive()
-            if(cnt % 16 == 3) {
+            if(cnt > 0 && cnt % JUNGDOK_PER_DIRECTION == 0) {
                 directionIndex = (directionIndex + 1) % DIRECTIONS.size
             }
-            if(cnt % 16 > 8) {
-                cast(Skill.HEAL, Target.Me)
-                delay(300)
-            } else {
-                cast(Skill.JUNGDOK, Target.Direction(DIRECTIONS[directionIndex]))
-                delay(120)
-            }
+            cast(Skill.JUNGDOK, Target.Direction(DIRECTIONS[directionIndex]))
+            delay(120)
             cnt++
         }
     }
@@ -142,11 +139,12 @@ class MacroDetailAction2(
                 cast(Skill.CHUM2)
             }
         }
-        // 보무가 끊기기 전에, 마기지체는 쿨이 돌 때마다 건다
+        // 보무가 끊기기 전에, 마기지체는 쿨이 돌 때마다, 공증+자힐은 마력이 떨어졌을 때 건다
         launch {
             while (isActive) {
                 bomu()
                 magi()
+                mana()
                 delay(1.seconds)
             }
         }
@@ -160,6 +158,8 @@ class MacroDetailAction2(
     }
 
     companion object {
+        /** 한 방향에 중독을 몇 번 걸고 다음 방향으로 넘어갈지 */
+        private const val JUNGDOK_PER_DIRECTION = 9
         private val DIRECTIONS = listOf(
             KeyEvent.VK_UP,
             KeyEvent.VK_LEFT,
