@@ -147,11 +147,11 @@ private fun Thumbnail(region: TimerRegion, state: RegionState) {
                         style = Stroke(width = 1.5f),
                     )
                 }
-                // 맵에서 찾은 몬스터
+                // 옆 칸에서 찾은 몬스터
                 reading.monsters.forEach { monster ->
                     val m = monster.box
                     drawRect(
-                        color = if (monster.direction != null) UnparsedColor else Color.Yellow,
+                        color = UnparsedColor,
                         topLeft = Offset(m.x * scale, m.y * scale),
                         size = Size(m.width * scale, m.height * scale),
                         style = Stroke(width = 1.5f),
@@ -186,7 +186,9 @@ private fun CharacterRows(region: TimerRegion, state: RegionState, monsterCount:
     val found = state.character
     if (region == TimerRegion.FIELD && found != null) {
         Text(
-            text = "일치 ${(found.score * 100).roundToInt()}% · 화면 몬스터 ${state.monsters?.monsters?.size ?: 0}",
+            text = "일치 ${(found.score * 100).roundToInt()}% · " + Direction.entries.joinToString(" ") {
+                "${it.arrow}${((state.monsters?.scores?.get(it) ?: 0.0) * 100).roundToInt()}%"
+            },
             style = SmallText,
             color = Color.Gray,
         )

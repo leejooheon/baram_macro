@@ -273,7 +273,6 @@ object TimerMonitor {
                 screenX = found?.let { it.center.x.toDouble() / field.width },
                 screenY = found?.let { it.center.y.toDouble() / field.height },
                 adjacent = nearby?.occupied.orEmpty(),
-                visibleMonsters = nearby?.monsters?.size ?: 0,
                 capturedAt = capturedAt,
             )
         )

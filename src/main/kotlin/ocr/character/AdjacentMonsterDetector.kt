@@ -3,16 +3,15 @@ package ocr.character
 import ocr.model.Direction
 import java.awt.Rectangle
 import java.awt.image.BufferedImage
-import kotlin.math.abs
-import kotlin.math.roundToInt
 
 /**
- * 맵 화면에서 등록한 몬스터를 모두 찾고, 그중 내 캐릭터 바로 옆 네 칸(상하좌우)에 선 몬스터를 고른다. OCR 서버를 쓰지 않는다.
+ * 내 캐릭터 바로 옆 네 칸(상하좌우)에 등록한 몬스터가 서 있는지 본다. OCR 서버를 쓰지 않는다.
  *
- * 내 캐릭터를 찾을 때와 같은 방식이다. 등록한 몬스터 그림에서 "그 몬스터에만 있는 색"(그림 테두리의 바닥색,
- * 지금 맵에 흔한 색, 내 캐릭터 색을 뺀 것)을 골라, 맵에서 그 색이 몬스터 그림만큼 모인 곳을 몬스터로 본다.
- * 그다음 몬스터 발밑 칸이 캐릭터 발밑 칸에서 몇 칸 떨어졌는지로 방향을 정하므로, 대각선 몬스터나
- * 칸에 반쯤 걸친 몬스터도 헷갈리지 않는다. 스킬 이펙트(노랑, 흰색)는 몬스터 색이 아니라서 걸러진다.
+ * 등록한 몬스터 그림에서 "그 몬스터 색"(그림 테두리의 바닥색, 지금 맵에 흔한 색, 내 캐릭터 색을 뺀 것)인 픽셀만
+ * 골라 그 자리와 색을 기억해 둔다. 옆 칸마다 몬스터 발밑이 그 칸에 오는 위치들을 훑으면서, 기억한 픽셀 중
+ * 같은 자리에 같은 색이 있는 비율이 가장 높은 곳을 찾는다. 색 분포가 아니라 모양까지 맞춰 보므로
+ * 바닥 무늬, 바위, 핏자국처럼 색만 비슷한 것은 걸러지고, 스킬 이펙트(노랑, 흰색)는 몬스터 색이 아니라서 빠진다.
+ * 몬스터가 보는 방향마다 모양이 다르므로 앞/뒤/옆 모습을 각각 등록하는 것이 좋다.
  */
 object AdjacentMonsterDetector {
     private const val BINS = CharacterLocator.BINS
@@ -22,29 +21,26 @@ object AdjacentMonsterDetector {
     private const val MAX_BACKGROUND_SHARE = 0.02
     /** 맵 전체에서 이 비율 이상 보이는 색은 흔해서 뺀다 (몬스터가 많이 모여도 그 색이 빠지지 않게 넉넉히 잡는다) */
     private const val MAX_FIELD_SHARE = 0.01
-    /** 맵의 한 곳에 몬스터 색이 몬스터 그림 대비 이 비율 이상 모였으면 몬스터로 본다 */
-    const val MIN_SCORE = 0.45
+    /** 기억한 픽셀 중 이 비율 이상이 같은 자리 같은 색이면 몬스터가 있다고 본다 */
+    const val MIN_SCORE = 0.5
 
     data class Monster(
         /** 맵 영역 이미지 픽셀 기준 몬스터 칸 */
         val box: Rectangle,
-        /** 몬스터 그림 대비 몬스터 색 비율 */
+        /** 기억한 몬스터 픽셀 중 같은 자리 같은 색 비율 */
         val score: Double,
-        /** 캐릭터 발밑 칸에서 몇 칸 떨어졌는지 (오른쪽/아래가 +) */
-        val dx: Int,
-        val dy: Int,
-    ) {
-        /** 바로 옆 네 칸 중 하나면 그 방향, 아니면 null */
-        val direction: Direction? get() = Direction.entries.firstOrNull { it.dx == dx && it.dy == dy }
-    }
+        val direction: Direction,
+    )
 
     data class Reading(
         /** 방향별 캐릭터 옆 칸 (맵 영역 이미지 픽셀 기준, 썸네일에 그린다) */
         val cells: Map<Direction, Rectangle>,
-        /** 맵에서 찾은 몬스터 전부 */
+        /** 방향별 가장 잘 맞은 점수 (몬스터가 없어도 들어 있다) */
+        val scores: Map<Direction, Double>,
+        /** 옆 칸에서 찾은 몬스터 */
         val monsters: List<Monster>,
     ) {
-        val occupied: Set<Direction> get() = monsters.mapNotNull { it.direction }.toSet()
+        val occupied: Set<Direction> get() = monsters.map { it.direction }.toSet()
     }
 
     /**
@@ -67,68 +63,47 @@ object AdjacentMonsterDetector {
             Rectangle(standX + direction.dx * tileSize, standY + direction.dy * tileSize, tileSize, tileSize)
                 .intersection(bounds)
         }
-        if (samples.isEmpty()) return Reading(cells, emptyList())
+        val scores = Direction.entries.associateWith { 0.0 }.toMutableMap()
+        val best = mutableMapOf<Direction, Monster>()
+        if (samples.isEmpty()) return Reading(cells, scores, emptyList())
 
         val bins = CharacterLocator.bins(field)
         val fieldCounts = IntArray(BINS).also { c -> bins.forEach { c[it]++ } }
-        // 걷는 자세나 스킬 이펙트로 캐릭터 그림 바깥에 걸친 픽셀이 세어지지 않게 캐릭터 칸은 조금 넓혀서 뺀다
-        val margin = tileSize / 4
-        val exclude = Rectangle(box.x - margin, box.y - margin, box.width + margin * 2, box.height + margin * 2)
-
-        val found = mutableListOf<Monster>()
+        val step = maxOf(1, tileSize / 24)
         for (sample in samples) {
-            val colors = sampleColors(sample, fieldCounts, bins.size, character.colorBins) ?: continue
-            val w = colors.width.coerceAtMost(width)
-            val h = colors.height.coerceAtMost(height)
-            // 몬스터 색 픽셀 누적합으로 w x h 칸마다 개수를 센다
-            val stride = width + 1
-            val sums = IntArray(stride * (height + 1))
-            for (y in 0 until height) {
-                var row = 0
-                for (x in 0 until width) {
-                    if (colors.isKey[bins[y * width + x]] && !exclude.contains(x, y)) row++
-                    sums[(y + 1) * stride + x + 1] = sums[y * stride + x + 1] + row
+            val shape = sampleShape(sample, fieldCounts, bins.size, character.colorBins) ?: continue
+            for (direction in Direction.entries) {
+                // 몬스터 그림의 아래 가운데(발밑)가 옆 칸 안에 오는 위치만 훑는다 (발끝은 칸 아래로 조금 내려온다)
+                val tileX = standX + direction.dx * tileSize
+                val tileY = standY + direction.dy * tileSize
+                for (footY in tileY + tileSize / 4..tileY + tileSize + tileSize / 3 step step) {
+                    val oy = footY - shape.height
+                    if (oy < 0 || footY > height) continue
+                    for (footX in tileX..tileX + tileSize step step) {
+                        val ox = footX - shape.width / 2
+                        if (ox < 0 || ox + shape.width > width) continue
+                        var same = 0
+                        for (i in shape.xs.indices) {
+                            if (bins[(oy + shape.ys[i]) * width + ox + shape.xs[i]] == shape.bins[i]) same++
+                        }
+                        val score = same.toDouble() / shape.xs.size
+                        if (score > scores.getValue(direction)) {
+                            scores[direction] = score
+                            if (score >= MIN_SCORE) {
+                                best[direction] = Monster(Rectangle(ox, oy, shape.width, shape.height), score, direction)
+                            }
+                        }
+                    }
                 }
             }
-            fun count(x: Int, y: Int) =
-                sums[(y + h) * stride + x + w] - sums[y * stride + x + w] - sums[(y + h) * stride + x] + sums[y * stride + x]
-
-            // 점수가 높은 곳부터 고르고, 고른 곳과 많이 겹치는 곳은 같은 몬스터로 보고 건너뛴다
-            val need = (colors.expected * MIN_SCORE).toInt().coerceAtLeast(1)
-            val step = maxOf(1, tileSize / 12)
-            val candidates = mutableListOf<Triple<Int, Int, Int>>()
-            for (y in 0..height - h step step) for (x in 0..width - w step step) {
-                val c = count(x, y)
-                if (c >= need) candidates += Triple(c, x, y)
-            }
-            candidates.sortByDescending { it.first }
-            for ((c, x, y) in candidates) {
-                val rect = Rectangle(x, y, w, h)
-                if (found.any { it.box.overlapRatio(rect) > 0.3 }) continue
-                val footX = x + w / 2
-                val footY = y + h - tileSize / 2
-                found += Monster(
-                    box = rect,
-                    score = c.toDouble() / colors.expected,
-                    dx = ((footX - (standX + tileSize / 2)).toDouble() / tileSize).roundToInt(),
-                    dy = ((footY - (standY + tileSize / 2)).toDouble() / tileSize).roundToInt(),
-                )
-            }
         }
-        return Reading(cells, found)
+        return Reading(cells, scores, best.values.toList())
     }
 
-    /** 작은 쪽 넓이 대비 겹친 넓이 */
-    private fun Rectangle.overlapRatio(other: Rectangle): Double {
-        val i = intersection(other)
-        if (i.isEmpty) return 0.0
-        return (i.width.toDouble() * i.height) / minOf(width * height, other.width * other.height)
-    }
+    /** 몬스터 색인 픽셀의 자리(그림 왼쪽 위 기준)와 색 칸 */
+    private class SampleShape(val xs: IntArray, val ys: IntArray, val bins: IntArray, val width: Int, val height: Int)
 
-    private class SampleColors(val isKey: BooleanArray, val expected: Int, val width: Int, val height: Int)
-
-    /** 등록한 몬스터 그림에서 몬스터 색을 고르고, 그 색이 있는 곳의 크기(5%~95%)와 개수를 잰다 */
-    private fun sampleColors(sample: BufferedImage, fieldCounts: IntArray, fieldTotal: Int, characterBins: Set<Int>): SampleColors? {
+    private fun sampleShape(sample: BufferedImage, fieldCounts: IntArray, fieldTotal: Int, characterBins: Set<Int>): SampleShape? {
         val w = sample.width
         val h = sample.height
         if (w < 8 || h < 8) return null
@@ -151,20 +126,13 @@ object AdjacentMonsterDetector {
         }
         val xs = ArrayList<Int>()
         val ys = ArrayList<Int>()
+        val keyBins = ArrayList<Int>()
         for (y in 0 until h) for (x in 0 until w) {
-            if (isKey[bins[y * w + x]]) { xs += x; ys += y }
+            val b = bins[y * w + x]
+            if (isKey[b]) { xs += x; ys += y; keyBins += b }
         }
         // 몬스터 색이 너무 적으면 (지금 맵에 흔한 색뿐이면) 이 그림으로는 찾지 않는다
         if (xs.size < 20) return null
-        xs.sort(); ys.sort()
-        val x0 = xs[xs.size * 5 / 100]
-        val x1 = xs[xs.size * 95 / 100]
-        val y0 = ys[ys.size * 5 / 100]
-        val y1 = ys[ys.size * 95 / 100]
-        var expected = 0
-        for (y in y0..y1) for (x in x0..x1) if (isKey[bins[y * w + x]]) expected++
-        if (expected < 20) return null
-        // 몬스터 발끝은 색이 있는 곳보다 조금 아래이므로 높이는 그림 아래 끝까지 잡는다
-        return SampleColors(isKey, expected, x1 - x0 + 1, h - y0)
+        return SampleShape(xs.toIntArray(), ys.toIntArray(), keyBins.toIntArray(), w, h)
     }
 }
