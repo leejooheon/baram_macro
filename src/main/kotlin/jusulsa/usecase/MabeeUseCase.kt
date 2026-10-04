@@ -71,7 +71,7 @@ class MabeeUseCase(
         private val ME = Tile(0, 0)
         /** 마비 사이에 공격할 틈을 두는 간격 */
         const val MIN_INTERVAL_MILLIS = 800L
-        /** 마비가 풀렸다고 보는 시간. 실제 지속시간을 알면 맞춘다 */
-        const val HOLD_MILLIS = 10_000L
+        /** 마비 지속시간 30초 (사용자 확인) */
+        const val HOLD_MILLIS = 30_000L
     }
 }

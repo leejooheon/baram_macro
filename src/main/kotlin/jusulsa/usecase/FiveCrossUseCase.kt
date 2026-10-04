@@ -163,8 +163,8 @@ class FiveCrossUseCase(
         private val ME = Tile(0, 0)
         /** 중심 몹 상하좌우에 이만큼은 붙어 있어야 각을 만들기 시작한다 */
         const val MIN_NEIGHBORS = 2
-        /** 절망이 풀렸다고 보는 시간. 실제 지속시간을 알면 맞춘다 */
-        const val HOLD_MILLIS = 10_000L
+        /** 절망 지속시간 60초 (사용자 확인) */
+        const val HOLD_MILLIS = 60_000L
         /** 묶은 지 이만큼 지났는데 각 밖에 있으면 활력으로 푼다 */
         const val RELEASE_AFTER_MILLIS = 2_000L
         const val RELEASE_INTERVAL_MILLIS = 1_000L
