@@ -63,9 +63,18 @@ class JusulsaViewModel2 {
             NativeKeyEvent.VC_DOWN -> macroDetailAction.onDirectionChanged(KeyEvent.VK_DOWN)
             NativeKeyEvent.VC_RIGHT -> macroDetailAction.onDirectionChanged(KeyEvent.VK_RIGHT)
 
-            // PgDn은 ESC와 같이 멈춤
-            NativeKeyEvent.VC_ESCAPE,
-            NativeKeyEvent.VC_PAGE_DOWN -> actionJob?.cancel()
+            NativeKeyEvent.VC_ESCAPE -> actionJob?.cancel()
+            NativeKeyEvent.VC_PAGE_DOWN -> stopAndPressEscape()
+        }
+    }
+
+    /** PgDn: 매크로를 멈추고, 매크로가 키를 다 뗀 뒤 게임에 ESC를 보낸다 */
+    private fun stopAndPressEscape() {
+        val job = actionJob
+        job?.cancel()
+        scope.launch {
+            job?.join()
+            Keyboard.atomic { Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE) }
         }
     }
 
