@@ -41,7 +41,7 @@ class MacroEngine(
                 continue
             }
             // 공격은 너무 자주라 생존·버프만 찍는다
-            if (urgent != null) println("[MacroEngine] ${task.name}")
+            if (urgent != null && urgent.logEachRun) println("[MacroEngine] ${task.name}")
             Keyboard.atomic { task.execute() }
             counts[task.name] = (counts[task.name] ?: 0) + 1
             summarize(time)

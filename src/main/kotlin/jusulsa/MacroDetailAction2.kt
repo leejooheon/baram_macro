@@ -90,14 +90,14 @@ class MacroDetailAction2(
     /**
      * 첨첨. 할 일은 전부 UseCase이고, [MacroEngine]이 상태를 보고 하나씩 골라 실행한다.
      *
-     * 우선(앞에서부터, 할 일이 있으면 바로): 공증 > 자힐 > 보무 > 마기지체 > 삼매진화 > 저주(사방) > 헬파이어
-     * 공격(번갈아 가며): 첨 > 6번 맵 전체 > 평타
+     * 우선(앞에서부터, 할 일이 있으면 바로): 공증 > 자힐 > 평타 > 보무 > 마기지체 > 삼매진화 > 저주(사방) > 헬파이어
+     * 공격(번갈아 가며): 첨 > 6번 맵 전체
      * 사용자가 방향키로 이동 중이면 아무것도 안 한다.
      */
     suspend fun chumChum() = withContext(Dispatchers.Default) {
         MacroEngine(
-            priority = listOf(mana, selfHeal, bomu, magi, sammeUseCase, CurseAroundUseCase(), HellfireUseCase({ latestDirection })),
-            rotation = listOf(ChumUseCase(), DespairSpreadUseCase({ latestDirection }), BasicAttackUseCase()),
+            priority = listOf(mana, selfHeal, BasicAttackUseCase(), bomu, magi, sammeUseCase, CurseAroundUseCase(), HellfireUseCase({ latestDirection })),
+            rotation = listOf(ChumUseCase(), DespairSpreadUseCase({ latestDirection })),
         ).run()
     }
 

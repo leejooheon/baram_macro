@@ -93,18 +93,22 @@ class DespairSpreadUseCase(
     }
 
     companion object {
-        const val BURST = 3
+        const val BURST = 2
         const val PER_DIRECTION = 6
         const val CURSE_RESERVE = 1
         private val DIRECTIONS = listOf(KeyEvent.VK_UP, KeyEvent.VK_LEFT, KeyEvent.VK_DOWN, KeyEvent.VK_RIGHT)
     }
 }
 
-/** 평타. 예전 매크로처럼 스페이스바를 꾹 누르지 않고 [INTERVAL_MILLIS]마다 한 번씩 누른다 */
+/**
+ * 평타. 예전 매크로처럼 스페이스바를 꾹 누르지 않고 [INTERVAL_MILLIS]마다 한 번씩 누른다.
+ * 키 하나라 금방 끝나므로 공격 순환에서 차례를 기다리지 않게 우선 목록에 둔다.
+ */
 class BasicAttackUseCase(
     private val now: () -> Long = System::currentTimeMillis,
 ) : MacroUseCase {
     override val name = "평타"
+    override val logEachRun = false
     private var lastAt = 0L
 
     override fun isReady(now: Long) = now - lastAt >= INTERVAL_MILLIS

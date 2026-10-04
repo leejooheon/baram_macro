@@ -13,6 +13,9 @@ interface MacroUseCase {
     /** 로그에 찍을 이름 */
     val name: String
 
+    /** 우선 목록에서 실행할 때마다 로그를 찍을지. 자주 도는 것은 5초 요약에만 남긴다 */
+    val logEachRun: Boolean get() = true
+
     fun isReady(now: Long): Boolean
 
     suspend fun execute()
