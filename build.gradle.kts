@@ -21,6 +21,8 @@ dependencies {
     implementation(libs.jna.platform)
 
     implementation(libs.bundles.ktor)
+
+    testImplementation(kotlin("test"))
 }
 
 compose.desktop {
@@ -34,4 +36,8 @@ compose.desktop {
             packageVersion = "1.0.0"
         }
     }
+}
+
+tasks.test {
+    useJUnitPlatform()
 }

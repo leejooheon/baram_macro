@@ -1,5 +1,6 @@
 package ocr.model
 
+import ocr.vitals.VitalsReader
 import java.awt.Rectangle
 import java.awt.geom.Rectangle2D
 import java.awt.image.BufferedImage
@@ -41,6 +42,12 @@ data class TimerMonitorState(
         val cached: Boolean = false,
         val capturedAt: Long = 0,
         val error: String? = null,
+        /** 체력/마력 영역만: 계산한 % */
+        val vitals: Vitals? = null,
+        /** 체력/마력 영역만: 찾은 막대 위치 (썸네일에 그린다) */
+        val bars: VitalsReader.BarReading? = null,
+        /** 체력/마력 영역만: 100%로 삼은 막대 폭 */
+        val fullWidth: Int = 0,
     )
 
     /**
