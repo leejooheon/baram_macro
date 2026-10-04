@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import ocr.OcrStateHolder
 import ocr.model.TimerMonitorState.RegionState
 import ocr.model.TimerMonitorState.TimerEntry
 import ocr.model.TimerRegion
@@ -46,6 +47,7 @@ internal fun RegionSection(
             Text(
                 text = state.error ?: when {
                     state.capturedAt == 0L -> ""
+                    !region.usesOcr -> "${state.latencyMillis}ms · 막대 색으로 계산"
                     state.cached -> "${state.latencyMillis}ms · 변화 없음"
                     else -> "${state.latencyMillis}ms · OCR ${state.ocrMillis.roundToInt()}ms"
                 },
@@ -62,7 +64,10 @@ internal fun RegionSection(
             Thumbnail(state)
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
-                if (state.entries.isEmpty()) {
+                if (!region.usesOcr) {
+                    VitalRow("체력", state.vitals?.hpPercent, HpColor)
+                    VitalRow("마력", state.vitals?.mpPercent, MpColor)
+                } else if (state.entries.isEmpty()) {
                     Text(
                         text = if (state.image == null) "캡처 없음" else "없음",
                         style = SmallText,
@@ -97,6 +102,17 @@ private fun Thumbnail(state: RegionState) {
             dstOffset = IntOffset.Zero,
             dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()),
         )
+        state.bars?.let { bars ->
+            // 찾은 막대 칸 전체
+            listOfNotNull(bars.hpBox, bars.mpBox).forEach { box ->
+                drawRect(
+                    color = ParsedColor,
+                    topLeft = Offset(box.x * scale - 1, box.y * scale - 1),
+                    size = Size(box.width * scale + 2, box.height * scale + 2),
+                    style = Stroke(width = 1.5f),
+                )
+            }
+        }
         state.entries.forEach { entry ->
             drawRect(
                 color = if (entry.confidence >= 0.5) ParsedColor else UnparsedColor,
@@ -105,6 +121,39 @@ private fun Thumbnail(state: RegionState) {
                 style = Stroke(width = 1.5f),
             )
         }
+    }
+}
+
+private val HpColor = Color(0xFFE53935)
+private val MpColor = Color(0xFF1E88E5)
+
+/** 체력/마력 한 줄: 이름, 작은 막대, % */
+@Composable
+private fun VitalRow(label: String, percent: Int?, color: Color) {
+    val low = label == "마력" && percent != null && percent <= OcrStateHolder.MANA_LOW_PERCENT
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.height(18.dp)) {
+        Text(label, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(32.dp))
+        Box(
+            Modifier
+                .weight(1f)
+                .height(8.dp)
+                .background(Color(0xFFEEEEEE))
+        ) {
+            Box(
+                Modifier
+                    .fillMaxWidth((percent ?: 0) / 100f)
+                    .fillMaxHeight()
+                    .background(color)
+            )
+        }
+        Text(
+            text = percent?.let { "$it%" } ?: "-",
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            fontFamily = FontFamily.Monospace,
+            color = if (low) Color.Red else Color.Unspecified,
+            modifier = Modifier.width(44.dp).padding(start = 4.dp),
+        )
     }
 }
 

@@ -18,12 +18,15 @@ import ocr.model.TimerMonitorState.TimerEntry
 import ocr.model.TimerMonitorState.WindowState
 import ocr.model.TimerLineModel
 import ocr.model.TimerRegion
+import ocr.model.Vitals
+import ocr.vitals.VitalsReader
 import java.awt.Rectangle
 import java.awt.geom.Rectangle2D
 import java.awt.image.BufferedImage
 
 /**
  * 게임 창을 주기적으로 한 장 찍고, 그 안의 쿨타임 박스와 버프 패널을 잘라 OCR 서버로 읽는다.
+ * 체력/마력 막대는 서버로 보내지 않고 여기서 색으로 잰다.
  * 다른 매크로에서는 [state]의 remaining(...)으로 남은 초를 읽어 쓰면 된다.
  *
  * 남은 초는 읽은 시점 기준으로 계속 줄어들게 계산하므로, OCR 주기를 길게 잡아도 표시는 매초 갱신된다.
@@ -106,7 +109,7 @@ object TimerMonitor {
         val target = findWindow() ?: return
         val regions = TimerRegion.entries
         val fractions = regions.map { state.value.regions.getValue(it).fraction }
-        // 게임 창 전체가 아니라 두 영역만 옮겨 온다
+        // 게임 창 전체가 아니라 영역들만 옮겨 온다
         val capture = runCatching { GameWindowCapture.captureRegions(target, fractions) }.getOrNull()
         _state.update {
             it.copy(
@@ -115,7 +118,10 @@ object TimerMonitor {
             )
         }
         capture ?: return
-        regions.forEachIndexed { i, region -> read(region, capture.images[i], capturedAt) }
+        regions.forEachIndexed { i, region ->
+            if (region.usesOcr) read(region, capture.images[i], capturedAt)
+            else readVitals(region, capture.images[i], capturedAt)
+        }
         if (state.value.server is ServerState.Unknown) checkServer()
     }
 
@@ -183,6 +189,24 @@ object TimerMonitor {
                     else -> state.server
                 }
             )
+        }
+    }
+
+    private fun readVitals(region: TimerRegion, image: BufferedImage, capturedAt: Long) {
+        val bars = VitalsReader.read(image)
+        val vitals = bars?.let { Vitals(hpPercent = it.hpPercent, mpPercent = it.mpPercent, capturedAt = capturedAt) }
+        if (vitals != null) OcrStateHolder.updateVitals(vitals)
+
+        _state.update { state ->
+            val next = state.regions.getValue(region).copy(
+                image = image,
+                capturedAt = capturedAt,
+                latencyMillis = System.currentTimeMillis() - capturedAt,
+                vitals = vitals,
+                bars = bars,
+                error = if (bars == null) "막대를 못 찾았어요" else null,
+            )
+            state.copy(regions = state.regions + (region to next))
         }
     }
 

@@ -76,7 +76,10 @@ fun RegionPickerWindow(
                     val py = it.y * frame.height
                     "(${px.roundToInt()}, ${py.roundToInt()})  " +
                         "${(it.width * frame.width).roundToInt()}×${(it.height * frame.height).roundToInt()}"
-                } ?: "${region.title} 글자가 보이는 곳을 드래그하세요. 점선은 지금 쓰는 영역이에요."
+                } ?: when (region.usesOcr) {
+                    true -> "${region.title} 글자가 보이는 곳을 드래그하세요. 점선은 지금 쓰는 영역이에요."
+                    false -> "체력/마력 막대 두 줄만 꼭 맞게 드래그하세요. 점선은 지금 쓰는 영역이에요."
+                }
                 Text(hint, modifier = Modifier.weight(1f))
                 Button(onClick = ::confirm, enabled = selection != null) { Text("저장 (Enter)") }
                 Spacer(Modifier.width(8.dp))
