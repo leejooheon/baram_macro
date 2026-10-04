@@ -12,7 +12,6 @@ import jusulsa.usecase.MagiUseCase
 import jusulsa.usecase.ManaUseCase
 import jusulsa.usecase.SammeUseCase
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
@@ -99,13 +98,16 @@ class MacroDetailAction2(
     suspend fun chumChum() = kotlinx.coroutines.coroutineScope {
         val attack = CursePoisonCycle()
 
-        // 0. 평타: 첨첨이 도는 동안 스페이스바를 누르고 있는다. 멈추면(ESC 등) 뗀다
-        launch {
-            Keyboard.press(KeyEvent.VK_SPACE)
-            try {
-                awaitCancellation()
-            } finally {
-                Keyboard.release(KeyEvent.VK_SPACE)
+        // 0. 평타: 예전 매크로처럼 스페이스바를 꾹 누르지 않고 [ATTACK_INTERVAL_MILLIS]마다 한 번씩 누른다
+        launch(Dispatchers.Default) {
+            while (isActive) {
+                val moving = UserInput.waitMillis()
+                if (moving > 0) {
+                    delay(moving)
+                    continue
+                }
+                Keyboard.pressAndRelease(KeyEvent.VK_SPACE)
+                delay(ATTACK_INTERVAL_MILLIS)
             }
         }
 
@@ -190,6 +192,8 @@ class MacroDetailAction2(
     companion object {
         /** 쓸 수 있는 마법이 없을 때 다시 고르기까지 쉬는 시간 */
         private const val IDLE_MILLIS = 20L
+        /** 평타(스페이스바) 간격. 예전 매크로의 값 */
+        private const val ATTACK_INTERVAL_MILLIS = 450L
         private val CHUMS = listOf(Skill.CHUM1, Skill.CHUM2)
         /** 한 방향에 몇 마리를 걸고 다음 방향으로 넘어갈지 */
         private const val CURSE_PER_DIRECTION = 5
