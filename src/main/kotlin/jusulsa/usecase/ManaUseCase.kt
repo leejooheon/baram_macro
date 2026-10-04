@@ -20,9 +20,31 @@ class ManaUseCase(
 
     fun needsGongjeung(): Boolean {
         val time = now()
-        if (!canCast(time)) return false
-        val mp = ocr.state.value.freshVitals(time)?.mpPercent ?: return false
-        return mp <= OcrStateHolder.MANA_LOW_PERCENT
+        val vitals = ocr.state.value.freshVitals(time)
+        val mp = vitals?.mpPercent
+        if (mp == null) {
+            log(if (vitals == null) "체력/마력 막대 읽기 실패 또는 5초 이상 지연됨" else "마력 막대를 못 찾음")
+            return false
+        }
+        if (mp > OcrStateHolder.MANA_LOW_PERCENT) return false
+
+        // 공증 직후에는 막대가 아직 안 바뀌었을 수 있다
+        lastGongjeungAt?.let {
+            if (time - it < RECAST_GUARD_MILLIS) {
+                log("마력 $mp% 이지만 ${time - it}ms 전에 공증해서 대기")
+                return false
+            }
+        }
+
+        // 쿨타임 박스에 공력증강이 보이면 아직 못 쓴다
+        val cooldown = ocr.state.value.fresh(TimerRegion.COOLDOWN, time)
+        val remaining = cooldown?.find(GONGJEUNG_NAME)?.remainingSeconds(time)
+        if (remaining != null && remaining > 0) {
+            log("마력 $mp% 이지만 쿨타임 박스에 $GONGJEUNG_NAME $remaining 초 남음")
+            return false
+        }
+        log("마력 $mp% -> 공증 (쿨타임 박스 ${if (cooldown == null) "못 읽음" else "통과"})")
+        return true
     }
 
     /** 마력이 부족하면 공증한다. 했으면 true */
@@ -33,15 +55,7 @@ class ManaUseCase(
         return true
     }
 
-    private fun canCast(time: Long): Boolean {
-        // 공증 직후에는 막대가 아직 안 바뀌었을 수 있다
-        lastGongjeungAt?.let { if (time - it < RECAST_GUARD_MILLIS) return false }
-
-        // 쿨타임 박스에 공력증강이 보이면 아직 못 쓴다
-        val cooldown = ocr.state.value.fresh(TimerRegion.COOLDOWN, time)
-        val remaining = cooldown?.find(GONGJEUNG_NAME)?.remainingSeconds(time)
-        return remaining == null || remaining <= 0
-    }
+    private fun log(message: String) = println("[ManaUseCase] $message")
 
     private suspend fun gongjeung(empty: Boolean) {
         Keyboard.atomic {
