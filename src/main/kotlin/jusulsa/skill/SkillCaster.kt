@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap
  *
  * - 초당 횟수: [RateGroup]별로 직전 1초 안에 limit번까지만 (넘으면 게임이 무시하므로 여유는 두지 않는다)
  * - 최소 간격: [Skill.minIntervalMillis]
- * - 사용자 이동키: 사용자가 방향키로 이동 중이면 대상이 틀어질 수 있는 마법은 미룬다.
+ * - 사용자 이동키: 사용자가 방향키로 이동 중이면 어떤 마법도 쓰지 않고 기다린다.
  *   방향으로 대상을 잡는 도중에 사용자 방향키가 들어오면 ESC로 취소하고 다시 시도한다.
  */
 object SkillCaster {
@@ -23,7 +23,7 @@ object SkillCaster {
     /** 규칙을 지킬 수 있을 때까지 기다렸다가 시전한다 */
     suspend fun cast(skill: Skill, target: Target = Target.Current) {
         while (true) {
-            val wait = waitMillis(skill, target, now())
+            val wait = waitMillis(skill, now())
             if (wait > 0) {
                 delay(wait)
                 continue
@@ -35,7 +35,7 @@ object SkillCaster {
 
     private suspend fun tryCast(skill: Skill, target: Target): Boolean {
         val startedAt = now()
-        if (waitMillis(skill, target, startedAt) > 0) return false
+        if (waitMillis(skill, startedAt) > 0) return false
 
         select(skill)
         when (target) {
@@ -68,16 +68,19 @@ object SkillCaster {
         return true
     }
 
-    private fun waitMillis(skill: Skill, target: Target, now: Long): Long {
+    /** 지금 바로 쓸 수 있으면 0, 아니면 기다려야 할 시간(ms). 매크로가 기다리지 않고 다른 마법을 고를 때 쓴다 */
+    fun readyIn(skill: Skill): Long = waitMillis(skill, now())
+
+    /** 이 묶음을 지금 바로 몇 번 더 쓸 수 있는지 */
+    fun remaining(group: RateGroup): Int = limiters.getValue(group).remaining(now())
+
+    private fun waitMillis(skill: Skill, now: Long): Long {
         var wait = 0L
         skill.rateGroup?.let { wait = maxOf(wait, limiters.getValue(it).waitMillis(now)) }
         if (skill.minIntervalMillis > 0) {
             lastCastAt[skill]?.let { wait = maxOf(wait, it + skill.minIntervalMillis - now) }
         }
-        if (skill.userInputSensitive || target is Target.Direction) {
-            wait = maxOf(wait, UserInput.waitMillis(now))
-        }
-        return wait
+        return maxOf(wait, UserInput.waitMillis(now))
     }
 
     private suspend fun select(skill: Skill) {

@@ -39,7 +39,7 @@ class SammeUseCase(
 
     companion object {
         const val NAME = "삼매진화"
-        /** 자힐이 채우는 값(HealUseCase.HEAL_UNTIL_PERCENT)과 같게 둬야 힐 뒤에 삼매가 나간다 */
+        /** 자힐 기준(HealUseCase.HEAL_BELOW_PERCENT)과 같게 둬야 힐 뒤에 삼매가 나간다 */
         const val FULL_HP_PERCENT = 90
         const val RECAST_GUARD_MILLIS = 5_000L
     }
