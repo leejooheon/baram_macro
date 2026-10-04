@@ -39,6 +39,10 @@ import kotlin.math.roundToInt
 object TimerMonitor {
     /** 맵 한 칸 크기 / 게임 창 폭. 클라이언트 영역 2554px 폭 창에서 한 칸이 72px였다 */
     private const val TILE_PER_WINDOW_WIDTH = 72.0 / 2554
+    /** 이 점수 이상이면 캐릭터를 확실하게 찾았다고 보고 자리를 기억한다 (가만히 서 있으면 0.9 안팎) */
+    private const val CONFIDENT_CHARACTER_SCORE = 0.75
+    /** 좌표가 그대로면 기억한 자리를 이만큼 계속 쓴다 */
+    private const val CHARACTER_HOLD_MILLIS = 60_000L
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     // 매 요청마다 PNG 본문을 로그로 찍지 않도록 로그를 끈 클라이언트를 따로 쓴다
@@ -255,6 +259,33 @@ object TimerMonitor {
         }
     }
 
+    /** 마지막으로 확실하게 찾은 캐릭터와 그때의 좌표 */
+    private var lastCharacter: Triple<CharacterLocator.Reading, CoordinateReader.Coordinate, Long>? = null
+
+    /**
+     * 몬스터에 둘러싸이거나 이펙트에 가리면 캐릭터 색이 모자라 못 찾거나 엉뚱한 곳을 찾는다.
+     * 게임 좌표가 마지막으로 확실하게 찾았을 때와 같으면 캐릭터가 움직이지 않은 것이므로 그 자리를 그대로 쓴다.
+     */
+    private fun locateCharacter(
+        portrait: BufferedImage,
+        field: BufferedImage,
+        coordinate: CoordinateReader.Coordinate?,
+        capturedAt: Long,
+    ): CharacterLocator.Reading? {
+        val found = CharacterLocator.locate(portrait, field)
+        val last = lastCharacter?.takeIf { (_, at, time) ->
+            at == coordinate && capturedAt - time <= CHARACTER_HOLD_MILLIS
+        }
+        if (found != null && found.score >= CONFIDENT_CHARACTER_SCORE && coordinate != null) {
+            lastCharacter = Triple(found, coordinate, capturedAt)
+        }
+        if (last == null) return found
+        val (reading, _, _) = last
+        // 같은 자리에서 확실하게 찾았으면 새 값을 쓰고, 아니면 가만히 있는 캐릭터의 마지막 자리를 쓴다
+        val near = found != null && found.center.distance(reading.center) <= reading.box.width
+        return if (near && found!!.score >= CONFIDENT_CHARACTER_SCORE) found else reading
+    }
+
     private fun readCharacter(
         portrait: BufferedImage,
         field: BufferedImage,
@@ -262,10 +293,10 @@ object TimerMonitor {
         windowWidth: Int,
         capturedAt: Long,
     ) {
-        val found = CharacterLocator.locate(portrait, field)
+        val coordinate = CoordinateReader.read(coords)
+        val found = locateCharacter(portrait, field, coordinate, capturedAt)
         val tileSize = (windowWidth * TILE_PER_WINDOW_WIDTH).roundToInt().coerceAtLeast(8)
         val nearby = found?.let { AdjacentMonsterDetector.detect(field, it, tileSize, monsters) }
-        val coordinate = CoordinateReader.read(coords)
         CharacterStateHolder.update(
             CharacterState(
                 mapX = coordinate?.x,
