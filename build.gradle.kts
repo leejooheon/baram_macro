@@ -29,6 +29,8 @@ compose.desktop {
     application {
         // 다른 앱 실행: gradlew run -PmainClass=OcrMonitorKt (OCR 모니터)
         mainClass = (findProperty("mainClass") as String?) ?: "JusulsaKt"
+        // 윈도우 콘솔에서 로그 한글이 깨지지 않게
+        jvmArgs += listOf("-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8")
 
         nativeDistributions {
             targetFormats(TargetFormat.Msi)

@@ -84,7 +84,8 @@ class FiveCrossUseCase(
         reserved = emptySet()
         val detection = detection(now) ?: return null
         val grid = TileGrid.of(detection) ?: return null
-        val monsters = detection.monsters.associateBy { grid.tileOf(it) }
+        // 내 칸에 잡힌 몹은 나를 잘못 잡은 것이라 뺀다
+        val monsters = detection.monsters.associateBy { grid.tileOf(it) }.filterKeys { it != ME }
         // 몹이 떠난 칸의 기록은 지우고, 오래된 기록은 풀렸다고 본다
         held.entries.removeIf { (tile, at) -> tile !in monsters || now - at > HOLD_MILLIS }
 

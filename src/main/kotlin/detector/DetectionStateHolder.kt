@@ -44,9 +44,10 @@ data class Detection(
     /** 내 캐릭터를 못 찾았으면 화면 가운데에 있다고 본다 (화면이 캐릭터를 따라다닌다) */
     val myPosition: Point get() = me?.center() ?: Point(windowWidth / 2, windowHeight / 2)
 
+    /** 내 자리를 덮은 박스는 몹이 아니라 나를 잘못 잡은 것이라 뺀다 (내 칸을 클릭하면 캐릭터 정보 창이 뜬다) */
     fun nearestMonster(): Rectangle? {
         val me = myPosition
-        return monsters.minByOrNull { it.center().distanceSq(me) }
+        return monsters.filterNot { it.contains(me) }.minByOrNull { it.center().distanceSq(me) }
     }
 
     fun isFresh(now: Long = System.currentTimeMillis()): Boolean = now - capturedAt <= MAX_AGE_MILLIS
@@ -58,3 +59,7 @@ data class Detection(
 }
 
 fun Rectangle.center() = Point(x + width / 2, y + height / 2)
+
+/** 몹 박스 중 중심이 내 캐릭터 박스 안에 있는 것(나를 몹으로도 잡은 것)을 뺀다 */
+fun List<Rectangle>.withoutMe(me: Rectangle?): List<Rectangle> =
+    if (me == null) this else filterNot { me.contains(it.center()) }

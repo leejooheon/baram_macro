@@ -21,13 +21,18 @@ class MabeeUseCaseTest {
     )
 
     @Test
-    fun `가까운 몹부터 마비를 건다`() {
-        assertEquals(Tile(1, 1), useCase(emptySet(), Tile(3, 0), Tile(1, 1)).plan(NOW)?.first)
+    fun `내 옆에 붙은 몹에만 마비를 건다`() {
+        assertEquals(Tile(0, 1), useCase(emptySet(), Tile(3, 0), Tile(1, 1), Tile(0, 1)).plan(NOW)?.first)
     }
 
     @Test
-    fun `5매각에 쓰는 몹과 먼 몹은 건너뛴다`() {
-        assertNull(useCase(setOf(Tile(1, 1)), Tile(1, 1), Tile(10, 0)).plan(NOW))
+    fun `대각선이나 먼 몹, 내 칸은 찍지 않는다`() {
+        assertNull(useCase(emptySet(), Tile(1, 1), Tile(3, 0), Tile(0, 0)).plan(NOW))
+    }
+
+    @Test
+    fun `5매각에 쓰는 몹은 건너뛴다`() {
+        assertNull(useCase(setOf(Tile(1, 0)), Tile(1, 0)).plan(NOW))
     }
 
     companion object {

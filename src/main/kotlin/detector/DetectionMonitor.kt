@@ -84,13 +84,14 @@ object DetectionMonitor {
         when (val result = client.detect(frame)) {
             is Result.Success -> {
                 val objects = result.data.objects
+                // 내 캐릭터가 여러 개로 잡히면 가장 확실한 것 하나만
+                val me = objects.filter { it.label == ME }.maxByOrNull { it.confidence }?.rectangle()
                 val detection = Detection(
                     window = target.hwnd,
                     windowWidth = frame.width,
                     windowHeight = frame.height,
-                    // 내 캐릭터가 여러 개로 잡히면 가장 확실한 것 하나만
-                    me = objects.filter { it.label == ME }.maxByOrNull { it.confidence }?.rectangle(),
-                    monsters = objects.filter { it.label == MONSTER }.map { it.rectangle() },
+                    me = me,
+                    monsters = objects.filter { it.label == MONSTER }.map { it.rectangle() }.withoutMe(me),
                     capturedAt = capturedAt,
                     latencyMillis = System.currentTimeMillis() - capturedAt,
                 )

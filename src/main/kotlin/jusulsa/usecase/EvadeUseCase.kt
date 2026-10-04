@@ -47,7 +47,7 @@ class EvadeUseCase(
         // 이동한 뒤의 화면으로 다시 판단해야 하므로, 움직인 다음에 찍은 결과만 쓴다
         if (detection.capturedAt <= lastMoveAt) return null
         val grid = TileGrid.of(detection) ?: return null
-        val all = detection.monsters.map { grid.tileOf(it) }.toSet()
+        val all = detection.monsters.map { grid.tileOf(it) }.toSet() - ME
         val monsters = all - ignore()
 
         fun adjacent(tile: Tile) = tile.neighbors.count { it in monsters }
