@@ -54,11 +54,12 @@ class JusulsaViewModel2 : BaseViewModel() {
             NativeKeyEvent.VC_3 -> execute { macroDetailAction.julmang() }
 
             NativeKeyEvent.VC_F1 -> execute { macroDetailAction.hondon() }
+            NativeKeyEvent.VC_F4 -> execute { macroDetailAction.chumChum() }
 
-            NativeKeyEvent.VC_UP,
-            NativeKeyEvent.VC_LEFT,
-            NativeKeyEvent.VC_DOWN,
-            NativeKeyEvent.VC_RIGHT -> macroDetailAction.onDirectionChanged(keyEvent)
+            NativeKeyEvent.VC_UP -> macroDetailAction.onDirectionChanged(KeyEvent.VK_UP)
+            NativeKeyEvent.VC_LEFT -> macroDetailAction.onDirectionChanged(KeyEvent.VK_LEFT)
+            NativeKeyEvent.VC_DOWN -> macroDetailAction.onDirectionChanged(KeyEvent.VK_DOWN)
+            NativeKeyEvent.VC_RIGHT -> macroDetailAction.onDirectionChanged(KeyEvent.VK_RIGHT)
 
             NativeKeyEvent.VC_ESCAPE -> actionJob?.cancel()
         }
@@ -158,7 +159,7 @@ class JusulsaViewModel2 : BaseViewModel() {
 
     private fun execute(block: suspend CoroutineScope.() -> Unit) {
         actionJob?.cancel()
-        scope.launch { block() }
+        actionJob = scope.launch { block() }
     }
 
     override fun dispatch(event: UiEvent): Job { throw IllegalAccessException("not implementation") }

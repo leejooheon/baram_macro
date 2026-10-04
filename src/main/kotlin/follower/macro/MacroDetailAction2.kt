@@ -7,14 +7,19 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import java.awt.event.KeyEvent
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 class MacroDetailAction2 {
     private var bomuTime = 0L
     private var latestDirection: Int = KeyEvent.VK_LEFT
+
+    // 동시에 도는 매크로끼리 키 입력이 섞이지 않게 한다
+    private val keyMutex = Mutex()
 
     fun onDirectionChanged(event: Int) {
         latestDirection = event
@@ -83,12 +88,15 @@ class MacroDetailAction2 {
 //            Keyboard.pressAndRelease(KeyEvent.VK_ENTER, DELAY)
         }
     }
-    suspend fun jeoju2() {
-        while (true) {
+    private suspend fun jeoju2(direction: Int, duration: Duration) {
+        val endTime = System.currentTimeMillis() + duration.inWholeMilliseconds
+        while (System.currentTimeMillis() < endTime) {
             currentCoroutineContext().ensureActive()
-            Keyboard.pressAndRelease(JEOJU)
-            Keyboard.pressAndRelease(latestDirection)
-            Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+            keyMutex.withLock {
+                Keyboard.pressAndRelease(JEOJU)
+                Keyboard.pressAndRelease(direction)
+                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+            }
         }
     }
 
@@ -110,12 +118,28 @@ class MacroDetailAction2 {
         }
     }
 
-    suspend fun jungDok() {
-        while (true) {
+    // 4방향으로 중독을 돌리고 사이사이 자힐
+    private suspend fun jungDok(duration: Duration) {
+        val endTime = System.currentTimeMillis() + duration.inWholeMilliseconds
+        var cnt = 0
+        var directionIndex = 0
+        while (System.currentTimeMillis() < endTime) {
             currentCoroutineContext().ensureActive()
-            Keyboard.pressAndRelease(JUNGDOK)
-            Keyboard.pressAndRelease(latestDirection)
-            Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+            if(cnt % 16 == 3) {
+                directionIndex = (directionIndex + 1) % DIRECTIONS.size
+            }
+            if(cnt % 16 > 8) {
+                keyMutex.withLock { healMe() }
+                delay(300)
+            } else {
+                keyMutex.withLock {
+                    selectAlphabetMagic(JUNGDOK, upper = true)
+                    Keyboard.pressAndRelease(DIRECTIONS[directionIndex])
+                    Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+                }
+                delay(120)
+            }
+            cnt++
         }
     }
 
@@ -126,9 +150,7 @@ class MacroDetailAction2 {
     }
 
     suspend fun samme() {
-        executeAlphabetMagic(
-            Triple(SAMME, false, false)
-        )
+        Keyboard.pressAndRelease(SAMME)
     }
 
     suspend fun gongjeung() {
@@ -136,25 +158,27 @@ class MacroDetailAction2 {
     }
 
     suspend fun hondon() {
-        executeAlphabetMagic(Triple(HONDON, false, false))
+        Keyboard.pressAndRelease(HONDON)
     }
 
     suspend fun chumChum() = withContext(Dispatchers.Default) {
+        // 중독을 돌리는 동안 방향키가 눌리므로 시작 시점의 방향을 잡아둔다
+        val direction = latestDirection
+
+        bomu(true)
+        bomuTime = System.currentTimeMillis()
+
         launch {
             while (isActive) {
-                withTimeoutOrNull(5.seconds) {
-                    jeoju2()
-                }
-                withTimeoutOrNull(30.seconds) {
-                    jungDok()
-                }
+                jeoju2(direction, 5.seconds)
+                jungDok(30.seconds)
             }
         }
         launch {
             while (isActive) {
-                executeAlphabetMagic(Triple(CHUM1, false, false))
+                keyMutex.withLock { selectAlphabetMagic(CHUM1) }
                 delay(400)
-                executeAlphabetMagic(Triple(CHUM2, false, false))
+                keyMutex.withLock { selectAlphabetMagic(CHUM2) }
                 delay(400)
             }
         }
@@ -203,13 +227,7 @@ class MacroDetailAction2 {
         args.forEach { arg ->
             val (magic, forMe, enter) = arg
 
-            Keyboard.press(KeyEvent.VK_SHIFT)
-            delay(DELAY)
-
-            Keyboard.pressAndRelease(KeyEvent.VK_Z)
-            Keyboard.release(KeyEvent.VK_SHIFT)
-            delay(DELAY)
-            Keyboard.pressAndRelease(magic)
+            selectAlphabetMagic(magic)
 
             if(forMe) {
                 delay(DELAY)
@@ -223,30 +241,61 @@ class MacroDetailAction2 {
         }
     }
 
+    // shift+z 후 알파벳, 대문자 칸은 shift를 누른 채로 알파벳까지 입력
+    private suspend fun selectAlphabetMagic(magic: Int, upper: Boolean = false) {
+        Keyboard.press(KeyEvent.VK_SHIFT)
+        try {
+            delay(DELAY)
+            Keyboard.pressAndRelease(KeyEvent.VK_Z)
+            if(upper) {
+                delay(DELAY)
+                Keyboard.pressAndRelease(magic)
+            }
+        } finally {
+            Keyboard.release(KeyEvent.VK_SHIFT)
+        }
+
+        if(!upper) {
+            delay(DELAY)
+            Keyboard.pressAndRelease(magic)
+        }
+    }
+
     companion object {
-        // a(1), b(2), c(3) 비움,
+        // a(1): 헬파이어,
+        // b(2): 공력증강,
+        // c(3): 마비,
         // d(4): 활력,
-        // e(5): 공증,
-        // f(6): 마비,
-        // g(7): 절망,
-        // h(8): 저주,
-        // i(9): 기원,
-        // j(0): 헬파,
+        // e(5): 혼돈,
+        // f(6): 절망,
+        // g(7): 저주,
+        // h(8): 삼매진화,
+        // i(9): 태양의기원,
+        // j(0): 지폭지술,
+        // 나머지는 shift+z + 알파벳
+        // m: 보호, n: 무장, o: 마기지체, q: 극진뢰격참주'첨, r: 진뢰격참주'첨, G: 중독
         private const val DELAY = 60L
-        private const val HELLFIRE = KeyEvent.VK_0
-        private const val MABEE = KeyEvent.VK_6
-        private const val JULMANG = KeyEvent.VK_7
-        private const val JUNGDOK = KeyEvent.VK_7
-        private const val JEOJU = KeyEvent.VK_8
+        private const val HELLFIRE = KeyEvent.VK_1
+        private const val GONGJEUNG = KeyEvent.VK_2
+        private const val MABEE = KeyEvent.VK_3
+        private const val HONDON = KeyEvent.VK_5
+        private const val JULMANG = KeyEvent.VK_6
+        private const val JEOJU = KeyEvent.VK_7
+        private const val SAMME = KeyEvent.VK_8
         private const val HEAL = KeyEvent.VK_9
-        private const val SAMME = KeyEvent.VK_K
-        private const val GONGJEUNG = KeyEvent.VK_5
         private const val BOHO = KeyEvent.VK_M
         private const val MUJANG = KeyEvent.VK_N
         private const val MAGII = KeyEvent.VK_O
-        private const val HONDON = KeyEvent.VK_P
         private const val CHUM1 = KeyEvent.VK_Q
         private const val CHUM2 = KeyEvent.VK_R
+        private const val JUNGDOK = KeyEvent.VK_G // 대문자 G
         // A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z
+
+        private val DIRECTIONS = listOf(
+            KeyEvent.VK_UP,
+            KeyEvent.VK_LEFT,
+            KeyEvent.VK_DOWN,
+            KeyEvent.VK_RIGHT
+        )
     }
 }
