@@ -12,6 +12,7 @@ import jusulsa.usecase.MagiUseCase
 import jusulsa.usecase.ManaUseCase
 import jusulsa.usecase.SammeUseCase
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
@@ -97,6 +98,16 @@ class MacroDetailAction2(
      */
     suspend fun chumChum() = kotlinx.coroutines.coroutineScope {
         val attack = CursePoisonCycle()
+
+        // 0. 평타: 첨첨이 도는 동안 스페이스바를 누르고 있는다. 멈추면(ESC 등) 뗀다
+        launch {
+            Keyboard.press(KeyEvent.VK_SPACE)
+            try {
+                awaitCancellation()
+            } finally {
+                Keyboard.release(KeyEvent.VK_SPACE)
+            }
+        }
 
         // 1. 공격 전담 코루틴: 첨첨 마법 2개는 최우선으로 끊임없이 발사 (이동 중이 아닐 때만)
         launch(Dispatchers.Default) {
