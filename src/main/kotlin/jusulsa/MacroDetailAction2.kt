@@ -8,6 +8,7 @@ import jusulsa.skill.SkillCaster.cast
 import jusulsa.skill.Target
 import jusulsa.usecase.BomuUseCase
 import jusulsa.usecase.HealUseCase
+import jusulsa.usecase.HellfireUseCase
 import jusulsa.usecase.MagiUseCase
 import jusulsa.usecase.ManaUseCase
 import jusulsa.usecase.SammeUseCase
@@ -30,6 +31,7 @@ class MacroDetailAction2(
     private val selfHeal: HealUseCase = HealUseCase(),
     private val mana: ManaUseCase = ManaUseCase(),
     private val sammeUseCase: SammeUseCase = SammeUseCase(),
+    private val hellfire: HellfireUseCase = HellfireUseCase(),
 ) {
     private var latestDirection: Int = KeyEvent.VK_LEFT
 
@@ -96,7 +98,7 @@ class MacroDetailAction2(
      * 5. 남는 시간에 저주+중독을 한 방향씩 멀리 퍼뜨린다
      */
     suspend fun chumChum() = kotlinx.coroutines.coroutineScope {
-        val attack = CursePoisonCycle()
+        val attack = CursePoisonCycle(hellfire)
 
         // 1. 공격 전담 코루틴: 첨첨 마법 2개는 최우선으로 끊임없이 발사 (이동 중이 아닐 때만)
         launch(Dispatchers.Default) {
@@ -145,12 +147,12 @@ class MacroDetailAction2(
     }
 
     /**
-     * 한 방향으로 저주를 걸어 다음 몹으로 커서를 옮기고, 같은 몹에 바로 중독을 건다.
+     * 한 방향으로 저주를 걸어 다음 몹으로 커서를 옮기고, 같은 몹에 바로 중독을 건다. 헬파이어가 쿨이 아니면 그 몹에 같이 쓴다.
      * 방향키는 지금 커서 위치에서 그 방향의 다음 몹으로 옮겨 가므로, 같은 방향을 이어서 눌러야 멀리까지 퍼진다.
      * 한 방향에 [CURSE_PER_DIRECTION]마리를 걸고 다음 방향으로 넘어간다.
      * 힐·삼매·보무를 쓰면 커서가 나로 돌아오므로 그 뒤에는 내 주변부터 다시 퍼진다.
      */
-    private class CursePoisonCycle {
+    private class CursePoisonCycle(private val hellfire: HellfireUseCase) {
         private var count = 0
 
         /** 지금 쓸 수 있으면 저주+중독 한 쌍을 쓴다. 썼으면 true */
@@ -161,6 +163,7 @@ class MacroDetailAction2(
             // 둘 사이에 다른 마법이 끼면 중독이 엉뚱한 대상(나)에게 갈 수 있어서 한 번에 보낸다
             val casted = Keyboard.atomic {
                 if (!SkillCaster.tryCast(Skill.JEOJU, Target.Direction(dir))) return@atomic false
+                if (hellfire.canCast() && SkillCaster.tryCast(Skill.HELLFIRE, Target.Confirm)) hellfire.onCast()
                 SkillCaster.tryCast(Skill.JUNGDOK)
                 true
             }
