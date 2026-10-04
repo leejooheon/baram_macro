@@ -9,7 +9,7 @@ import ocr.OcrStateHolder
 import ocr.model.TimerRegion
 
 /**
- * 헬파이어. 쿨타임 박스에 헬파이어가 없으면 쓴다.
+ * 헬파이어. 쿨타임 박스에 헬파이어가 없고, 삼매진화가 [SAMME_HOLD_SECONDS]초 넘게 쿨타임일 때 쓴다.
  * 예전 헬파이어 단축키와 같이, 나를 기준으로 [direction] 방향 몹에 저주를 걸어 대상을 잡은 뒤 1 + Enter로 쓴다.
  *
  * 마력이 공증 기준 이하면 쓰지 않는다. 마력이 없어서 1이 안 먹으면 뒤의 Enter가 채팅창을 열고,
@@ -35,6 +35,13 @@ class HellfireUseCase(
             reason.log("쿨타임 박스 읽기 실패라 안 씀")
             return false
         }
+        // 삼매진화가 우선이다. 삼매가 쿨타임 중이고 한동안 안 돌아올 때만 쓴다.
+        // 헬파이어로 마력을 비우면 삼매가 돌아왔을 때 공증을 기다려야 하기 때문이다
+        val samme = cooldown.find(SammeUseCase.NAME)?.remainingSeconds(now)
+        if (samme == null || samme < SAMME_HOLD_SECONDS) {
+            reason.log("삼매진화 우선 (삼매 쿨 ${samme ?: "없음"})")
+            return false
+        }
         // OCR이 이름을 조금씩 다르게 읽어서 "헬"만 보고 찾는다
         val remaining = cooldown.entries.firstOrNull { NAME_KEY in it.name }?.remainingSeconds(now)
         if (remaining != null && remaining > 0) {
@@ -54,5 +61,7 @@ class HellfireUseCase(
     companion object {
         const val NAME_KEY = "헬"
         const val RECAST_GUARD_MILLIS = 5_000L
+        /** 삼매진화 쿨타임이 이만큼 남아 있어야 헬파이어를 쓴다 */
+        const val SAMME_HOLD_SECONDS = 5
     }
 }
