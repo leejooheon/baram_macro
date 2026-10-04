@@ -51,7 +51,7 @@ class ManaUseCase(
     suspend operator fun invoke(): Boolean {
         if (!needsGongjeung()) return false
         val mp = ocr.state.value.freshVitals(now())?.mpPercent
-        gongjeung(empty = mp != null && mp <= 0)
+        gongjeung(empty = mp != null && mp <= EMPTY_MP_PERCENT)
         return true
     }
 
@@ -69,6 +69,11 @@ class ManaUseCase(
 
     companion object {
         const val GONGJEUNG_NAME = "공력증강"
+        /**
+         * 이 이하면 마력 0으로 보고 U를 두 번 누른다. 삼매 뒤 막대가 바로 0이 되지 않고
+         * 몇 % 남은 것처럼 읽히는 동안에는 실제 마력이 0이라 U 없이 공증하면 실패한다
+         */
+        const val EMPTY_MP_PERCENT = 5
         const val RECAST_GUARD_MILLIS = 3_000L
     }
 }
