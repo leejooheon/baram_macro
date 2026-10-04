@@ -17,3 +17,4 @@ build/
 # OCR server venv
 script/.venv/
 __pycache__/
+script/detector/.venv/
