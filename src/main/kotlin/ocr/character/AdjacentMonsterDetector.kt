@@ -34,7 +34,8 @@ object AdjacentMonsterDetector {
     /**
      * [character]는 내 캐릭터 칸, [tileSize]는 맵 한 칸의 픽셀 크기, [monsters]는 등록한 몬스터 그림.
      * 캐릭터 그림은 칸보다 위로 솟아 있으므로 그림 아래쪽 한 칸을 캐릭터가 선 칸으로 본다.
-     * 몬스터 그림은 가로 약 1.5칸, 세로 약 2칸이고 발끝이 칸 아래로 조금 내려오므로 옆 칸보다 넓게 본다.
+     * 몬스터 그림은 세로 약 2칸이고 발끝이 칸 아래로 조금 내려오므로 옆 칸을 위아래로 넓혀 본다.
+     * 걷는 자세나 스킬 이펙트로 캐릭터 그림 바깥에 걸친 픽셀이 세어지지 않게 캐릭터 칸은 조금 넓혀서 뺀다.
      */
     fun detect(
         field: BufferedImage,
@@ -45,13 +46,16 @@ object AdjacentMonsterDetector {
         val width = field.width
         val height = field.height
         val box = character.box
+        val margin = tileSize / 4
+        val exclude = Rectangle(box.x - margin, box.y - margin, box.width + margin * 2, box.height + margin * 2)
         val standX = box.x + box.width / 2 - tileSize / 2
         val standY = box.y + box.height - tileSize
         val bounds = Rectangle(0, 0, width, height)
         val cells = Direction.entries.associateWith { direction ->
             val tileX = standX + direction.dx * tileSize
             val tileY = standY + direction.dy * tileSize
-            Rectangle(tileX - tileSize / 4, tileY - tileSize, tileSize * 3 / 2, tileSize * 2 + tileSize / 3)
+            // 옆 칸 폭 그대로(대각선 칸과 겹치지 않게), 위로는 몬스터 몸통 높이만큼, 아래로는 발끝만큼 넓힌다
+            Rectangle(tileX, tileY - tileSize * 7 / 10, tileSize, tileSize + tileSize * 7 / 10 + tileSize * 3 / 10)
                 .intersection(bounds)
         }
         if (monsters.isEmpty()) return Reading(cells, Direction.entries.associateWith { 0.0 })
@@ -65,8 +69,8 @@ object AdjacentMonsterDetector {
                 if (cell.isEmpty) continue
                 var hit = 0
                 for (y in cell.y until cell.y + cell.height) for (x in cell.x until cell.x + cell.width) {
-                    // 위 칸은 내 캐릭터 머리가 덮고 있으므로 캐릭터 그림 칸은 빼고 센다
-                    if (!box.contains(x, y) && colors.isKey[bins[y * width + x]]) hit++
+                    // 위 칸은 내 캐릭터 머리가 덮고 있으므로 캐릭터 그림 칸(+여유)은 빼고 센다
+                    if (!exclude.contains(x, y) && colors.isKey[bins[y * width + x]]) hit++
                 }
                 val ratio = hit.toDouble() / colors.expected
                 if (ratio > ratios.getValue(direction)) ratios[direction] = ratio
