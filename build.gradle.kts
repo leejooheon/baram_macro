@@ -21,6 +21,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.jnativehook)
     implementation(libs.jna)
+    implementation(libs.jna.platform)
 
 //    implementation(files("libs/tess4j-5.10.0.jar"))
     implementation(libs.tess4j) {
@@ -32,7 +33,8 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "JusulsaKt"
+        // 다른 앱 실행: gradlew run -PmainClass=OcrMonitorKt (OCR 모니터)
+        mainClass = (findProperty("mainClass") as String?) ?: "JusulsaKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Msi)

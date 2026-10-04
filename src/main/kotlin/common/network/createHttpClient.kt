@@ -10,7 +10,9 @@ import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.serialization.kotlinx.json.json
 
-fun createHttpClient(): HttpClient {
+fun createHttpClient(
+    logLevel: LogLevel = LogLevel.ALL,
+): HttpClient {
     return HttpClient(OkHttp.create()) {
         install(HttpTimeout) {
             requestTimeoutMillis = 10000
@@ -18,7 +20,7 @@ fun createHttpClient(): HttpClient {
             connectTimeoutMillis = 10000
         }
         install(Logging) {
-            level = LogLevel.ALL
+            level = logLevel
         }
         install(ContentNegotiation) {
             json(

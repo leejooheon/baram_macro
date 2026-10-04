@@ -175,5 +175,22 @@ class JusulsaViewModel2 : BaseViewModel() {
     }
 
     override fun dispatch(event: UiEvent): Job { throw IllegalAccessException("not implementation") }
+
+    companion object {
+        // 매크로 단축키는 게임에 넘기지 않는다. 방향키와 ESC는 게임에서도 써야 하므로 뺀다
+        internal val MACRO_KEYS = setOf(
+            NativeKeyEvent.VC_PAGE_UP,
+            NativeKeyEvent.VC_PAGE_DOWN,
+            NativeKeyEvent.VC_BACKQUOTE,
+            NativeKeyEvent.VC_SLASH,
+            NativeKeyEvent.VC_BACK_SLASH,
+            NativeKeyEvent.VC_KANJI,
+            NativeKeyEvent.VC_1,
+            NativeKeyEvent.VC_2,
+            NativeKeyEvent.VC_3,
+            NativeKeyEvent.VC_F1,
+            NativeKeyEvent.VC_F4,
+        )
+    }
     fun dispatchKeyPressEvent(keyEvent: Int) = scope.launch {}
 }
