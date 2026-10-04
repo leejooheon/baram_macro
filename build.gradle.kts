@@ -32,8 +32,8 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "CommanderKt"
-//        mainClass = "JusulsaKt"
+        // 다른 앱 실행: gradlew run -PmainClass=JusulsaKt (OCR 모니터는 OcrMonitorKt)
+        mainClass = (findProperty("mainClass") as String?) ?: "CommanderKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Msi)
