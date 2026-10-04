@@ -30,9 +30,11 @@ object WinInput {
 
     private val user32Ext by lazy { Native.load("user32", User32Ext::class.java) }
 
+    fun scanCode(windowsVk: Int): Int = user32Ext.MapVirtualKeyW(windowsVk, MAPVK_VK_TO_VSC)
+
     fun sendKey(javaKeyCode: Int, pressed: Boolean): Boolean {
         val vk = KeyCodes.javaToWindowsVk(javaKeyCode)
-        val scan = user32Ext.MapVirtualKeyW(vk, MAPVK_VK_TO_VSC)
+        val scan = scanCode(vk)
 
         var flags = if (pressed) 0 else KEYEVENTF_KEYUP
         if (KeyCodes.isExtended(vk)) flags = flags or KEYEVENTF_EXTENDEDKEY

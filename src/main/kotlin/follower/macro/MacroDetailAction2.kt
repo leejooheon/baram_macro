@@ -1,6 +1,8 @@
 package follower.macro
 
+import com.sun.jna.platform.win32.WinDef
 import common.robot.Keyboard
+import common.robot.WindowKeyboard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -188,6 +190,25 @@ class MacroDetailAction2 {
             Triple(BOHO, focusMe, true),
             Triple(MUJANG, false, true),
         )
+    }
+
+    // PostMessage 테스트: 창에 메시지로 보무(보호 -> 나, 무장)를 건다
+    suspend fun bomuByPostMessage(window: WinDef.HWND) {
+        listOf(BOHO to true, MUJANG to false).forEach { (magic, forMe) ->
+            WindowKeyboard.press(window, KeyEvent.VK_SHIFT)
+            delay(DELAY)
+            WindowKeyboard.pressAndRelease(window, KeyEvent.VK_Z)
+            WindowKeyboard.release(window, KeyEvent.VK_SHIFT)
+            delay(DELAY)
+            WindowKeyboard.pressAndRelease(window, magic)
+
+            if(forMe) {
+                delay(DELAY)
+                WindowKeyboard.pressAndRelease(window, KeyEvent.VK_HOME)
+            }
+            delay(DELAY)
+            WindowKeyboard.pressAndRelease(window, KeyEvent.VK_ENTER)
+        }
     }
 
     private suspend fun healMe() {
