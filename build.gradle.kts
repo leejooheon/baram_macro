@@ -1,39 +1,32 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
-    kotlin("jvm")
-    kotlin("plugin.serialization") version "2.0.20"
-    id("org.jetbrains.kotlin.plugin.compose")
-    id("org.jetbrains.compose")
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.compose.multiplatform)
 }
 
-repositories {
-    mavenCentral()
-    google()
+kotlin {
+    jvmToolchain(21)
 }
 
 dependencies {
     implementation(compose.desktop.currentOs)
 
     // Include the Test API
-    testImplementation(compose.desktop.uiTestJUnit4)
+    testImplementation(libs.compose.ui.test.junit4)
 
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-    implementation("com.github.kwhat:jnativehook:2.2.2")
-    implementation("net.java.dev.jna:jna:5.13.0")
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.jnativehook)
+    implementation(libs.jna)
 
 //    implementation(files("libs/tess4j-5.10.0.jar"))
-    implementation("net.sourceforge.tess4j:tess4j:5.10.0") {
+    implementation(libs.tess4j) {
         exclude(group = "net.sourceforge.tess4j", module = "tess4j")
     }
 
-    implementation("io.ktor:ktor-client-core:2.3.12")
-    implementation("io.ktor:ktor-client-okhttp:2.3.12")
-//    implementation("io.ktor:ktor-client-darwin:2.3.12")
-    implementation("io.ktor:ktor-client-content-negotiation:2.3.12")
-    implementation("io.ktor:ktor-client-logging:2.3.12")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.12")
-    implementation("io.ktor:ktor-client-auth:2.3.12")
+    implementation(libs.bundles.ktor)
 }
 
 compose.desktop {
