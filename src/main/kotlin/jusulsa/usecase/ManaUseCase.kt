@@ -1,6 +1,8 @@
 package jusulsa.usecase
 
 import common.robot.Keyboard
+import jusulsa.engine.MacroUseCase
+import jusulsa.engine.ReasonLog
 import jusulsa.skill.Skill
 import jusulsa.skill.SkillCaster
 import kotlinx.coroutines.delay
@@ -16,8 +18,12 @@ import java.awt.event.KeyEvent
 class ManaUseCase(
     private val ocr: OcrStateHolder = OcrStateHolder,
     private val now: () -> Long = System::currentTimeMillis,
-) {
+) : MacroUseCase {
+    override val name = "공증"
     private var lastGongjeungAt: Long? = null
+    private val reason = ReasonLog("ManaUseCase")
+
+    override fun isReady(now: Long) = needsGongjeung()
 
     fun needsGongjeung(): Boolean {
         val time = now()
@@ -32,7 +38,7 @@ class ManaUseCase(
         // 공증 직후에는 막대가 아직 안 바뀌었을 수 있다. 막대를 0.2초마다 읽으니 짧게 두고, 씹혔으면 바로 다시 쓴다
         lastGongjeungAt?.let {
             if (time - it < RECAST_GUARD_MILLIS) {
-                log("마력 $mp% 이지만 ${time - it}ms 전에 공증해서 대기")
+                log("마력 $mp% 이지만 방금 공증해서 대기")
                 return false
             }
         }
@@ -48,27 +54,23 @@ class ManaUseCase(
         return true
     }
 
-    /** 마력이 부족하면 공증한다. 했으면 true */
-    suspend operator fun invoke(): Boolean {
-        if (!needsGongjeung()) return false
+    /** 마력이 0이면 U 두 번 후 공증 */
+    override suspend fun execute() {
         val mp = ocr.state.value.freshVitals(now())?.mpPercent
         gongjeung(empty = mp != null && mp <= 0)
-        return true
     }
 
-    private fun log(message: String) = println("[ManaUseCase] $message")
+    private fun log(message: String) = reason.log(message)
 
     private suspend fun gongjeung(empty: Boolean) {
-        Keyboard.atomic {
-            if (empty) {
-                // 너무 빨리 누르면 씹혀서 예전 매크로(eat)의 간격을 그대로 쓴다
-                repeat(2) {
-                    delay(U_GAP_MILLIS)
-                    Keyboard.pressAndRelease(KeyEvent.VK_U, U_PRESS_MILLIS)
-                }
+        if (empty) {
+            // 너무 빨리 누르면 씹혀서 예전 매크로(eat)의 간격을 그대로 쓴다
+            repeat(2) {
+                delay(U_GAP_MILLIS)
+                Keyboard.pressAndRelease(KeyEvent.VK_U, U_PRESS_MILLIS)
             }
-            SkillCaster.cast(Skill.GONGJEUNG)
         }
+        SkillCaster.tryCast(Skill.GONGJEUNG)
         lastGongjeungAt = now()
     }
 
