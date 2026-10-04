@@ -27,7 +27,7 @@ OCR 서버가 다른 PC에 있으면 `OCR_HOST` 환경변수로 주소를 바꾼
 it will be later
 
 ## Libraries
-* Detect text: [EasyOCR](https://github.com/JaidedAI/EasyOCR), [Tesseract](https://github.com/tesseract-ocr/tesseract)
+* Detect text: [EasyOCR](https://github.com/JaidedAI/EasyOCR)
 * Network: [Ktor](https://github.com/ktorio/ktor)
 * Keyboard Event: [JNativeHook](https://github.com/kwhat/jnativehook)
 

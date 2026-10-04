@@ -1,24 +1,24 @@
 package jusulsa
 
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
-import common.base.BaseViewModel
-import common.model.UiEvent
+import common.network.OcrClient
+import common.network.createHttpClient
 import common.robot.DisplayProvider
 import common.robot.Keyboard
+import common.util.Result
 import follower.macro.MacroDetailAction2
-import follower.ocr.TextDetecter
+import io.ktor.client.plugins.logging.LogLevel
 import jusulsa.model.JusulsaUiState
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
+import java.awt.Rectangle
 import java.awt.event.KeyEvent
-import java.awt.image.BufferedImage
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-class JusulsaViewModel2 : BaseViewModel() {
+class JusulsaViewModel2 {
     private val exceptionHandler = CoroutineExceptionHandler { _, exception ->
         if(exception is CancellationException) {
             runBlocking {
@@ -28,6 +28,7 @@ class JusulsaViewModel2 : BaseViewModel() {
     }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + exceptionHandler)
     private val macroDetailAction = MacroDetailAction2()
+    private val ocrClient = OcrClient(createHttpClient(logLevel = LogLevel.NONE))
     @Volatile private var actionJob: Job? = null
     @Volatile private var hellfireJob: Job? = null
     private val _uiState = MutableStateFlow(JusulsaUiState.default)
@@ -99,65 +100,20 @@ class JusulsaViewModel2 : BaseViewModel() {
     }
 
     private fun observeScreens() = scope.launch {
-        launch {
-            updateFromLocal(
-                state = uiState.value.addOnState,
-                duration = 1.seconds
-            )
-        }
-        launch {
-            hellfireCount.collectLatest {
-                _uiState.update { state -> state.copy(count = it) }
-            }
+        hellfireCount.collectLatest {
+            _uiState.update { state -> state.copy(count = it) }
         }
     }
 
+    /** 헬파이어가 나갔는지 쿨타임 박스를 OCR 서버로 읽어 확인한다 */
     private suspend fun checkHellfireDelay(): Boolean {
         delay(200)
         repeat(2) {
-            val screen = DisplayProvider.capture2(uiState.value.addOnState.rectangle)
-            val text = TextDetecter.detectString(screen)
-            updateScreen(uiState.value.addOnState, screen, text)
-            if (text.contains("헬")) return true
+            val screen = DisplayProvider.capture(COOLDOWN_RECT)
+            val lines = (ocrClient.readTimers(screen) as? Result.Success)?.data?.lines.orEmpty()
+            if (lines.any { "헬" in it.name || "헬" in it.raw }) return true
         }
         return false
-    }
-
-    private fun updateScreen(
-        state: JusulsaUiState.State,
-        screen: BufferedImage,
-        text: String,
-    ) {
-        _uiState.update {
-            when(state.type) {
-                JusulsaUiState.JusulsaType.AddOn -> it.copy(
-                    addOnState = state.copy(
-                        image = screen,
-                        texts = listOf(text)
-                    )
-                )
-                JusulsaUiState.JusulsaType.Result -> it.copy(
-                    resultState = state.copy(
-                        image = screen,
-                        texts = listOf(text)
-                    )
-                )
-            }
-        }
-    }
-
-    private suspend fun updateFromLocal(
-        state: JusulsaUiState.State,
-        duration: Duration,
-    ) = withContext(Dispatchers.IO) {
-        while (isActive) {
-            if(actionJob?.isActive == true) {
-                val screen = DisplayProvider.capture2(state.rectangle)
-                val text = TextDetecter.detectString(screen)
-                updateScreen(state, screen, text)
-            }
-            delay(duration)
-        }
     }
 
     private fun execute(block: suspend CoroutineScope.() -> Unit): Job {
@@ -180,9 +136,11 @@ class JusulsaViewModel2 : BaseViewModel() {
         }
     }
 
-    override fun dispatch(event: UiEvent): Job { throw IllegalAccessException("not implementation") }
-
     companion object {
+        /** 화면 우상단 스킬 쿨타임 박스 */
+        private val COOLDOWN_RECT = Rectangle(1267, 60, 170, 120)
+
+
         // 매크로 단축키는 게임에 넘기지 않는다. 방향키와 ESC는 게임에서도 써야 하므로 뺀다
         internal val MACRO_KEYS = setOf(
             NativeKeyEvent.VC_PAGE_UP,
