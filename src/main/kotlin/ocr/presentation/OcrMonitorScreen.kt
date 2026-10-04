@@ -42,6 +42,7 @@ internal val SmallText = TextStyle(fontSize = 12.sp)
 fun OcrMonitorScreen(
     state: TimerMonitorState,
     onEvent: (OcrMonitorEvent) -> Unit,
+    header: @Composable () -> Unit = {},
 ) {
     // 남은 초는 OCR 사이에도 줄어들어야 하므로 화면만 따로 갱신한다
     val now by produceState(System.currentTimeMillis()) {
@@ -58,6 +59,7 @@ fun OcrMonitorScreen(
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
+        header()
         ControlBar(state, onEvent)
         TimerRegion.entries.forEach { region ->
             Divider()

@@ -1,13 +1,13 @@
 package jusulsa
 
-import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import common.event.ObserveKeyEvents
-import common.event.ObserveMouseEvents
+import ocr.presentation.OcrMonitorApp
 
+/** 주술사 매크로 단축키 + OCR 모니터 화면 */
 @Composable
 fun JusulsaApp() {
     val viewModel = remember { JusulsaViewModel2() }
@@ -19,9 +19,7 @@ fun JusulsaApp() {
         consumeKeys = JusulsaViewModel2.MACRO_KEYS,
     )
 
-    MaterialTheme {
-        JusulsaScreen(
-            uiState = uiState
-        )
-    }
+    OcrMonitorApp(
+        header = { JusulsaStatusBar(uiState) }
+    )
 }

@@ -113,7 +113,7 @@ class JusulsaViewModel2 : BaseViewModel() {
         }
         launch {
             hellfireCount.collectLatest {
-                _uiState.value = _uiState.value.copy(count = it)
+                _uiState.update { state -> state.copy(count = it) }
             }
         }
     }
@@ -172,12 +172,18 @@ class JusulsaViewModel2 : BaseViewModel() {
         return scope.launch {
             // 이전 매크로가 눌린 키를 다 떼고 끝난 뒤에 시작해야 입력이 섞이지 않는다
             previous?.join()
+            _uiState.update { it.copy(isRunning = true) }
             try {
                 block()
             } finally {
                 withContext(NonCancellable) { Keyboard.releaseAll() }
             }
-        }.also { actionJob = it }
+        }.also { job ->
+            actionJob = job
+            job.invokeOnCompletion {
+                if (actionJob === job) _uiState.update { it.copy(isRunning = false) }
+            }
+        }
     }
 
     override fun dispatch(event: UiEvent): Job { throw IllegalAccessException("not implementation") }

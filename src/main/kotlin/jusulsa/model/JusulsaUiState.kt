@@ -5,6 +5,8 @@ import java.awt.image.BufferedImage
 
 data class JusulsaUiState(
     val count: Int,
+    /** 매크로가 돌고 있는지 */
+    val isRunning: Boolean = false,
     val addOnState: State,
     val resultState: State,
 ) {
