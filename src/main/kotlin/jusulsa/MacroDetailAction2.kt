@@ -125,9 +125,9 @@ class MacroDetailAction2(
                 }
 
                 // || (OR) 로 묶여 있어서 앞에서 하나라도 실행되면 뒤의 것은 스킵됨 (선택적 실행)
-                // 힐이나 마력 충전이 급하면 먼저 하고, 여유 있을 때 삼매나 저주/중독을 건다
-                val casted = selfHeal() || mana() ||
-                    bomu() || magi() || sammeUseCase() ||
+                // 마력이 없으면 힐도 안 나가므로 공증이 가장 먼저다. 삼매는 마력을 다 쓰므로 쓰자마자 공증한다
+                val casted = mana() || selfHeal() ||
+                    bomu() || magi() || sammeThenGongjeung() ||
                     attack.step()
                 
                 if (!casted) {
@@ -138,6 +138,13 @@ class MacroDetailAction2(
                 }
             }
         }
+    }
+
+    /** 삼매진화를 쓰면 마력이 0이 되므로, 막대를 다시 읽을 때까지 기다리지 않고 바로 공증한다 */
+    private suspend fun sammeThenGongjeung(): Boolean {
+        if (!sammeUseCase()) return false
+        mana.afterManaSpent()
+        return true
     }
 
     private suspend fun chum(): Boolean {

@@ -20,11 +20,32 @@ class ManaUseCase(
 
     fun needsGongjeung(): Boolean {
         val time = now()
+        if (!canCast(time)) return false
+        val mp = ocr.state.value.freshVitals(time)?.mpPercent ?: return false
+        return mp <= OcrStateHolder.MANA_LOW_PERCENT
+    }
+
+    /** 마력이 부족하면 공증한다. 했으면 true */
+    suspend operator fun invoke(): Boolean {
+        if (!needsGongjeung()) return false
+        val mp = ocr.state.value.freshVitals(now())?.mpPercent
+        gongjeung(empty = mp != null && mp <= 0)
+        return true
+    }
+
+    /**
+     * 마력을 다 쓰는 마법(삼매진화) 직후에 부른다. 막대를 다시 읽을 때까지 기다리지 않고 마력 0으로 보고 바로 공증한다.
+     * 공증이 쿨이면 아무것도 안 한다. 했으면 true
+     */
+    suspend fun afterManaSpent(): Boolean {
+        if (!canCast(now())) return false
+        gongjeung(empty = true)
+        return true
+    }
+
+    private fun canCast(time: Long): Boolean {
         // 공증 직후에는 막대가 아직 안 바뀌었을 수 있다
         lastGongjeungAt?.let { if (time - it < RECAST_GUARD_MILLIS) return false }
-
-        val mp = ocr.state.value.freshVitals(time)?.mpPercent ?: return false
-        if (mp > OcrStateHolder.MANA_LOW_PERCENT) return false
 
         // 쿨타임 박스에 공력증강이 보이면 아직 못 쓴다
         val cooldown = ocr.state.value.fresh(TimerRegion.COOLDOWN, time)
@@ -32,19 +53,14 @@ class ManaUseCase(
         return remaining == null || remaining <= 0
     }
 
-    /** 마력이 부족하면 공증한다. 했으면 true */
-    suspend operator fun invoke(): Boolean {
-        if (!needsGongjeung()) return false
-
-        val mp = ocr.state.value.freshVitals(now())?.mpPercent
+    private suspend fun gongjeung(empty: Boolean) {
         Keyboard.atomic {
-            if (mp != null && mp <= 0) {
+            if (empty) {
                 repeat(2) { Keyboard.pressAndRelease(KeyEvent.VK_U) }
             }
             SkillCaster.cast(Skill.GONGJEUNG)
         }
         lastGongjeungAt = now()
-        return true
     }
 
     companion object {
