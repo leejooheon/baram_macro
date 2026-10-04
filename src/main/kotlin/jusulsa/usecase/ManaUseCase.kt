@@ -33,16 +33,6 @@ class ManaUseCase(
         return true
     }
 
-    /**
-     * 마력을 다 쓰는 마법(삼매진화) 직후에 부른다. 막대를 다시 읽을 때까지 기다리지 않고 마력 0으로 보고 바로 공증한다.
-     * 공증이 쿨이면 아무것도 안 한다. 했으면 true
-     */
-    suspend fun afterManaSpent(): Boolean {
-        if (!canCast(now())) return false
-        gongjeung(empty = true)
-        return true
-    }
-
     private fun canCast(time: Long): Boolean {
         // 공증 직후에는 막대가 아직 안 바뀌었을 수 있다
         lastGongjeungAt?.let { if (time - it < RECAST_GUARD_MILLIS) return false }
