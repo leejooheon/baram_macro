@@ -7,7 +7,7 @@ import ocr.OcrStateHolder
 import ocr.model.TimerRegion
 
 /**
- * 삼매진화. 체력이 가득 찼고 쿨타임 박스에 삼매진화가 없을 때만 나를 기준으로 쓴다.
+ * 삼매진화. 체력이 [FULL_HP_PERCENT]% 이상이고 쿨타임 박스에 삼매진화가 없을 때만 나를 기준으로 쓴다.
  * 체력 막대나 쿨타임 박스를 못 읽으면 쓰지 않는다.
  */
 class SammeUseCase(
@@ -39,7 +39,8 @@ class SammeUseCase(
 
     companion object {
         const val NAME = "삼매진화"
-        const val FULL_HP_PERCENT = 100
+        /** 자힐이 채우는 값(HealUseCase.HEAL_UNTIL_PERCENT)과 같게 둬야 힐 뒤에 삼매가 나간다 */
+        const val FULL_HP_PERCENT = 90
         const val RECAST_GUARD_MILLIS = 5_000L
     }
 }

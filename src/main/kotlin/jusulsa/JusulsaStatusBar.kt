@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Divider
+import androidx.compose.material.Slider
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -13,6 +14,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import jusulsa.model.JusulsaUiState
+import kotlin.math.roundToInt
 
 private val StatusText = TextStyle(fontSize = 12.sp)
 
@@ -33,5 +35,28 @@ internal fun JusulsaStatusBar(uiState: JusulsaUiState) {
             }
         }
         Divider()
+    }
+}
+
+/** OCR 모니터 화면 맨 아래에 붙는 창 투명도 조절 */
+@Composable
+internal fun JusulsaOpacityBar(
+    opacity: Float,
+    onOpacityChange: (Float) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Divider()
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("투명도", style = StatusText)
+            Spacer(Modifier.width(8.dp))
+            Slider(
+                value = opacity,
+                onValueChange = onOpacityChange,
+                valueRange = 0.2f..1f,
+                modifier = Modifier.weight(1f).height(24.dp),
+            )
+            Spacer(Modifier.width(8.dp))
+            Text("${(opacity * 100).roundToInt()}%", style = StatusText)
+        }
     }
 }

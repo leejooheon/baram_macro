@@ -43,6 +43,7 @@ fun OcrMonitorScreen(
     state: TimerMonitorState,
     onEvent: (OcrMonitorEvent) -> Unit,
     header: @Composable () -> Unit = {},
+    footer: @Composable () -> Unit = {},
 ) {
     // 남은 초는 OCR 사이에도 줄어들어야 하므로 화면만 따로 갱신한다
     val now by produceState(System.currentTimeMillis()) {
@@ -70,6 +71,7 @@ fun OcrMonitorScreen(
                 onPickRegion = { onEvent(OcrMonitorEvent.PickRegion(region)) },
             )
         }
+        footer()
     }
 }
 
