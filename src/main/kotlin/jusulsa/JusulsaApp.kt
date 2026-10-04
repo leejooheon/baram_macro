@@ -9,7 +9,10 @@ import ocr.presentation.OcrMonitorApp
 
 /** 주술사 매크로 단축키 + OCR 모니터 화면 */
 @Composable
-fun JusulsaApp() {
+fun JusulsaApp(
+    opacity: Float,
+    onOpacityChange: (Float) -> Unit,
+) {
     val viewModel = remember { JusulsaViewModel2() }
     val uiState by viewModel.uiState.collectAsState()
 
@@ -20,6 +23,12 @@ fun JusulsaApp() {
     )
 
     OcrMonitorApp(
-        header = { JusulsaStatusBar(uiState) }
+        header = {
+            JusulsaStatusBar(
+                uiState = uiState,
+                opacity = opacity,
+                onOpacityChange = onOpacityChange,
+            )
+        }
     )
 }
