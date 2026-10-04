@@ -37,7 +37,8 @@ class HealUseCase(
     }
 
     companion object {
-        const val HEAL_BELOW_PERCENT = 70
+        /** 삼매진화 기준(SammeUseCase.FULL_HP_PERCENT)과 같게 둬야 힐도 삼매도 안 나가는 구간이 없다 */
+        const val HEAL_BELOW_PERCENT = 90
         const val HEAL_UNTIL_PERCENT = 90
         /** 체력을 못 읽거나 잘 안 차도 이 시간이 지나면 멈춘다 */
         const val HEAL_MAX_MILLIS = 5_000L
