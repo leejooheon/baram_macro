@@ -5,12 +5,15 @@ import common.robot.UserInput
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import ocr.TimerMonitor
+import ocr.capture.GameWindowCapture
 
 /**
  * 매크로 실행 엔진. 루프 하나가 매번 상태를 보고 할 일 하나를 골라 실행한다.
  * 키보드는 하나뿐이라 여러 루프가 동시에 키를 보내면 서로 끼어들거나 한쪽이 굶는다. 그래서 고르는 곳을 한 군데로 모은다.
  *
  * 고르는 순서
+ * 0. 게임 창이 맨 앞이 아니면 아무것도 안 한다 (다른 창에 마법 키와 엔터가 들어가지 않게)
  * 1. 사용자가 방향키로 이동 중이면 아무것도 안 한다
  * 2. [priority]에서 앞에서부터 할 일이 있는 첫 번째 (생존·버프처럼 늦으면 안 되는 것)
  * 3. 없으면 [rotation]을 돌아가며 할 일이 있는 다음 것 (공격처럼 계속 도는 것). 번갈아 고르므로 어느 하나가 굶지 않는다
@@ -20,6 +23,7 @@ class MacroEngine(
     private val priority: List<MacroUseCase>,
     private val rotation: List<MacroUseCase>,
     private val now: () -> Long = System::currentTimeMillis,
+    private val gameFocused: () -> Boolean = { GameWindowCapture.isForeground(TimerMonitor.state.value.windowKeyword) },
 ) {
     private var nextRotation = 0
     private val counts = linkedMapOf<String, Int>()
@@ -27,6 +31,10 @@ class MacroEngine(
 
     suspend fun run() {
         while (currentCoroutineContext().isActive) {
+            if (!gameFocused()) {
+                delay(FOCUS_WAIT_MILLIS)
+                continue
+            }
             val moving = UserInput.waitMillis()
             if (moving > 0) {
                 delay(moving)
@@ -72,5 +80,6 @@ class MacroEngine(
         /** 할 일이 없을 때 다시 고르기까지 쉬는 시간 */
         const val IDLE_MILLIS = 10L
         const val SUMMARY_MILLIS = 5_000L
+        const val FOCUS_WAIT_MILLIS = 200L
     }
 }

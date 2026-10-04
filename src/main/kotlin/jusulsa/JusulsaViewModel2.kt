@@ -44,7 +44,7 @@ class JusulsaViewModel2 {
         UserInput.onKey(keyEvent, pressed = false)
 
         when(keyEvent) {
-            NativeKeyEvent.VC_BACKQUOTE -> execute { macroDetailAction.chumChum() }
+            NativeKeyEvent.VC_BACKQUOTE -> execute { macroDetailAction.hellfireHunt() }
 
             // 개편 중이라 나머지 단축키는 잠시 꺼둔다
 //            NativeKeyEvent.VC_PAGE_UP -> hellfire()

@@ -52,6 +52,15 @@ object GameWindowCapture {
 
     fun isAlive(window: GameWindow): Boolean = User32.INSTANCE.IsWindow(window.hwnd)
 
+    /** 맨 앞 창 제목에 [keyword]가 들어 있는지. 키워드가 비어 있으면 확인하지 않고 true */
+    fun isForeground(keyword: String): Boolean {
+        if (keyword.isBlank()) return true
+        val hwnd = User32.INSTANCE.GetForegroundWindow() ?: return false
+        val buffer = CharArray(512)
+        User32.INSTANCE.GetWindowText(hwnd, buffer, buffer.size)
+        return Native.toString(buffer).contains(keyword)
+    }
+
     /** 게임 창 클라이언트 영역 전체 (영역 지정 화면용). 창이 최소화돼 있으면 null */
     fun capture(window: GameWindow): BufferedImage? =
         withWindowImage(window) { size, read -> read(Rectangle(0, 0, size.width, size.height)) }

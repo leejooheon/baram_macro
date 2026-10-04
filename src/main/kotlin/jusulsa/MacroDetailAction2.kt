@@ -5,9 +5,7 @@ import jusulsa.skill.Skill
 import jusulsa.skill.SkillCaster.cast
 import jusulsa.skill.Target
 import jusulsa.engine.MacroEngine
-import jusulsa.usecase.BasicAttackUseCase
 import jusulsa.usecase.BomuUseCase
-import jusulsa.usecase.CurseUseCase
 import jusulsa.usecase.EvadeUseCase
 import jusulsa.usecase.FiveCrossUseCase
 import jusulsa.usecase.HealUseCase
@@ -93,16 +91,16 @@ class MacroDetailAction2(
     }
 
     /**
-     * 첨첨. 할 일은 전부 UseCase이고, [MacroEngine]이 상태를 보고 하나씩 골라 실행한다.
+     * 헬파 사냥 (단축키 `). 할 일은 전부 UseCase이고, [MacroEngine]이 상태를 보고 하나씩 골라 실행한다.
      *
      * 우선(앞에서부터, 할 일이 있으면 바로): 공증 > 자힐 > 헬파이어 > 붙은 몹 마비 > 몹 피하기(마비 안 걸린 몹만) > 보무 > 마기지체 > 5매각 > 삼매진화 (마비~5매각은 몹 탐지 중에만)
-     * 공격(번갈아 가며): 저주 > 평타 (사냥용 마법칸에는 첨, 중독이 없다)
+     * 헬파 쿨 사이에 저주 돌리기·평타는 하지 않는다 (첨첨 사냥 동작이라 사용자가 원하지 않음)
      * 사용자가 방향키로 이동 중이면 아무것도 안 한다.
      */
-    suspend fun chumChum() = withContext(Dispatchers.Default) {
+    suspend fun hellfireHunt() = withContext(Dispatchers.Default) {
         MacroEngine(
             priority = listOf(mana, selfHeal, HellfireUseCase({ latestDirection }), mabee, EvadeUseCase({ mabee.paralyzedTiles }), bomu, magi, fiveCross, sammeUseCase),
-            rotation = listOf(CurseUseCase({ latestDirection }), BasicAttackUseCase()),
+            rotation = emptyList(),
         ).run()
     }
 
