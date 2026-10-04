@@ -30,6 +30,10 @@ enum class Skill(
     BOHO(KeyEvent.VK_M, alphabet = true),    // m: 보호
     MUJANG(KeyEvent.VK_N, alphabet = true),  // n: 무장
     MAGII(KeyEvent.VK_O, alphabet = true),   // o: 마기지체
+    // 5매각용. 게임 마법창 칸이 다르면 여기만 바꾼다
+    MABEE(KeyEvent.VK_P, alphabet = true),   // p: 마비
+    JULMANG(KeyEvent.VK_Q, alphabet = true, rateGroup = RateGroup.CURSE), // q: 절망
+    HWALRYEOK(KeyEvent.VK_R, alphabet = true), // r: 활력
 }
 
 /** 서버 기준 1초에 쓸 수 있는 횟수를 같이 세는 마법 묶음 */

@@ -1,5 +1,6 @@
 package jusulsa.usecase
 
+import detector.DetectionStateHolder
 import jusulsa.engine.MacroUseCase
 import jusulsa.engine.ReasonLog
 import jusulsa.skill.Skill
@@ -11,8 +12,10 @@ import ocr.model.TimerRegion
 /**
  * 삼매진화. 쿨타임 박스에 삼매진화가 없을 때 나를 기준으로 쓴다.
  * 쿨타임 박스를 못 읽으면 쓰지 않는다.
+ * 몹 탐지가 켜져 있으면 삼매진화는 [FiveCrossUseCase]가 5매각에 쓰므로 여기서는 쓰지 않는다.
  */
 class SammeUseCase(
+    private val detecting: (now: Long) -> Boolean = { DetectionStateHolder.state.value?.isFresh(it) == true },
     private val ocr: OcrStateHolder = OcrStateHolder,
     private val now: () -> Long = System::currentTimeMillis,
 ) : MacroUseCase {
@@ -24,6 +27,10 @@ class SammeUseCase(
 
     fun canCast(): Boolean {
         val time = now()
+        if (detecting(time)) {
+            reason.log("몹 탐지 중이라 5매각에 맡김")
+            return false
+        }
         // 쓴 직후에는 쿨타임 박스에 아직 안 잡힌다
         lastCastAt?.let { 
             if (time - it < RECAST_GUARD_MILLIS) {
