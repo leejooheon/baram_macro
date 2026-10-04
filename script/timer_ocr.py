@@ -30,6 +30,8 @@ DEFAULT_NAMES = [
 
 DIGITS = "0123456789"
 SECONDS_SUFFIX = "초"
+# 이름이 정확히 읽히지 않은 줄은 신뢰도 0.5 이상만 남긴다. 잡음은 0.3 아래, 실제 글자는 0.2 이상으로 나왔다
+MIN_CONFIDENCE = 0.15
 
 
 class _Lru:
@@ -215,16 +217,30 @@ class TimerOcr:
                     if seconds is not None:
                         name_words = words[:-1]
                 name, raw, name_conf = self._read_name(clean, y0, y1, name_words[0][0], name_words[-1][1])
+                confidence = min(name_conf, sec_conf)
+                exact = raw in self.names
+                if confidence < MIN_CONFIDENCE or (not exact and confidence < 0.5):
+                    continue  # 빈 패널 무늬, 잘린 글자, 게임 배경 같은 잡음
+                if seconds is None and not _looks_like_name(name, name_conf, self.names):
+                    continue
                 text = f"{raw} {seconds}{SECONDS_SUFFIX}" if seconds is not None else raw
                 lines.append({
                     "name": name,
                     "raw": text,
                     "seconds": seconds,
-                    "confidence": round(min(name_conf, sec_conf), 3),
+                    "confidence": round(confidence, 3),
                     "box": [x0, y0, x1 - x0, y1 - y0],
                 })
             self.frame_cache.put(frame_key, lines)
         return {"lines": lines, "elapsed_ms": _ms(started), "cached": False}
+
+
+def _looks_like_name(name, confidence, names):
+    """초를 못 읽은 줄은 알려진 이름이거나, 한글이 2자 이상이고 신뢰도가 높을 때만 남긴다."""
+    if name in names:
+        return True
+    hangul = sum(1 for ch in name if "가" <= ch <= "힣")
+    return hangul >= 2 and confidence >= 0.5
 
 
 def _split_glyph(line_mask, start, end, height):

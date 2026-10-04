@@ -1,5 +1,5 @@
-# OCR 서버 의존성 (python 3.10 ~ 3.12)
-# GPU가 없으면 CPU 전용 torch를 먼저 설치하면 용량이 훨씬 작다:
+# OCR server dependencies (python 3.10 - 3.12)
+# Without a GPU, install the CPU-only torch first (much smaller download):
 #   pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 easyocr
 opencv-python-headless

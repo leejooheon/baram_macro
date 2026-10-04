@@ -11,6 +11,8 @@ from timer_ocr import TimerOcr
 HERE = os.path.dirname(os.path.abspath(__file__))
 EXPECTED = {
     "cooldown.png": [("호체주술", 243)],
+    # 쿨타임 여러 줄 (합성 이미지)
+    "cooldown_multi.png": [("호체주술", 243), ("호체주술", 49), ("보호", 178), ("무장", 179)],
     "buff.png": [("호체주술", 49), ("보호", 178), ("무장", 179)],
     "buff_150.png": [("호체주술", 49), ("보호", 178), ("무장", 179)],
 }

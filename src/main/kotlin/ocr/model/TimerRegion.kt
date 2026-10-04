@@ -13,8 +13,8 @@ enum class TimerRegion(
     val title: String,
     val defaultFraction: Rectangle2D.Double,
 ) {
-    /** 우상단 검은 박스 (예: 호체주술 243초) */
-    COOLDOWN("스킬 쿨타임", Rectangle2D.Double(0.7432, 0.0369, 0.1175, 0.0443)),
+    /** 우상단 검은 박스 (예: 호체주술 243초). 여러 마법이 쿨타임이면 아래로 줄이 쌓이므로 박스 전체(약 4~5줄)를 잡는다 */
+    COOLDOWN("스킬 쿨타임", Rectangle2D.Double(0.7432, 0.0369, 0.1175, 0.19)),
 
     /** 우측 가운데 양피지 패널 (예: 호체주술 49초 / 보호 178초 / 무장 179초) */
     BUFF("버프", Rectangle2D.Double(0.7655, 0.4259, 0.1703, 0.1288)),
