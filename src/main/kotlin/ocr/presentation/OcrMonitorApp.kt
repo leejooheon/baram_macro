@@ -19,6 +19,7 @@ fun OcrMonitorApp(
     val state by TimerMonitor.state.collectAsState()
     val scope = rememberCoroutineScope()
     var picking by remember { mutableStateOf<Pair<TimerRegion, BufferedImage>?>(null) }
+    var pickingMonster by remember { mutableStateOf<BufferedImage?>(null) }
 
     LaunchedEffect(Unit) { TimerMonitor.start() }
 
@@ -38,6 +39,10 @@ fun OcrMonitorApp(
                         val frame = TimerMonitor.refreshFrame() ?: state.frame ?: return@launch
                         picking = event.region to frame
                     }
+                    OcrMonitorEvent.AddMonster -> scope.launch {
+                        pickingMonster = TimerMonitor.refreshFrame() ?: state.frame ?: return@launch
+                    }
+                    OcrMonitorEvent.ClearMonsters -> TimerMonitor.clearMonsters()
                 }
             },
         )
@@ -54,6 +59,23 @@ fun OcrMonitorApp(
                     picking = null
                 },
                 onCancel = { picking = null },
+            )
+        }
+    }
+
+    pickingMonster?.let { frame ->
+        MaterialTheme {
+            RegionPickerWindow(
+                region = TimerRegion.FIELD,
+                frame = frame,
+                regions = emptyMap(),
+                onConfirm = {
+                    TimerMonitor.addMonster(frame, it)
+                    pickingMonster = null
+                },
+                onCancel = { pickingMonster = null },
+                title = "몬스터 등록",
+                hint = "몬스터 한 마리를 꼭 맞게 드래그하세요. 다른 몬스터나 내 캐릭터가 겹치지 않은 것이 좋아요.",
             )
         }
     }

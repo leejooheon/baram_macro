@@ -36,17 +36,20 @@ object CoordinateReader {
         }
         if (glyphs.isEmpty()) return null
         val tallest = glyphs.maxOf { it.rows.count() }
-        val digits = glyphs.filter { it.rows.count() >= tallest * 0.6 }
-        if (digits.size < 2) return null
+        // 영역 끝에 걸린 패널 테두리 조각은 숫자로 안 읽히므로 양 끝에서 떼어 낸다. 가운데 글자를 못 읽으면 실패
+        val classified = glyphs.filter { it.rows.count() >= tallest * 0.6 }.map { it to classify(it, mask, width) }
+        val first = classified.indexOfFirst { it.second != null }
+        val last = classified.indexOfLast { it.second != null }
+        if (first < 0) return null
+        val digits = classified.subList(first, last + 1)
+        if (digits.size < 2 || digits.any { it.second == null }) return null
 
         // 두 숫자 사이 공백은 글자 사이 공백보다 훨씬 넓다
-        val gaps = digits.zipWithNext { a, b -> b.columns.first - a.columns.last }
+        val gaps = digits.zipWithNext { a, b -> b.first.columns.first - a.first.columns.last }
         val split = gaps.indices.maxBy { gaps[it] }
         if (gaps[split] < gaps.sorted()[gaps.size / 2] * 2) return null
 
-        val text = buildString {
-            for (digit in digits) append(classify(digit, mask, width) ?: return null)
-        }
+        val text = digits.joinToString("") { it.second.toString() }
         val x = text.substring(0, split + 1).toIntOrNull() ?: return null
         val y = text.substring(split + 1).toIntOrNull() ?: return null
         return Coordinate(x, y)
@@ -110,7 +113,7 @@ object CoordinateReader {
 
     /**
      * 실제 게임 화면 좌표 줄과 돈 줄에서 뜬 7x9 숫자 모양.
-     * 2와 6은 아직 샘플이 없어서 빠져 있다. 좌표에 2나 6이 있으면 null이 된다.
+     * 6은 아직 샘플이 없어서 빠져 있다. 좌표에 6이 있으면 null이 된다.
      */
     private val TEMPLATES: Map<Char, List<String>> = mapOf(
         '0' to listOf(
@@ -132,6 +135,17 @@ object CoordinateReader {
             "..###..",
             "..###..",
             "..###..",
+            ".######",
+            "######.",
+        ),
+        '2' to listOf(
+            "..###..",
+            ".#####.",
+            "##..##.",
+            "....##.",
+            "....##.",
+            "...##..",
+            "..##...",
             ".######",
             "######.",
         ),

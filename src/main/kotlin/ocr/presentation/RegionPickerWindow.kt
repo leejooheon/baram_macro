@@ -44,6 +44,8 @@ fun RegionPickerWindow(
     regions: Map<TimerRegion, Rectangle2D.Double>,
     onConfirm: (Rectangle2D.Double) -> Unit,
     onCancel: () -> Unit,
+    title: String = "${region.title} 영역 지정",
+    hint: String = region.pickHint,
 ) {
     var selection by remember { mutableStateOf<Rectangle2D.Double?>(null) }
 
@@ -53,7 +55,7 @@ fun RegionPickerWindow(
 
     Window(
         onCloseRequest = onCancel,
-        title = "${region.title} 영역 지정",
+        title = title,
         state = rememberWindowState(size = DpSize(1280.dp, 860.dp), position = WindowPosition.PlatformDefault),
         onKeyEvent = { event ->
             if (event.type != KeyEventType.KeyUp) return@Window false
@@ -76,7 +78,7 @@ fun RegionPickerWindow(
                     val py = it.y * frame.height
                     "(${px.roundToInt()}, ${py.roundToInt()})  " +
                         "${(it.width * frame.width).roundToInt()}×${(it.height * frame.height).roundToInt()}"
-                } ?: region.pickHint
+                } ?: hint
                 Text(hint, modifier = Modifier.weight(1f))
                 Button(onClick = ::confirm, enabled = selection != null) { Text("저장 (Enter)") }
                 Spacer(Modifier.width(8.dp))

@@ -32,6 +32,9 @@ sealed interface OcrMonitorEvent {
     data object CheckServer : OcrMonitorEvent
     data class ChangeInterval(val millis: Long) : OcrMonitorEvent
     data class PickRegion(val region: TimerRegion) : OcrMonitorEvent
+    /** 게임 화면에서 몬스터를 드래그해 등록한다 */
+    data object AddMonster : OcrMonitorEvent
+    data object ClearMonsters : OcrMonitorEvent
     data class ChangeWindowKeyword(val keyword: String) : OcrMonitorEvent
 }
 
@@ -70,6 +73,9 @@ fun OcrMonitorScreen(
                 state = state.regions.getValue(region),
                 now = now,
                 onPickRegion = { onEvent(OcrMonitorEvent.PickRegion(region)) },
+                monsterCount = state.monsterCount,
+                onAddMonster = { onEvent(OcrMonitorEvent.AddMonster) },
+                onClearMonsters = { onEvent(OcrMonitorEvent.ClearMonsters) },
             )
         }
         footer()

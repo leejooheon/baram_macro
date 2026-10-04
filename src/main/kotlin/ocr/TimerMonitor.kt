@@ -14,6 +14,7 @@ import ocr.capture.GameWindowCapture
 import ocr.character.AdjacentMonsterDetector
 import ocr.character.CharacterLocator
 import ocr.character.CoordinateReader
+import ocr.character.MonsterStore
 import ocr.model.TimerMonitorState
 import ocr.model.TimerMonitorState.RegionState
 import ocr.model.TimerMonitorState.ServerState
@@ -44,6 +45,9 @@ object TimerMonitor {
     private val client = OcrClient(createHttpClient(logLevel = LogLevel.NONE))
     private var job: Job? = null
     private var window: GameWindowCapture.GameWindow? = null
+    /** 등록한 몬스터 그림 */
+    @Volatile
+    private var monsters: List<BufferedImage> = MonsterStore.load()
 
     private val _state = MutableStateFlow(
         RegionStore.load().let { saved ->
@@ -55,6 +59,7 @@ object TimerMonitor {
                 window = WindowState.Searching,
                 frame = null,
                 regions = saved.regions.mapValues { (_, fraction) -> RegionState(fraction = fraction) },
+                monsterCount = monsters.size,
             )
         }
     )
@@ -98,6 +103,28 @@ object TimerMonitor {
         save()
         // 바뀐 영역을 바로 한 번 읽어서 보여준다
         scope.launch { tick() }
+    }
+
+    /** 영역 지정 화면에서 [frame]의 [fraction] 부분을 몬스터 그림으로 등록한다 */
+    fun addMonster(frame: BufferedImage, fraction: Rectangle2D.Double) {
+        val rect = Rectangle(
+            (fraction.x * frame.width).roundToInt(),
+            (fraction.y * frame.height).roundToInt(),
+            (fraction.width * frame.width).roundToInt(),
+            (fraction.height * frame.height).roundToInt(),
+        ).intersection(Rectangle(0, 0, frame.width, frame.height))
+        if (rect.width < 8 || rect.height < 8) return
+        val crop = BufferedImage(rect.width, rect.height, BufferedImage.TYPE_INT_RGB)
+        crop.graphics.drawImage(frame.getSubimage(rect.x, rect.y, rect.width, rect.height), 0, 0, null)
+        MonsterStore.add(crop)
+        monsters = MonsterStore.load()
+        _state.update { it.copy(monsterCount = monsters.size) }
+    }
+
+    fun clearMonsters() {
+        MonsterStore.clear()
+        monsters = emptyList()
+        _state.update { it.copy(monsterCount = 0) }
     }
 
     /** 영역 지정 화면을 열기 전에 최신 게임 화면을 찍어 둔다 */
@@ -237,7 +264,7 @@ object TimerMonitor {
     ) {
         val found = CharacterLocator.locate(portrait, field)
         val tileSize = (windowWidth * TILE_PER_WINDOW_WIDTH).roundToInt().coerceAtLeast(8)
-        val monsters = found?.let { AdjacentMonsterDetector.detect(field, it, tileSize) }
+        val monsters = found?.let { AdjacentMonsterDetector.detect(field, it, tileSize, monsters) }
         val coordinate = CoordinateReader.read(coords)
         CharacterStateHolder.update(
             CharacterState(

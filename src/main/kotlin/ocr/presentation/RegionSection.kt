@@ -40,6 +40,9 @@ internal fun RegionSection(
     state: RegionState,
     now: Long,
     onPickRegion: () -> Unit,
+    monsterCount: Int = 0,
+    onAddMonster: () -> Unit = {},
+    onClearMonsters: () -> Unit = {},
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -59,6 +62,14 @@ internal fun RegionSection(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
+            if (region == TimerRegion.FIELD) {
+                Chip("몬스터 등록 $monsterCount", selected = false, onClick = onAddMonster)
+                if (monsterCount > 0) {
+                    Spacer(Modifier.width(4.dp))
+                    Chip("지우기", selected = false, onClick = onClearMonsters)
+                }
+                Spacer(Modifier.width(4.dp))
+            }
             Chip("영역", selected = false, onClick = onPickRegion)
         }
 
@@ -70,7 +81,7 @@ internal fun RegionSection(
                     VitalRow("체력", state.vitals?.hpPercent, HpColor)
                     VitalRow("마력", state.vitals?.mpPercent, MpColor)
                 } else if (region.reader == TimerRegion.Reader.CHARACTER) {
-                    CharacterRows(region, state)
+                    CharacterRows(region, state, monsterCount)
                 } else if (state.entries.isEmpty()) {
                     Text(
                         text = if (state.image == null) "캡처 없음" else "없음",
@@ -151,14 +162,14 @@ private fun Thumbnail(region: TimerRegion, state: RegionState) {
 
 /** 내 캐릭터: 맵 영역은 찾은 위치와 붙은 몬스터, 좌표 영역은 읽은 좌표 */
 @Composable
-private fun CharacterRows(region: TimerRegion, state: RegionState) {
+private fun CharacterRows(region: TimerRegion, state: RegionState, monsterCount: Int) {
     val text = when {
         state.image == null -> "캡처 없음"
         region == TimerRegion.COORDS -> state.coordinate?.let { "(${it.x}, ${it.y})" } ?: "못 읽음"
         state.character == null -> "못 찾음"
         else -> {
             val occupied = state.monsters?.occupied.orEmpty()
-            "붙은 몬스터 ${occupied.size}" + Direction.entries.filter { it in occupied }.joinToString("", " ") { it.arrow }
+            if (monsterCount == 0) "몬스터를 등록하세요" else "붙은 몬스터 ${occupied.size}" + Direction.entries.filter { it in occupied }.joinToString("", " ") { it.arrow }
         }
     }
     Text(text, fontSize = 13.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)

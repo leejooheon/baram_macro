@@ -17,6 +17,8 @@ data class TimerMonitorState(
     /** 마지막으로 찍은 게임 창 전체 (영역 지정 화면에 쓴다) */
     val frame: BufferedImage?,
     val regions: Map<TimerRegion, RegionState>,
+    /** 붙은 몬스터를 찾을 때 쓰는 등록한 몬스터 그림 수 */
+    val monsterCount: Int = 0,
 ) {
     sealed interface ServerState {
         data object Unknown : ServerState
