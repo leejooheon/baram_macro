@@ -28,8 +28,11 @@ class HealUseCase(
         if (count <= 0 || SkillCaster.readyIn(Skill.HEAL) > 0) return false
 
         Keyboard.atomic {
-            SkillCaster.cast(Skill.HEAL, Target.Me)
-            repeat(count - 1) { SkillCaster.cast(Skill.HEAL) }
+            if (!SkillCaster.tryCast(Skill.HEAL, Target.Me)) return@atomic
+            repeat(count - 1) { 
+                if (common.robot.UserInput.isMoving()) return@atomic
+                SkillCaster.tryCast(Skill.HEAL) 
+            }
         }
         return true
     }
