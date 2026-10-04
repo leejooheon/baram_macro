@@ -43,9 +43,9 @@ object OcrStateHolder {
     }
 
     /** 이 값 이하가 되면 [OcrEvent.ManaLow]를 보낸다 */
-    const val MANA_LOW_PERCENT = 10
+    const val MANA_LOW_PERCENT = 20
     /** 막대가 경계에서 흔들릴 때 이벤트가 연달아 나가지 않도록, 이만큼 회복해야 다시 보낸다 */
-    const val MANA_REARM_PERCENT = 15
+    const val MANA_REARM_PERCENT = 25
 }
 
 sealed interface OcrEvent {

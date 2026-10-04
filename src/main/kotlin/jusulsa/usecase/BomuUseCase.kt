@@ -1,5 +1,6 @@
 package jusulsa.usecase
 
+import jusulsa.engine.MacroUseCase
 import jusulsa.skill.Skill
 import jusulsa.skill.SkillCaster
 import jusulsa.skill.Target
@@ -15,7 +16,9 @@ import java.util.concurrent.ConcurrentHashMap
 class BomuUseCase(
     private val ocr: OcrStateHolder = OcrStateHolder,
     private val now: () -> Long = System::currentTimeMillis,
-) {
+) : MacroUseCase {
+    override val name = "보무"
+
     enum class Buff(val label: String, val skill: Skill, val target: Target) {
         BOHO("보호", Skill.BOHO, Target.Me),
         MUJANG("무장", Skill.MUJANG, Target.Confirm),
@@ -30,14 +33,12 @@ class BomuUseCase(
         return Buff.entries.filter { needsRenew(it, panel, time) }
     }
 
-    /** 걸어야 하는 보호·무장을 건다. 하나라도 걸었으면 true */
-    suspend operator fun invoke(): Boolean {
-        val buffs = buffsToRenew()
-        buffs.forEach { buff ->
-            SkillCaster.cast(buff.skill, buff.target)
-            lastCastAt[buff] = now()
-        }
-        return buffs.isNotEmpty()
+    override fun isReady(now: Long) = buffsToRenew().isNotEmpty()
+
+    /** 걸어야 하는 것 중 하나만 건다. 나머지는 엔진이 다음에 다시 고른다 */
+    override suspend fun execute() {
+        val buff = buffsToRenew().firstOrNull() ?: return
+        if (SkillCaster.tryCast(buff.skill, buff.target)) lastCastAt[buff] = now()
     }
 
     private fun needsRenew(buff: Buff, panel: RegionResult?, time: Long): Boolean {
