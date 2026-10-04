@@ -28,7 +28,7 @@ class ManaUseCase(
         }
         if (mp > OcrStateHolder.MANA_LOW_PERCENT) return false
 
-        // 공증 직후에는 막대가 아직 안 바뀌었을 수 있다
+        // 공증 직후에는 막대가 아직 안 바뀌었을 수 있다. 막대를 0.2초마다 읽으니 짧게 두고, 씹혔으면 바로 다시 쓴다
         lastGongjeungAt?.let {
             if (time - it < RECAST_GUARD_MILLIS) {
                 log("마력 $mp% 이지만 ${time - it}ms 전에 공증해서 대기")
@@ -69,6 +69,6 @@ class ManaUseCase(
 
     companion object {
         const val GONGJEUNG_NAME = "공력증강"
-        const val RECAST_GUARD_MILLIS = 3_000L
+        const val RECAST_GUARD_MILLIS = 500L
     }
 }
