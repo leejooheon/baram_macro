@@ -8,7 +8,6 @@ import java.awt.event.KeyEvent
  *
  * @param rateGroup 같은 그룹끼리 합쳐서 초당 횟수를 제한한다
  * @param minIntervalMillis 같은 마법을 다시 쓰기까지의 최소 간격
- * @param userInputSensitive 사용자가 방향키로 이동 중이면 대상이 틀어질 수 있어 미룬다
  */
 enum class Skill(
     val key: Int,
@@ -16,22 +15,21 @@ enum class Skill(
     val upper: Boolean = false,
     val rateGroup: RateGroup? = null,
     val minIntervalMillis: Long = 0,
-    val userInputSensitive: Boolean = false,
 ) {
     HELLFIRE(KeyEvent.VK_1),           // a(1): 헬파이어
     GONGJEUNG(KeyEvent.VK_2),          // b(2): 공력증강
     MABEE(KeyEvent.VK_3),              // c(3): 마비
     HONDON(KeyEvent.VK_5),             // e(5): 혼돈
-    JULMANG(KeyEvent.VK_6, rateGroup = RateGroup.CURSE, userInputSensitive = true), // f(6): 절망
-    JEOJU(KeyEvent.VK_7, rateGroup = RateGroup.CURSE, userInputSensitive = true),   // g(7): 저주
+    JULMANG(KeyEvent.VK_6, rateGroup = RateGroup.CURSE), // f(6): 절망
+    JEOJU(KeyEvent.VK_7, rateGroup = RateGroup.CURSE),   // g(7): 저주
     SAMME(KeyEvent.VK_8),              // h(8): 삼매진화
     HEAL(KeyEvent.VK_9, rateGroup = RateGroup.HEAL), // 9: 힐
     BOHO(KeyEvent.VK_M, alphabet = true),    // m: 보호
     MUJANG(KeyEvent.VK_N, alphabet = true),  // n: 무장
     MAGII(KeyEvent.VK_O, alphabet = true),   // o: 마기지체
-    CHUM1(KeyEvent.VK_Q, alphabet = true, minIntervalMillis = 400, userInputSensitive = true), // q: 극진뢰격참주'첨
-    CHUM2(KeyEvent.VK_R, alphabet = true, minIntervalMillis = 400, userInputSensitive = true), // r: 진뢰격참주'첨
-    JUNGDOK(KeyEvent.VK_G, alphabet = true, upper = true), // G: 중독
+    CHUM1(KeyEvent.VK_Q, alphabet = true, minIntervalMillis = 400), // q: 극진뢰격참주'첨
+    CHUM2(KeyEvent.VK_R, alphabet = true, minIntervalMillis = 400), // r: 진뢰격참주'첨
+    JUNGDOK(KeyEvent.VK_G, alphabet = true, upper = true, minIntervalMillis = 120), // G: 중독
 }
 
 /** 서버 기준 1초에 쓸 수 있는 횟수를 같이 세는 마법 묶음 */
