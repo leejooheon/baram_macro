@@ -13,7 +13,7 @@ import kotlinx.coroutines.delay
 import ocr.model.TimerMonitorState
 import ocr.model.TimerMonitorState.ServerState
 import ocr.model.TimerRegion
-import java.awt.Rectangle
+import ocr.model.TimerMonitorState.WindowState
 
 sealed interface OcrMonitorEvent {
     data object Start : OcrMonitorEvent
@@ -21,7 +21,7 @@ sealed interface OcrMonitorEvent {
     data object CheckServer : OcrMonitorEvent
     data class ChangeInterval(val millis: Long) : OcrMonitorEvent
     data class PickRegion(val region: TimerRegion) : OcrMonitorEvent
-    data class ChangeRectangle(val region: TimerRegion, val rectangle: Rectangle) : OcrMonitorEvent
+    data class ChangeWindowKeyword(val keyword: String) : OcrMonitorEvent
 }
 
 private val intervals = listOf(500L, 1000L, 2000L, 3000L)
@@ -53,7 +53,6 @@ fun OcrMonitorScreen(
                 state = state.regions.getValue(region),
                 now = now,
                 onPickRegion = { onEvent(OcrMonitorEvent.PickRegion(region)) },
-                onRectangleChanged = { onEvent(OcrMonitorEvent.ChangeRectangle(region, it)) },
             )
         }
     }
@@ -81,6 +80,7 @@ private fun ControlBar(
                 Button(onClick = { onEvent(OcrMonitorEvent.Start) }) { Text("인식 시작") }
             }
         }
+        WindowRow(state, onEvent)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("읽는 주기", style = MaterialTheme.typography.body2)
             Spacer(Modifier.width(8.dp))
@@ -96,5 +96,33 @@ private fun ControlBar(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun WindowRow(
+    state: TimerMonitorState,
+    onEvent: (OcrMonitorEvent) -> Unit,
+) {
+    var keyword by remember(state.windowKeyword) { mutableStateOf(state.windowKeyword) }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        OutlinedTextField(
+            value = keyword,
+            onValueChange = { keyword = it },
+            label = { Text("게임 창 제목") },
+            singleLine = true,
+            modifier = Modifier.width(160.dp),
+        )
+        if (keyword != state.windowKeyword) {
+            TextButton(onClick = { onEvent(OcrMonitorEvent.ChangeWindowKeyword(keyword)) }) { Text("적용") }
+        }
+        Spacer(Modifier.width(8.dp))
+        val (label, color) = when (val window = state.window) {
+            is WindowState.Found -> "${window.title} (${window.width}×${window.height})" to ParsedColor
+            is WindowState.CaptureFailed -> "${window.title}: 캡처 실패 (최소화돼 있나요?)" to UnparsedColor
+            WindowState.NotFound -> "제목에 '${state.windowKeyword}'이(가) 들어간 창이 없어요" to Color.Red
+            WindowState.Searching -> "게임 창 찾는 중" to Color.Gray
+        }
+        Text(label, color = color, style = MaterialTheme.typography.body2)
     }
 }

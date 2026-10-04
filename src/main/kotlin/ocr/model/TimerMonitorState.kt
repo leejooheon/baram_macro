@@ -1,12 +1,17 @@
 package ocr.model
 
 import java.awt.Rectangle
+import java.awt.geom.Rectangle2D
 import java.awt.image.BufferedImage
 
 data class TimerMonitorState(
     val isRunning: Boolean,
     val intervalMillis: Long,
     val server: ServerState,
+    val windowKeyword: String,
+    val window: WindowState,
+    /** 마지막으로 찍은 게임 창 전체 (영역 지정 화면에 쓴다) */
+    val frame: BufferedImage?,
     val regions: Map<TimerRegion, RegionState>,
 ) {
     sealed interface ServerState {
@@ -15,9 +20,20 @@ data class TimerMonitorState(
         data object Disconnected : ServerState
     }
 
+    sealed interface WindowState {
+        data object Searching : WindowState
+        data class Found(val title: String, val width: Int, val height: Int) : WindowState
+        data object NotFound : WindowState
+        /** 창은 있지만 최소화 등으로 찍을 수 없음 */
+        data class CaptureFailed(val title: String) : WindowState
+    }
+
     data class RegionState(
-        val rectangle: Rectangle,
-        /** 마지막으로 OCR에 보낸 캡처 (실제 화면 픽셀 해상도) */
+        /** 게임 창 대비 비율 */
+        val fraction: Rectangle2D.Double,
+        /** 마지막 캡처 기준 픽셀 좌표 */
+        val pixels: Rectangle? = null,
+        /** 마지막으로 OCR에 보낸 이미지 */
         val image: BufferedImage? = null,
         val entries: List<TimerEntry> = emptyList(),
         /** 캡처부터 응답까지 걸린 시간 */
@@ -38,7 +54,7 @@ data class TimerMonitorState(
         val raw: String,
         val seconds: Int?,
         val confidence: Double,
-        /** 캡처 이미지 픽셀 기준 */
+        /** 영역 이미지 픽셀 기준 */
         val box: Rectangle,
         val capturedAt: Long,
     ) {
@@ -51,13 +67,4 @@ data class TimerMonitorState(
     /** 버프/쿨타임 이름으로 남은 초. 없으면 null */
     fun remaining(region: TimerRegion, name: String): Int? =
         entries(region).firstOrNull { it.name == name }?.remainingSeconds()
-
-    companion object {
-        val default = TimerMonitorState(
-            isRunning = false,
-            intervalMillis = 1000,
-            server = ServerState.Unknown,
-            regions = TimerRegion.entries.associateWith { RegionState(rectangle = it.defaultRectangle) },
-        )
-    }
 }

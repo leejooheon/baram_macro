@@ -13,7 +13,9 @@
 1. `script/run_ocr_server.bat` 로 OCR 서버를 띄운다 (처음 한 번은 venv를 만들고 CPU용 torch를 설치한다).
    CPU 스레드 수는 `OCR_THREADS` 환경변수로 정한다 (기본 2).
 2. `script/run_ocr_monitor.bat` (또는 `gradlew run -PmainClass=OcrMonitorKt`) 로 모니터를 띄운다.
-3. 각 영역의 **영역 지정** 버튼을 누르고 화면에서 드래그한다. 좌표는 `~/.baram_macro/ocr_regions.json` 에 저장된다.
+3. 게임 창(제목에 `옛날바람`이 들어간 창)을 직접 캡처한다. 다른 창에 가려져도 되고, 창을 옮겨도 된다.
+4. 각 영역의 **영역 지정** 버튼을 누르고 게임 화면에서 드래그한다. 영역은 게임 창 대비 비율로
+   `~/.baram_macro/ocr_settings.json` 에 저장돼서 창 크기가 바뀌어도 따라간다.
 
 OCR 서버가 다른 PC에 있으면 `OCR_HOST` 환경변수로 주소를 바꾼다 (기본 `192.168.0.2`).
 인식 확인은 `script` 폴더에서 `python test_timer_ocr.py`.

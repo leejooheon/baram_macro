@@ -10,14 +10,20 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import ocr.capture.GameWindowCapture
 import ocr.model.TimerMonitorState
+import ocr.model.TimerMonitorState.RegionState
 import ocr.model.TimerMonitorState.ServerState
 import ocr.model.TimerMonitorState.TimerEntry
+import ocr.model.TimerMonitorState.WindowState
 import ocr.model.TimerRegion
+import ocr.model.toPixels
 import java.awt.Rectangle
+import java.awt.geom.Rectangle2D
+import java.awt.image.BufferedImage
 
 /**
- * 스킬 쿨타임 박스와 버프 패널을 주기적으로 캡처해서 OCR 서버로 읽는다.
+ * 게임 창을 주기적으로 한 장 찍고, 그 안의 쿨타임 박스와 버프 패널을 잘라 OCR 서버로 읽는다.
  * 다른 매크로에서는 [state]의 remaining(...)으로 남은 초를 읽어 쓰면 된다.
  *
  * 남은 초는 읽은 시점 기준으로 계속 줄어들게 계산하므로, OCR 주기를 길게 잡아도 표시는 매초 갱신된다.
@@ -27,11 +33,20 @@ object TimerMonitor {
     // 매 요청마다 PNG 본문을 로그로 찍지 않도록 로그를 끈 클라이언트를 따로 쓴다
     private val client = OcrClient(createHttpClient(logLevel = LogLevel.NONE))
     private var job: Job? = null
+    private var window: GameWindowCapture.GameWindow? = null
 
     private val _state = MutableStateFlow(
-        TimerMonitorState.default.copy(
-            regions = RegionStore.load().mapValues { (_, rect) -> TimerMonitorState.RegionState(rectangle = rect) }
-        )
+        RegionStore.load().let { saved ->
+            TimerMonitorState(
+                isRunning = false,
+                intervalMillis = 1000,
+                server = ServerState.Unknown,
+                windowKeyword = saved.windowKeyword,
+                window = WindowState.Searching,
+                frame = null,
+                regions = saved.regions.mapValues { (_, fraction) -> RegionState(fraction = fraction) },
+            )
+        }
     )
     val state: StateFlow<TimerMonitorState> = _state.asStateFlow()
 
@@ -42,7 +57,7 @@ object TimerMonitor {
             checkServer()
             while (isActive) {
                 val startedAt = System.currentTimeMillis()
-                TimerRegion.entries.forEach { read(it) }
+                tick()
                 val elapsed = System.currentTimeMillis() - startedAt
                 delay((state.value.intervalMillis - elapsed).coerceAtLeast(50))
             }
@@ -59,15 +74,24 @@ object TimerMonitor {
         _state.update { it.copy(intervalMillis = millis) }
     }
 
-    fun setRectangle(region: TimerRegion, rectangle: Rectangle) {
+    fun setWindowKeyword(keyword: String) {
+        window = null
+        _state.update { it.copy(windowKeyword = keyword, window = WindowState.Searching) }
+        save()
+    }
+
+    fun setRegion(region: TimerRegion, fraction: Rectangle2D.Double) {
         _state.update { state ->
             val regionState = state.regions.getValue(region)
-            state.copy(regions = state.regions + (region to regionState.copy(rectangle = rectangle)))
+            state.copy(regions = state.regions + (region to regionState.copy(fraction = fraction)))
         }
-        RegionStore.save(state.value.regions.mapValues { it.value.rectangle })
+        save()
         // 바뀐 영역을 바로 한 번 읽어서 보여준다
-        scope.launch { read(region) }
+        scope.launch { state.value.frame?.let { read(region, it, System.currentTimeMillis()) } }
     }
+
+    /** 영역 지정 화면을 열기 전에 최신 게임 화면을 찍어 둔다 */
+    suspend fun refreshFrame(): BufferedImage? = withContext(Dispatchers.IO) { captureFrame() }
 
     suspend fun checkServer() {
         val server = when (val result = client.health()) {
@@ -77,10 +101,37 @@ object TimerMonitor {
         _state.update { it.copy(server = server) }
     }
 
-    private suspend fun read(region: TimerRegion) {
-        val rectangle = state.value.regions.getValue(region).rectangle
+    private suspend fun tick() {
         val capturedAt = System.currentTimeMillis()
-        val image = runCatching { NativeScreenCapture.capture(rectangle) }.getOrNull() ?: return
+        val frame = captureFrame() ?: return
+        TimerRegion.entries.forEach { read(it, frame, capturedAt) }
+        if (state.value.server is ServerState.Unknown) checkServer()
+    }
+
+    private fun captureFrame(): BufferedImage? {
+        val target = window?.takeIf { GameWindowCapture.isAlive(it) }
+            ?: GameWindowCapture.find(state.value.windowKeyword)
+        window = target
+        if (target == null) {
+            _state.update { it.copy(window = WindowState.NotFound) }
+            return null
+        }
+
+        val frame = runCatching { GameWindowCapture.capture(target) }.getOrNull()
+        _state.update {
+            it.copy(
+                window = if (frame == null) WindowState.CaptureFailed(target.title)
+                         else WindowState.Found(target.title, frame.width, frame.height),
+                frame = frame ?: it.frame,
+            )
+        }
+        return frame
+    }
+
+    private suspend fun read(region: TimerRegion, frame: BufferedImage, capturedAt: Long) {
+        val pixels = state.value.regions.getValue(region).fraction.toPixels(frame)
+        if (pixels.isEmpty) return
+        val image = frame.getSubimage(pixels.x, pixels.y, pixels.width, pixels.height)
 
         val result = client.readTimers(image)
         val latency = System.currentTimeMillis() - capturedAt
@@ -89,6 +140,7 @@ object TimerMonitor {
             val previous = state.regions.getValue(region)
             val next = when (result) {
                 is Result.Success -> previous.copy(
+                    pixels = pixels,
                     image = image,
                     entries = result.data.lines.map { line ->
                         TimerEntry(
@@ -107,6 +159,7 @@ object TimerMonitor {
                     error = null,
                 )
                 is Result.Error -> previous.copy(
+                    pixels = pixels,
                     image = image,
                     capturedAt = capturedAt,
                     error = result.error.toMessage(),
@@ -121,7 +174,11 @@ object TimerMonitor {
                 }
             )
         }
-        if (state.value.server is ServerState.Unknown) checkServer()
+    }
+
+    private fun save() {
+        val state = state.value
+        RegionStore.save(state.windowKeyword, state.regions.mapValues { it.value.fraction })
     }
 
     private fun NetworkError.toMessage() = when (this) {

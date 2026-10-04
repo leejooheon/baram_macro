@@ -19,11 +19,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import common.presentation.SizeItem
 import ocr.model.TimerMonitorState.RegionState
 import ocr.model.TimerMonitorState.TimerEntry
 import ocr.model.TimerRegion
-import java.awt.Rectangle
 import kotlin.math.roundToInt
 
 internal val ParsedColor = Color(0xFF2E7D32)
@@ -35,30 +33,19 @@ internal fun RegionCard(
     state: RegionState,
     now: Long,
     onPickRegion: () -> Unit,
-    onRectangleChanged: (Rectangle) -> Unit,
 ) {
-    var showCoordinates by remember { mutableStateOf(false) }
-
     Card(elevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(region.title, style = MaterialTheme.typography.h6)
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = state.rectangle.let { "(${it.x}, ${it.y})  ${it.width}×${it.height}" },
+                    text = state.pixels?.let { "게임 창 기준 (${it.x}, ${it.y})  ${it.width}×${it.height}" } ?: "",
                     style = MaterialTheme.typography.caption,
                     color = Color.Gray,
                 )
                 Spacer(Modifier.weight(1f))
-                TextButton(onClick = { showCoordinates = !showCoordinates }) {
-                    Text(if (showCoordinates) "좌표 닫기" else "좌표 수정")
-                }
                 Button(onClick = onPickRegion) { Text("영역 지정") }
-            }
-
-            if (showCoordinates) {
-                Spacer(Modifier.height(8.dp))
-                SizeItem(rectangle = state.rectangle, onRectangleChanged = onRectangleChanged)
             }
 
             Spacer(Modifier.height(8.dp))
@@ -163,7 +150,6 @@ private fun StatusLine(state: RegionState, now: Long) {
             append("${((now - state.capturedAt) / 1000.0).let { "%.1f".format(it) }}초 전 읽음 · ")
             append("응답 ${state.latencyMillis}ms")
             append(if (state.cached) " (화면 변화 없음, 캐시)" else " (OCR ${state.ocrMillis.roundToInt()}ms)")
-            state.image?.let { append(" · 캡처 ${it.width}×${it.height}px") }
         }
     }
     Text(

@@ -6,11 +6,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import ocr.NativeScreenCapture
 import ocr.TimerMonitor
 import ocr.model.TimerRegion
 import ocr.presentation.OcrMonitorEvent
@@ -24,7 +20,6 @@ import java.awt.image.BufferedImage
  */
 fun main() = application {
     val state by TimerMonitor.state.collectAsState()
-    val windowState = rememberWindowState(size = DpSize(560.dp, 820.dp), position = WindowPosition.PlatformDefault)
     val scope = rememberCoroutineScope()
     var picking by remember { mutableStateOf<Pair<TimerRegion, BufferedImage>?>(null) }
 
@@ -33,7 +28,7 @@ fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
         title = "OCR 모니터",
-        state = windowState,
+        state = rememberWindowState(size = DpSize(600.dp, 860.dp), position = WindowPosition.PlatformDefault),
     ) {
         MaterialTheme {
             OcrMonitorScreen(
@@ -44,13 +39,10 @@ fun main() = application {
                         OcrMonitorEvent.Stop -> TimerMonitor.stop()
                         OcrMonitorEvent.CheckServer -> scope.launch { TimerMonitor.checkServer() }
                         is OcrMonitorEvent.ChangeInterval -> TimerMonitor.setInterval(event.millis)
-                        is OcrMonitorEvent.ChangeRectangle -> TimerMonitor.setRectangle(event.region, event.rectangle)
+                        is OcrMonitorEvent.ChangeWindowKeyword -> TimerMonitor.setWindowKeyword(event.keyword)
                         is OcrMonitorEvent.PickRegion -> scope.launch {
-                            // 모니터 창이 캡처에 찍히지 않게 잠깐 내린다
-                            windowState.isMinimized = true
-                            delay(400)
-                            val screenshot = withContext(Dispatchers.IO) { NativeScreenCapture.captureFullScreen() }
-                            picking = event.region to screenshot
+                            val frame = TimerMonitor.refreshFrame() ?: state.frame ?: return@launch
+                            picking = event.region to frame
                         }
                     }
                 },
@@ -58,21 +50,17 @@ fun main() = application {
         }
     }
 
-    picking?.let { (region, screenshot) ->
-        fun close() {
-            picking = null
-            windowState.isMinimized = false
-        }
+    picking?.let { (region, frame) ->
         MaterialTheme {
             RegionPickerWindow(
                 region = region,
-                screenshot = screenshot,
-                current = state.regions.getValue(region).rectangle,
+                frame = frame,
+                regions = state.regions.mapValues { it.value.fraction },
                 onConfirm = {
-                    TimerMonitor.setRectangle(region, it)
-                    close()
+                    TimerMonitor.setRegion(region, it)
+                    picking = null
                 },
-                onCancel = ::close,
+                onCancel = { picking = null },
             )
         }
     }
