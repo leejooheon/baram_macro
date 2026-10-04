@@ -1,41 +1,9 @@
 package common.robot
 
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
-import java.awt.event.KeyEvent
 
-/** java KeyEvent.VK_*, Windows 가상 키코드, jnativehook VC_* 사이 변환 */
+/** Windows 가상 키코드를 jnativehook VC_* 로 변환 */
 object KeyCodes {
-    // java KeyEvent.VK_* 중 Windows VK 값과 다른 것들. 나머지(영문, 숫자, F키, 방향키 등)는 같다
-    fun javaToWindowsVk(javaKeyCode: Int) = when (javaKeyCode) {
-        KeyEvent.VK_ENTER -> 0x0D
-        KeyEvent.VK_DELETE -> 0x2E
-        KeyEvent.VK_INSERT -> 0x2D
-        KeyEvent.VK_SEMICOLON -> 0xBA
-        KeyEvent.VK_EQUALS -> 0xBB
-        KeyEvent.VK_COMMA -> 0xBC
-        KeyEvent.VK_MINUS -> 0xBD
-        KeyEvent.VK_PERIOD -> 0xBE
-        KeyEvent.VK_SLASH -> 0xBF
-        KeyEvent.VK_BACK_QUOTE -> 0xC0
-        KeyEvent.VK_OPEN_BRACKET -> 0xDB
-        KeyEvent.VK_BACK_SLASH -> 0xDC
-        KeyEvent.VK_CLOSE_BRACKET -> 0xDD
-        KeyEvent.VK_QUOTE -> 0xDE
-        else -> javaKeyCode
-    }
-
-    // 스캔코드로 보낼 때 확장 플래그가 필요한 키 (없으면 숫자패드 키로 인식된다)
-    private val extendedVks = setOf(
-        0x21, 0x22, 0x23, 0x24, // page up, page down, end, home
-        0x25, 0x26, 0x27, 0x28, // 방향키
-        0x2C, 0x2D, 0x2E, // print screen, insert, delete
-        0x5B, 0x5C, 0x5D, // win, apps
-        0x6F, 0x90, // 숫자패드 /, num lock
-        0xA3, 0xA5, // 오른쪽 ctrl, alt
-    )
-
-    fun isExtended(windowsVk: Int) = windowsVk in extendedVks
-
     fun windowsVkToVc(windowsVk: Int): Int = vkToVc[windowsVk] ?: NativeKeyEvent.VC_UNDEFINED
 
     // libuiohook(jnativehook)의 Windows keycode_scancode_table과 같은 매핑. 기존 단축키 코드(VC_*)를 그대로 쓰기 위함

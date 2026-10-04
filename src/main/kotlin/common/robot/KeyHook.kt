@@ -13,7 +13,7 @@ import kotlin.concurrent.thread
 /**
  * Windows 저수준 키보드 훅(WH_KEYBOARD_LL)을 직접 건다.
  *
- * - 이 앱이 SendInput으로 보낸 키(WinInput.MARKER)는 단축키로 처리하지 않는다.
+ * - 프로그램이 보낸 키(LLKHF_INJECTED, 매크로의 Robot 입력 포함)는 단축키로 처리하지 않는다.
  * - consumeKeys에 넣은 키는 게임으로 넘기지 않고 삼킨다(예: 1을 단축키로 쓰면 게임에는 1이 안 들어간다).
  * - 리스너는 별도 스레드에서 순서대로 호출한다. 훅 콜백이 오래 걸리면 Windows가 훅을 몰래 떼어버리기 때문.
  *
@@ -29,6 +29,9 @@ object KeyHook {
     private const val WM_KEYUP = 0x0101
     private const val WM_SYSKEYDOWN = 0x0104
     private const val WM_SYSKEYUP = 0x0105
+    private const val LLKHF_INJECTED = 0x10
+
+    val isAvailable: Boolean = System.getProperty("os.name").startsWith("Windows", ignoreCase = true)
 
     private val listeners = CopyOnWriteArrayList<Listener>()
     private val dispatcher = Executors.newSingleThreadExecutor { r ->
@@ -63,8 +66,8 @@ object KeyHook {
             WM_KEYUP, WM_SYSKEYUP -> false
             else -> return false
         }
-        // 우리가 보낸 키는 그대로 게임에 넘긴다
-        if (info.dwExtraInfo?.toLong() == WinInput.MARKER) return false
+        // 매크로가 보낸 키는 그대로 게임에 넘긴다
+        if (info.flags and LLKHF_INJECTED != 0) return false
 
         val keyCode = KeyCodes.windowsVkToVc(info.vkCode)
         if (keyCode == NativeKeyEvent.VC_UNDEFINED) return false
