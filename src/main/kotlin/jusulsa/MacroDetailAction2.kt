@@ -92,8 +92,8 @@ class MacroDetailAction2(
      * 1. 사용자가 이동 중이면 아무것도 안 쓴다
      * 2. 체력이 낮으면 자힐, 마력이 낮으면 공증
      * 3. 보무, 마기지체, 삼매진화가 필요하면
-     * 4. 극진뢰·진뢰 (각각 400ms 간격)
-     * 5. 남는 시간에 저주 5초 -> 4방향 중독 30초 반복
+     * 4. 극진뢰·진뢰
+     * 5. 남는 시간에 저주+중독을 한 방향씩 멀리 퍼뜨린다
      */
     suspend fun chumChum() = kotlinx.coroutines.coroutineScope {
         val attack = CursePoisonCycle()
@@ -144,43 +144,31 @@ class MacroDetailAction2(
         return true
     }
 
-    /** 저주와 중독을 0.5초 간격으로 번갈아가며 4방향으로 골고루 건다 */
+    /**
+     * 한 방향으로 저주를 걸어 다음 몹으로 커서를 옮기고, 같은 몹에 바로 중독을 건다.
+     * 방향키는 지금 커서 위치에서 그 방향의 다음 몹으로 옮겨 가므로, 같은 방향을 이어서 눌러야 멀리까지 퍼진다.
+     * 한 방향에 [CURSE_PER_DIRECTION]마리를 걸고 다음 방향으로 넘어간다.
+     * 힐·삼매·보무를 쓰면 커서가 나로 돌아오므로 그 뒤에는 내 주변부터 다시 퍼진다.
+     */
     private class CursePoisonCycle {
-        private var lastCastAt = 0L
-        private val interval = 500L // 0.5초 간격으로 하나씩 시전
-        private var isJeojuTurn = true
-        private var directionIndex = 0
+        private var count = 0
 
-        /** 지금 쓸 수 있으면 하나 쓴다. 썼으면 true */
+        /** 지금 쓸 수 있으면 저주+중독 한 쌍을 쓴다. 썼으면 true */
         suspend fun step(): Boolean {
-            val now = System.currentTimeMillis()
-            if (now - lastCastAt < interval) return false
+            if (SkillCaster.readyIn(Skill.JEOJU) > 0) return false
+            val dir = DIRECTIONS[(count / CURSE_PER_DIRECTION) % DIRECTIONS.size]
 
-            val dir = DIRECTIONS[directionIndex]
-            var casted = false
-            
-            if (isJeojuTurn) {
-                if (SkillCaster.readyIn(Skill.JEOJU) == 0L) {
-                    if (Keyboard.atomic { SkillCaster.tryCast(Skill.JEOJU, Target.Direction(dir)) }) {
-                        casted = true
-                        isJeojuTurn = false // 다음엔 중독
-                        lastCastAt = now
-                    }
-                }
-            } else {
-                if (SkillCaster.readyIn(Skill.JUNGDOK) == 0L) {
-                    if (Keyboard.atomic { SkillCaster.tryCast(Skill.JUNGDOK, Target.Direction(dir)) }) {
-                        casted = true
-                        isJeojuTurn = true // 다음엔 저주
-                        directionIndex = (directionIndex + 1) % DIRECTIONS.size // 중독까지 걸었으면 다음 방향으로 회전
-                        lastCastAt = now
-                    }
-                }
+            // 둘 사이에 다른 마법이 끼면 중독이 엉뚱한 대상(나)에게 갈 수 있어서 한 번에 보낸다
+            val casted = Keyboard.atomic {
+                if (!SkillCaster.tryCast(Skill.JEOJU, Target.Direction(dir))) return@atomic false
+                SkillCaster.tryCast(Skill.JUNGDOK)
+                true
             }
-            
+            if (casted) count++
             return casted
         }
     }
+
     suspend fun tabTab() = Keyboard.atomic {
         val duration = 30L
         Keyboard.pressAndRelease(KeyEvent.VK_TAB, duration)
@@ -191,11 +179,9 @@ class MacroDetailAction2(
     companion object {
         /** 쓸 수 있는 마법이 없을 때 다시 고르기까지 쉬는 시간 */
         private const val IDLE_MILLIS = 20L
-        private const val JEOJU_MILLIS = 5_000L
-        private const val JUNGDOK_MILLIS = 30_000L
         private val CHUMS = listOf(Skill.CHUM1, Skill.CHUM2)
-        /** 한 방향에 중독을 몇 번 걸고 다음 방향으로 넘어갈지 */
-        private const val JUNGDOK_PER_DIRECTION = 9
+        /** 한 방향에 몇 마리를 걸고 다음 방향으로 넘어갈지 */
+        private const val CURSE_PER_DIRECTION = 5
         private val DIRECTIONS = listOf(
             KeyEvent.VK_UP,
             KeyEvent.VK_LEFT,
