@@ -1,14 +1,17 @@
 package jusulsa.usecase
 
+import common.robot.Keyboard
 import jusulsa.skill.Skill
 import jusulsa.skill.SkillCaster
 import jusulsa.skill.Target
 import kotlinx.coroutines.withTimeoutOrNull
 import ocr.OcrStateHolder
 import ocr.model.TimerRegion
+import java.awt.event.KeyEvent
 
 /**
  * 마력이 떨어졌을 때만 공력증강 + 자힐. 공증으로 마력을 채우면 체력이 깎이니 바로 힐로 체력을 채운다.
+ * 마력이 0이면 공증을 쓸 수 없으니 먼저 U를 두 번 눌러 쓸 수 있는 상태로 만든다.
  * 체력/마력 막대를 못 읽으면 아무것도 하지 않는다.
  */
 class ManaUseCase(
@@ -35,7 +38,13 @@ class ManaUseCase(
     suspend operator fun invoke(): Boolean {
         if (!needsGongjeung()) return false
 
-        SkillCaster.cast(Skill.GONGJEUNG)
+        val mp = ocr.state.value.freshVitals(now())?.mpPercent
+        Keyboard.atomic {
+            if (mp != null && mp <= 0) {
+                repeat(2) { Keyboard.pressAndRelease(KeyEvent.VK_U) }
+            }
+            SkillCaster.cast(Skill.GONGJEUNG)
+        }
         lastGongjeungAt = now()
 
         // 초당 3번은 SkillCaster가 맞춘다. 다른 매크로가 대상을 바꿀 수 있어서 매번 나를 잡는다
