@@ -13,3 +13,7 @@ build/
 /captures
 .externalNativeBuild
 .cxx
+
+# OCR server venv
+script/.venv/
+__pycache__/

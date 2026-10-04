@@ -5,6 +5,8 @@ import common.model.api.PositionListModel
 import common.model.api.PositionModel
 import common.util.NetworkError
 import common.util.Result
+import ocr.model.OcrHealthModel
+import ocr.model.TimerOcrModel
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -13,6 +15,7 @@ import io.ktor.http.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.awt.image.BufferedImage
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.net.URL
 import java.util.*
@@ -55,6 +58,51 @@ class OcrClient(
                 val model = response.body<OcrModel>()
                 Result.Success(model)
             }
+            else -> parseError(status)
+        }
+    }
+
+    /** 쿨타임 박스나 버프 패널 캡처를 보내 '이름 N초' 줄 목록을 받는다. 임시 파일 없이 메모리에서 바로 보낸다. */
+    suspend fun readTimers(
+        bufferedImage: BufferedImage
+    ): Result<TimerOcrModel, NetworkError> = withContext(Dispatchers.IO) {
+        val bytes = ByteArrayOutputStream().use {
+            ImageIO.write(bufferedImage, "png", it)
+            it.toByteArray()
+        }
+        val response = try {
+            httpClient.submitFormWithBinaryData(
+                url = "http://$host:$ocrPort/ocr/timers/",
+                formData = formData {
+                    append(
+                        "file",
+                        bytes,
+                        Headers.build {
+                            append(HttpHeaders.ContentType, "image/png")
+                            append(HttpHeaders.ContentDisposition, "form-data; name=\"file\"; filename=\"region.png\"")
+                        }
+                    )
+                }
+            )
+        } catch (e: Exception) {
+            return@withContext Result.Error(NetworkError.REQUEST_TIMEOUT)
+        }
+
+        return@withContext when(val status = response.status.value) {
+            in 200..299 -> Result.Success(response.body<TimerOcrModel>())
+            else -> parseError(status)
+        }
+    }
+
+    suspend fun health(): Result<OcrHealthModel, NetworkError> = withContext(Dispatchers.IO) {
+        val response = try {
+            httpClient.get(urlString = "http://$host:$ocrPort/health/")
+        } catch (e: Exception) {
+            return@withContext Result.Error(NetworkError.REQUEST_TIMEOUT)
+        }
+
+        return@withContext when(val status = response.status.value) {
+            in 200..299 -> Result.Success(response.body<OcrHealthModel>())
             else -> parseError(status)
         }
     }
