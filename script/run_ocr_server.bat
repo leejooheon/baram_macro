@@ -12,6 +12,9 @@ if not exist .venv (
     .venv\Scripts\python -m pip install -r requirements.txt
 )
 
+REM 예전에 만든 .venv 에는 몹 탐지용 ultralytics 가 없으니 한 번 깔아 준다
+.venv\Scripts\python -c "import ultralytics" 2> nul || .venv\Scripts\python -m pip install ultralytics
+
 REM CPU 스레드 수. 높이면 빨라지지만 게임과 CPU를 나눠 쓴다
 if "%OCR_THREADS%"=="" set OCR_THREADS=2
 

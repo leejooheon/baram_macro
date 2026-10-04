@@ -1,6 +1,7 @@
 package jusulsa.skill
 
 import common.robot.Keyboard
+import common.robot.Mouse
 import common.robot.UserInput
 import kotlinx.coroutines.delay
 import java.awt.event.KeyEvent
@@ -13,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap
  * - 최소 간격: [Skill.minIntervalMillis]
  * - 사용자 이동키: 사용자가 방향키로 이동 중이면 어떤 마법도 쓰지 않고 기다린다.
  *   방향으로 대상을 잡는 도중에 사용자 방향키가 들어오면 ESC로 취소하고 다시 시도한다.
+ * - 마우스 대상([Target.Click]): 마법 키를 누른 뒤 몹 위치를 클릭한다. 클릭 후 마우스는 원래 자리로 돌아간다.
  */
 object SkillCaster {
     const val SKILL_DELAY = 60L
@@ -58,6 +60,14 @@ object SkillCaster {
                     return false
                 }
                 confirm(skill)
+            }
+            is Target.Click -> {
+                // 대상 고르는 커서가 뜬 뒤에 클릭한다
+                delay(SKILL_DELAY)
+                if (!Mouse.click(target.aim.window, target.aim.point.x, target.aim.point.y)) {
+                    Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE)
+                    return false
+                }
             }
         }
 

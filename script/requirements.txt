@@ -5,3 +5,5 @@ easyocr
 opencv-python-headless
 flask
 numpy
+# 몹 탐지 (학습한 모델이 있을 때만 쓴다)
+ultralytics

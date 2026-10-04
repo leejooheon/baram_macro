@@ -2,6 +2,7 @@ package common.network
 
 import common.util.NetworkError
 import common.util.Result
+import detector.model.DetectModel
 import ocr.model.OcrHealthModel
 import ocr.model.TimerOcrModel
 import io.ktor.client.*
@@ -21,21 +22,36 @@ class OcrClient(
     /** 쿨타임 박스나 버프 패널 캡처를 보내 '이름 N초' 줄 목록을 받는다. 임시 파일 없이 메모리에서 바로 보낸다. */
     suspend fun readTimers(
         bufferedImage: BufferedImage
-    ): Result<TimerOcrModel, NetworkError> = withContext(Dispatchers.IO) {
+    ): Result<TimerOcrModel, NetworkError> = upload("ocr/timers/", bufferedImage, "png")
+
+    /**
+     * 게임 창 전체 캡처를 보내 몹/내 캐릭터 박스를 받는다. 창 전체라 PNG는 인코딩이 느려서 JPEG로 보낸다.
+     * 학습한 모델이 없으면 서버가 503을 준다 ([NetworkError.SERVER_ERROR]).
+     */
+    suspend fun detect(
+        bufferedImage: BufferedImage
+    ): Result<DetectModel, NetworkError> = upload("detect/", bufferedImage, "jpg")
+
+    private suspend inline fun <reified T> upload(
+        path: String,
+        image: BufferedImage,
+        format: String,
+    ): Result<T, NetworkError> = withContext(Dispatchers.IO) {
         val bytes = ByteArrayOutputStream().use {
-            ImageIO.write(bufferedImage, "png", it)
+            ImageIO.write(image, format, it)
             it.toByteArray()
         }
+        val contentType = if (format == "png") "image/png" else "image/jpeg"
         val response = try {
             httpClient.submitFormWithBinaryData(
-                url = "http://$host:$ocrPort/ocr/timers/",
+                url = "http://$host:$ocrPort/$path",
                 formData = formData {
                     append(
                         "file",
                         bytes,
                         Headers.build {
-                            append(HttpHeaders.ContentType, "image/png")
-                            append(HttpHeaders.ContentDisposition, "form-data; name=\"file\"; filename=\"region.png\"")
+                            append(HttpHeaders.ContentType, contentType)
+                            append(HttpHeaders.ContentDisposition, "form-data; name=\"file\"; filename=\"image.$format\"")
                         }
                     )
                 }
@@ -45,7 +61,7 @@ class OcrClient(
         }
 
         return@withContext when(val status = response.status.value) {
-            in 200..299 -> Result.Success(response.body<TimerOcrModel>())
+            in 200..299 -> Result.Success(response.body<T>())
             else -> parseError(status)
         }
     }

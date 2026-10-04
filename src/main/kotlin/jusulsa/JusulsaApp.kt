@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import common.event.ObserveKeyEvents
 import detector.DatasetRecorderBar
+import detector.DetectionBar
 import ocr.presentation.OcrMonitorApp
 
 /** 주술사 매크로 단축키 + OCR 모니터 화면 */
@@ -26,6 +27,7 @@ fun JusulsaApp(
     OcrMonitorApp(
         header = { JusulsaStatusBar(uiState) },
         footer = {
+            DetectionBar()
             DatasetRecorderBar()
             JusulsaOpacityBar(opacity, onOpacityChange)
         },

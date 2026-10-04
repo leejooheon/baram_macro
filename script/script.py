@@ -2,11 +2,14 @@ import cv2
 import numpy as np
 from flask import Flask, request, jsonify
 
+from monster_detector import MonsterDetector
 from timer_ocr import TimerOcr
 
 app = Flask(__name__)
 # CUDA가 있으면 GPU, 없으면 CPU(OCR_THREADS 개 스레드, 기본 2)로 돈다
 timer_ocr = TimerOcr()
+# 몹/캐릭터 탐지. 학습한 모델이 없으면 /detect/ 만 503 을 돌려준다
+monster_detector = MonsterDetector()
 
 def _decode_upload():
     file = request.files.get('file')
@@ -25,6 +28,18 @@ def read_timers():
     return jsonify(timer_ocr.read(image))
 
 
+@app.route('/detect/', methods=['POST'])
+def detect():
+    """게임 창 전체 캡처를 받아 몹(monster)과 내 캐릭터(me) 박스 목록을 돌려준다."""
+    image = _decode_upload()
+    if image is None:
+        return jsonify({"error": "file is required"}), 400
+    result = monster_detector.detect(image)
+    if result is None:
+        return jsonify({"error": monster_detector.error}), 503
+    return jsonify(result)
+
+
 @app.route('/health/', methods=['GET'])
 def health():
     import torch
@@ -32,6 +47,7 @@ def health():
         "gpu": timer_ocr.gpu,
         "threads": torch.get_num_threads(),
         "names": timer_ocr.names,
+        "detector": monster_detector.status(),
     })
 
 # Press the green button in the gutter to run the script.

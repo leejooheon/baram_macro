@@ -1,5 +1,6 @@
 package jusulsa.skill
 
+import detector.Aim
 import java.awt.event.KeyEvent
 
 /**
@@ -51,4 +52,6 @@ sealed interface Target {
      * 방향으로 대상을 잡으므로 마법과 상관없이 사용자 이동키에 영향을 받는다.
      */
     data class Direction(val direction: Int, val fromMe: Boolean = false) : Target
+    /** 마법을 고른 뒤 게임 창의 [aim] 지점(몹)을 마우스로 클릭한다. 방향키처럼 다른 몹으로 새지 않는다 */
+    data class Click(val aim: Aim) : Target
 }
