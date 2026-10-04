@@ -31,8 +31,6 @@ data class TimerMonitorState(
     data class RegionState(
         /** 게임 창 대비 비율 */
         val fraction: Rectangle2D.Double,
-        /** 마지막 캡처 기준 픽셀 좌표 */
-        val pixels: Rectangle? = null,
         /** 마지막으로 OCR에 보낸 이미지 */
         val image: BufferedImage? = null,
         val entries: List<TimerEntry> = emptyList(),

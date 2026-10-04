@@ -17,7 +17,6 @@ import ocr.model.TimerMonitorState.ServerState
 import ocr.model.TimerMonitorState.TimerEntry
 import ocr.model.TimerMonitorState.WindowState
 import ocr.model.TimerRegion
-import ocr.model.toPixels
 import java.awt.Rectangle
 import java.awt.geom.Rectangle2D
 import java.awt.image.BufferedImage
@@ -87,7 +86,7 @@ object TimerMonitor {
         }
         save()
         // 바뀐 영역을 바로 한 번 읽어서 보여준다
-        scope.launch { state.value.frame?.let { read(region, it, System.currentTimeMillis()) } }
+        scope.launch { tick() }
     }
 
     /** 영역 지정 화면을 열기 전에 최신 게임 화면을 찍어 둔다 */
@@ -103,20 +102,33 @@ object TimerMonitor {
 
     private suspend fun tick() {
         val capturedAt = System.currentTimeMillis()
-        val frame = captureFrame() ?: return
-        TimerRegion.entries.forEach { read(it, frame, capturedAt) }
+        val target = findWindow() ?: return
+        val regions = TimerRegion.entries
+        val fractions = regions.map { state.value.regions.getValue(it).fraction }
+        // 게임 창 전체가 아니라 두 영역만 옮겨 온다
+        val capture = runCatching { GameWindowCapture.captureRegions(target, fractions) }.getOrNull()
+        _state.update {
+            it.copy(
+                window = if (capture == null) WindowState.CaptureFailed(target.title)
+                         else WindowState.Found(target.title, capture.windowSize.width, capture.windowSize.height)
+            )
+        }
+        capture ?: return
+        regions.forEachIndexed { i, region -> read(region, capture.images[i], capturedAt) }
         if (state.value.server is ServerState.Unknown) checkServer()
     }
 
-    private fun captureFrame(): BufferedImage? {
+    private fun findWindow(): GameWindowCapture.GameWindow? {
         val target = window?.takeIf { GameWindowCapture.isAlive(it) }
             ?: GameWindowCapture.find(state.value.windowKeyword)
         window = target
-        if (target == null) {
-            _state.update { it.copy(window = WindowState.NotFound) }
-            return null
-        }
+        if (target == null) _state.update { it.copy(window = WindowState.NotFound) }
+        return target
+    }
 
+    /** 영역 지정 화면용 게임 창 전체 캡처 */
+    private fun captureFrame(): BufferedImage? {
+        val target = findWindow() ?: return null
         val frame = runCatching { GameWindowCapture.capture(target) }.getOrNull()
         _state.update {
             it.copy(
@@ -128,11 +140,7 @@ object TimerMonitor {
         return frame
     }
 
-    private suspend fun read(region: TimerRegion, frame: BufferedImage, capturedAt: Long) {
-        val pixels = state.value.regions.getValue(region).fraction.toPixels(frame)
-        if (pixels.isEmpty) return
-        val image = frame.getSubimage(pixels.x, pixels.y, pixels.width, pixels.height)
-
+    private suspend fun read(region: TimerRegion, image: BufferedImage, capturedAt: Long) {
         val result = client.readTimers(image)
         val latency = System.currentTimeMillis() - capturedAt
 
@@ -140,7 +148,6 @@ object TimerMonitor {
             val previous = state.regions.getValue(region)
             val next = when (result) {
                 is Result.Success -> previous.copy(
-                    pixels = pixels,
                     image = image,
                     entries = result.data.lines.map { line ->
                         TimerEntry(
@@ -159,7 +166,6 @@ object TimerMonitor {
                     error = null,
                 )
                 is Result.Error -> previous.copy(
-                    pixels = pixels,
                     image = image,
                     capturedAt = capturedAt,
                     error = result.error.toMessage(),

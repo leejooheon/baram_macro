@@ -1,9 +1,6 @@
 package ocr.model
 
-import java.awt.Rectangle
 import java.awt.geom.Rectangle2D
-import java.awt.image.BufferedImage
-import kotlin.math.roundToInt
 
 /**
  * OCR로 읽는 영역. 게임 창 클라이언트 영역에 대한 비율(0~1)로 저장해서 창 크기가 바뀌어도 따라간다.
@@ -18,15 +15,4 @@ enum class TimerRegion(
 
     /** 우측 가운데 양피지 패널 (예: 호체주술 49초 / 보호 178초 / 무장 179초) */
     BUFF("버프", Rectangle2D.Double(0.7655, 0.4259, 0.1703, 0.1288)),
-}
-
-/** 비율 영역을 [frame] 픽셀 좌표로 바꾼다. 화면 밖으로 나가지 않게 자른다. */
-fun Rectangle2D.Double.toPixels(frame: BufferedImage): Rectangle {
-    val rect = Rectangle(
-        (x * frame.width).roundToInt(),
-        (y * frame.height).roundToInt(),
-        (width * frame.width).roundToInt().coerceAtLeast(1),
-        (height * frame.height).roundToInt().coerceAtLeast(1),
-    )
-    return rect.intersection(Rectangle(0, 0, frame.width, frame.height))
 }

@@ -25,7 +25,7 @@ import numpy as np
 DEFAULT_NAMES = [
     "호체주술", "보호", "무장", "금강불체", "혼마술", "헬파이어", "공력증강",
     "저주", "마비", "절망", "중독", "삼매진화", "지폭지술", "백호의희원",
-    "파력무참", "투명", "주술마도", "부활", "마기지체",
+    "파력무참", "투명", "주술마도", "부활", "마기지체", "노도성황",
 ]
 
 # 목록에 없는 이름도 읽히지만, 여기 있으면 더 정확하다. 한 줄에 하나씩 추가한다.
@@ -82,7 +82,8 @@ def binarize(gray):
     """글자 픽셀이 True인 마스크. 어두운 배경이면 밝은 글자, 밝은 배경이면 어두운 글자로 본다."""
     median = float(np.median(gray))
     if median < 100:
-        mask = gray > max(150, median + 80)
+        # 게임 글자는 거의 순백(255)이고, 겹쳐 보이는 메뉴 글자는 180대라 높게 자른다
+        mask = gray > max(210, median + 80)
     else:
         mask = gray < min(70, median - 50)
 
@@ -95,36 +96,55 @@ def binarize(gray):
             continue  # 양피지 얼룩, 점
         if h > height * 0.6 or w > width * 0.6:
             continue  # 패널 테두리
+        if x == 0 or x + w >= width:
+            continue  # 영역 좌우 끝에 걸린 무늬 조각 (글자는 영역 안쪽에 있다)
         keep[i] = True
     return keep[labels]
 
 
 def split_lines(mask, min_height=14):
-    """가로 투영으로 줄을 나눈다. 글자 줄보다 많이 낮은 덩어리(패널 무늬 등)는 버린다."""
+    """
+    가로 투영으로 줄을 나눈다. 줄 높이의 중앙값을 기준으로
+    - 많이 낮은 덩어리(패널 무늬 조각)는 버리고
+    - 두 줄 이상이 무늬 조각 때문에 붙은 덩어리는 줄 높이 단위로 다시 나눈다.
+    """
     runs = _runs(mask.sum(axis=1), min_height)
     if not runs:
         return []
-    tallest = max(y1 - y0 for y0, y1 in runs)
-    lines = []
+    typical = float(np.median([y1 - y0 for y0, y1 in runs]))
+    rows = []
     for y0, y1 in runs:
-        if y1 - y0 < tallest * 0.6:
+        height = y1 - y0
+        if height < typical * 0.6:
             continue
+        count = max(1, int(round(height / typical))) if height > typical * 1.5 else 1
+        for k in range(count):
+            rows.append((y0 + height * k // count, y0 + height * (k + 1) // count))
+
+    lines = []
+    for y0, y1 in rows:
         xs = np.where(mask[y0:y1].sum(axis=0) > 0)[0]
-        lines.append((y0, y1, int(xs[0]), int(xs[-1]) + 1))
+        if len(xs):
+            lines.append((y0, y1, int(xs[0]), int(xs[-1]) + 1))
     return lines
 
 
 def split_words(mask, y0, y1, x0, x1):
-    """줄 높이의 35%보다 넓은 공백을 단어 경계로 본다."""
+    """
+    줄을 [이름, 숫자초] 두 조각으로 나눈다. 이름과 숫자 사이 공백이 줄에서 가장 넓다
+    ('1'은 폭이 좁아서 숫자 사이 공백도 꽤 넓게 보이므로, 고정 기준보다 '가장 넓은 공백'이 안전하다).
+    """
     glyphs = _runs(mask[y0:y1, x0:x1].sum(axis=0))
-    gap = (y1 - y0) * 0.35
-    words = [glyphs[0]]
-    for g in glyphs[1:]:
-        if g[0] - words[-1][1] < gap:
-            words[-1][1] = g[1]
-        else:
-            words.append(g)
-    return [(x0 + a, x0 + b) for a, b in words]
+    if len(glyphs) < 2:
+        return [(x0 + glyphs[0][0], x0 + glyphs[0][1])] if glyphs else []
+    gaps = [glyphs[i + 1][0] - glyphs[i][1] for i in range(len(glyphs) - 1)]
+    widest = max(range(len(gaps)), key=lambda i: gaps[i])
+    if gaps[widest] < (y1 - y0) * 0.4:
+        return [(x0 + glyphs[0][0], x0 + glyphs[-1][1])]
+    return [
+        (x0 + glyphs[0][0], x0 + glyphs[widest][1]),
+        (x0 + glyphs[widest + 1][0], x0 + glyphs[-1][1]),
+    ]
 
 
 def parse_line(text):
@@ -249,7 +269,7 @@ class TimerOcr:
                 name, raw, name_conf = self._read_name(clean, y0, y1, name_words[0][0], name_words[-1][1])
                 confidence = min(name_conf, sec_conf)
                 # 'N초'가 없는 줄, 한글이 없는 줄, 신뢰도가 너무 낮은 줄은 패널 무늬나 잘린 글자 같은 잡음이다
-                if seconds is None or not _has_hangul(name) or confidence < MIN_CONFIDENCE:
+                if seconds is None or not _is_name(name) or confidence < MIN_CONFIDENCE:
                     continue
                 text = f"{raw} {seconds}{SECONDS_SUFFIX}" if seconds is not None else raw
                 lines.append({
@@ -263,8 +283,9 @@ class TimerOcr:
         return {"lines": lines, "elapsed_ms": _ms(started), "cached": False}
 
 
-def _has_hangul(text):
-    return any("가" <= ch <= "힣" for ch in text)
+def _is_name(text):
+    """마법 이름은 한글 2글자 이상이고 다른 문자가 섞이지 않는다"""
+    return len(text) >= 2 and all("가" <= ch <= "힣" for ch in text)
 
 
 def _split_glyph(line_mask, start, end, height):
