@@ -183,6 +183,11 @@ class MacroDetailAction2 {
         }
     }
 
+    suspend fun bomu() {
+        bomu(true)
+        bomuTime = System.currentTimeMillis()
+    }
+
     private suspend fun bomu(focusMe: Boolean) {
         executeAlphabetMagic(
             Triple(BOHO, focusMe, true),

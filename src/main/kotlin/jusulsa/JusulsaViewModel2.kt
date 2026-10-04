@@ -54,7 +54,7 @@ class JusulsaViewModel2 : BaseViewModel() {
             NativeKeyEvent.VC_2 -> execute { macroDetailAction.mabee() }
             NativeKeyEvent.VC_3 -> execute { macroDetailAction.julmang() }
 
-            NativeKeyEvent.VC_F1 -> execute { macroDetailAction.hondon() }
+            NativeKeyEvent.VC_F1 -> execute { macroDetailAction.bomu() }
             NativeKeyEvent.VC_F4 -> execute { macroDetailAction.chumChum() }
 
             NativeKeyEvent.VC_UP -> macroDetailAction.onDirectionChanged(KeyEvent.VK_UP)
