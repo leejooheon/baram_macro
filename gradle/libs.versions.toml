@@ -1,6 +1,8 @@
 [versions]
 kotlin = "2.4.20"
 compose-multiplatform = "1.12.1"
+# Compose 1.8부터 material이 아이콘을 전이 의존성으로 포함하지 않음. 아이콘 라이브러리는 1.7.3에서 버전이 고정됨
+compose-material-icons = "1.7.3"
 kotlinx-serialization = "1.11.0"
 ktor = "3.6.0"
 jnativehook = "2.2.2"
@@ -10,6 +12,7 @@ tess4j = "5.20.0"
 [libraries]
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 compose-ui-test-junit4 = { module = "org.jetbrains.compose.ui:ui-test-junit4", version.ref = "compose-multiplatform" }
+compose-material-icons-core = { module = "org.jetbrains.compose.material:material-icons-core", version.ref = "compose-material-icons" }
 jnativehook = { module = "com.github.kwhat:jnativehook", version.ref = "jnativehook" }
 jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 tess4j = { module = "net.sourceforge.tess4j:tess4j", version.ref = "tess4j" }

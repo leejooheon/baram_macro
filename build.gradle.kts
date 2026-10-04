@@ -13,6 +13,7 @@ kotlin {
 
 dependencies {
     implementation(compose.desktop.currentOs)
+    implementation(libs.compose.material.icons.core)
 
     // Include the Test API
     testImplementation(libs.compose.ui.test.junit4)
