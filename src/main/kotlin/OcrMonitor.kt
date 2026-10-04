@@ -28,7 +28,7 @@ fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
         title = "OCR 모니터",
-        state = rememberWindowState(size = DpSize(600.dp, 860.dp), position = WindowPosition.PlatformDefault),
+        state = rememberWindowState(size = DpSize(400.dp, 420.dp), position = WindowPosition.PlatformDefault),
     ) {
         MaterialTheme {
             OcrMonitorScreen(
