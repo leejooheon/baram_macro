@@ -38,4 +38,14 @@ class CoordinateReaderTest {
         listOf(8, 14, 32).forEach { y -> g.fillRect(source.width + 6, y, 21, 4) }
         assertEquals(CoordinateReader.Coordinate(39, 144), CoordinateReader.read(image))
     }
+
+    @Test
+    fun `칸 구분선 조각이 숫자 위에 붙어도 읽는다`() {
+        val image = load()
+        val g = image.graphics
+        g.color = java.awt.Color(247, 227, 156)
+        // 0039의 3 바로 위에 붙은 점 (위아래를 글자마다 따로 잡으면 3을 못 읽는다)
+        g.fillRect(75, 8, 3, 3)
+        assertEquals(CoordinateReader.Coordinate(39, 144), CoordinateReader.read(image))
+    }
 }

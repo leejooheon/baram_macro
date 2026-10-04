@@ -36,8 +36,12 @@ object CoordinateReader {
         }
         if (glyphs.isEmpty()) return null
         val tallest = glyphs.maxOf { it.rows.count() }
+        val tall = glyphs.filter { it.rows.count() >= tallest * 0.6 }
+        // 숫자는 모두 높이가 같다. 칸 구분선 조각이 위에 붙은 글자도 있으므로 위아래는 글자들의 중앙값으로 맞춘다
+        val top = tall.map { it.rows.first }.sorted()[tall.size / 2]
+        val bottom = tall.map { it.rows.last }.sorted()[tall.size / 2]
         // 영역 끝에 걸린 패널 테두리 조각은 숫자로 안 읽히므로 양 끝에서 떼어 낸다. 가운데 글자를 못 읽으면 실패
-        val classified = glyphs.filter { it.rows.count() >= tallest * 0.6 }.map { it to classify(it, mask, width) }
+        val classified = tall.map { Glyph(it.columns, top..bottom) }.map { it to classify(it, mask, width) }
         val first = classified.indexOfFirst { it.second != null }
         val last = classified.indexOfLast { it.second != null }
         if (first < 0) return null
@@ -113,7 +117,6 @@ object CoordinateReader {
 
     /**
      * 실제 게임 화면 좌표 줄과 돈 줄에서 뜬 7x9 숫자 모양.
-     * 6은 아직 샘플이 없어서 빠져 있다. 좌표에 6이 있으면 null이 된다.
      */
     private val TEMPLATES: Map<Char, List<String>> = mapOf(
         '0' to listOf(
@@ -181,6 +184,17 @@ object CoordinateReader {
             "...###.",
             ".####..",
             "####...",
+        ),
+        '6' to listOf(
+            "....###",
+            "..####.",
+            ".###...",
+            ".#####.",
+            "###..##",
+            "###..##",
+            "###.###",
+            "######.",
+            ".####..",
         ),
         '7' to listOf(
             ".######",
