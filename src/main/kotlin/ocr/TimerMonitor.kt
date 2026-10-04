@@ -118,9 +118,13 @@ object TimerMonitor {
             )
         }
         capture ?: return
+        // 체력/마력은 서버를 거치지 않으니 먼저 읽는다. OCR 서버가 느리거나 꺼져 있으면
+        // 요청마다 수 초씩 걸려서, 뒤에 읽으면 매크로가 쓰기 전에 값이 오래된 것으로 버려진다
+        regions.forEachIndexed { i, region ->
+            if (!region.usesOcr) readVitals(region, capture.images[i], capturedAt)
+        }
         regions.forEachIndexed { i, region ->
             if (region.usesOcr) read(region, capture.images[i], capturedAt)
-            else readVitals(region, capture.images[i], capturedAt)
         }
         if (state.value.server is ServerState.Unknown) checkServer()
     }
