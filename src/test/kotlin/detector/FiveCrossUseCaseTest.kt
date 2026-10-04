@@ -37,6 +37,15 @@ class FiveCrossUseCaseTest {
     }
 
     @Test
+    fun `세로로 긴 캐릭터 박스도 발 위치로 칸을 잡는다`() {
+        // 칸은 40px 정사각형, 그림은 70px 높이로 칸 위로 삐져나온다
+        fun tall(t: Tile) = java.awt.Rectangle(500 + t.x * tile - tile / 2, 300 + t.y * tile + tile / 2 - 70, tile, 70)
+        val d = Detection(HWND(), 2000, 1200, tall(Tile(0, 0)), listOf(tall(Tile(0, 1)), tall(Tile(0, -2))), capturedAt = NOW, latencyMillis = 0)
+        val grid = TileGrid.of(d)!!
+        assertEquals(listOf(Tile(0, 1), Tile(0, -2)), d.monsters.map { grid.tileOf(it) })
+    }
+
+    @Test
     fun `상하좌우가 다 차면 중심에 삼매진화`() {
         OcrStateHolder.update(TimerRegion.COOLDOWN, RegionResult(emptyList(), capturedAt = NOW, success = true))
         val c = Tile(3, 0)

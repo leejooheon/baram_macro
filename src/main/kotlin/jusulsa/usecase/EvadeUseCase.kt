@@ -8,10 +8,11 @@ import detector.TileGrid
 import jusulsa.engine.MacroUseCase
 import jusulsa.engine.ReasonLog
 import java.awt.event.KeyEvent
+import kotlin.math.abs
 
 /**
- * 몹 피하기. 내 상하좌우 칸에 몹이 붙으면 몹이 없는 쪽으로 한 칸 움직인다.
- * 갈 칸은 "그 칸 옆에 붙는 몹 수"가 가장 적은 곳, 같으면 가장 가까운 몹에서 먼 곳.
+ * 몹 피하기. 몹이 [DANGER_RANGE]칸 안으로 다가오면 몹이 없는 쪽으로 한 칸 움직인다.
+ * 갈 칸은 "그 칸 옆에 붙는 몹 수"가 가장 적은 곳, 같으면 [DANGER_RANGE]칸 안의 몹이 적은 곳, 같으면 가장 가까운 몹에서 먼 곳.
  * 지금 자리보다 나아지지 않으면 움직이지 않는다 (벽, 몹에 둘러싸임).
  *
  * 마비를 걸어 둔 몹([ignore])은 못 움직이고 못 때리니 무시한다. 붙은 몹은 먼저 마비를 걸고([MabeeUseCase]가 앞 순서),
@@ -50,20 +51,24 @@ class EvadeUseCase(
         val all = detection.monsters.map { grid.tileOf(it) }.toSet() - ME
         val monsters = all - ignore()
 
+        fun steps(a: Tile, b: Tile) = abs(a.x - b.x) + abs(a.y - b.y)
         fun adjacent(tile: Tile) = tile.neighbors.count { it in monsters }
+        fun near(tile: Tile) = monsters.count { steps(it, tile) <= DANGER_RANGE }
         fun nearest(tile: Tile) = monsters.minOfOrNull { (it.x - tile.x) * (it.x - tile.x) + (it.y - tile.y) * (it.y - tile.y) } ?: Int.MAX_VALUE
+        // 작을수록 안전한 칸
+        val danger = compareBy<Tile> { adjacent(it) }.thenBy { near(it) }.thenByDescending { nearest(it) }
 
-        val here = adjacent(ME)
+        val here = near(ME)
         if (here == 0) return null
 
         val best = MOVES.entries
             .filter { (tile, _) -> tile !in all }
-            .minWithOrNull(compareBy<Map.Entry<Tile, Int>> { adjacent(it.key) }.thenByDescending { nearest(it.key) })
-        if (best == null || adjacent(best.key) >= here) {
-            reason.log("몹 ${here}마리 붙음, 피할 곳 없음")
+            .minWithOrNull { a, b -> danger.compare(a.key, b.key) }
+        if (best == null || danger.compare(best.key, ME) >= 0) {
+            reason.log("몹 ${here}마리 다가옴, 피할 곳 없음")
             return null
         }
-        reason.log("몹 ${here}마리 붙음 -> ${best.key}로 피함")
+        reason.log("몹 ${here}마리 다가옴 -> ${best.key}로 피함")
         return best.value
     }
 
@@ -75,6 +80,8 @@ class EvadeUseCase(
             Tile(-1, 0) to KeyEvent.VK_LEFT,
             Tile(1, 0) to KeyEvent.VK_RIGHT,
         )
+        /** 이 칸 수(가로+세로) 안으로 몹이 오면 피한다 */
+        const val DANGER_RANGE = 2
         /** 한 칸 걷는 동안은 다시 움직이지 않는다 */
         const val MOVE_INTERVAL_MILLIS = 400L
     }

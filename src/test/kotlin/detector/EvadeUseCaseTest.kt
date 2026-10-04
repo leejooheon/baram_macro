@@ -27,6 +27,11 @@ class EvadeUseCaseTest {
     }
 
     @Test
+    fun `두 칸 앞까지 다가오면 미리 피한다`() {
+        assertEquals(KeyEvent.VK_LEFT, useCase(Tile(2, 0)).plan(NOW))
+    }
+
+    @Test
     fun `오른쪽에 붙으면 왼쪽으로 피한다`() {
         assertEquals(KeyEvent.VK_LEFT, useCase(Tile(1, 0)).plan(NOW))
     }
