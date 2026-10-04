@@ -1,6 +1,8 @@
 package jusulsa.usecase
 
-import jusulsa.skill.SkillInput
+import jusulsa.skill.Skill
+import jusulsa.skill.SkillCaster
+import jusulsa.skill.Target
 import ocr.OcrStateHolder
 import ocr.RegionResult
 import ocr.model.TimerRegion
@@ -14,9 +16,9 @@ class BomuUseCase(
     private val ocr: OcrStateHolder = OcrStateHolder,
     private val now: () -> Long = System::currentTimeMillis,
 ) {
-    enum class Buff(val label: String, val key: Int, val forMe: Boolean) {
-        BOHO("보호", jusulsa.skill.BOHO, forMe = true),
-        MUJANG("무장", jusulsa.skill.MUJANG, forMe = false),
+    enum class Buff(val label: String, val skill: Skill, val target: Target) {
+        BOHO("보호", Skill.BOHO, Target.Me),
+        MUJANG("무장", Skill.MUJANG, Target.Confirm),
     }
 
     private val lastCastAt = ConcurrentHashMap<Buff, Long>()
@@ -32,7 +34,7 @@ class BomuUseCase(
     suspend operator fun invoke(): Boolean {
         val buffs = buffsToRenew()
         buffs.forEach { buff ->
-            SkillInput.castAlphabetMagic(buff.key, forMe = buff.forMe, enter = true)
+            SkillCaster.cast(buff.skill, buff.target)
             lastCastAt[buff] = now()
         }
         return buffs.isNotEmpty()

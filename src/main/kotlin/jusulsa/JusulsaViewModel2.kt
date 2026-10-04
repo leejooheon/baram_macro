@@ -5,6 +5,7 @@ import common.network.OcrClient
 import common.network.createHttpClient
 import common.robot.DisplayProvider
 import common.robot.Keyboard
+import common.robot.UserInput
 import common.util.Result
 import io.ktor.client.plugins.logging.LogLevel
 import jusulsa.model.JusulsaUiState
@@ -40,6 +41,7 @@ class JusulsaViewModel2 {
 
     fun dispatchKeyReleaseEvent(keyEvent: Int) {
         println("dispatch:$keyEvent")
+        UserInput.onKey(keyEvent, pressed = false)
 
         when(keyEvent) {
             NativeKeyEvent.VC_PAGE_UP -> hellfire()
@@ -155,5 +157,7 @@ class JusulsaViewModel2 {
             NativeKeyEvent.VC_F4,
         )
     }
-    fun dispatchKeyPressEvent(keyEvent: Int) = scope.launch {}
+    fun dispatchKeyPressEvent(keyEvent: Int) {
+        UserInput.onKey(keyEvent, pressed = true)
+    }
 }

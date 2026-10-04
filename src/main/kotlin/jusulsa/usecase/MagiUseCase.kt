@@ -1,7 +1,7 @@
 package jusulsa.usecase
 
-import jusulsa.skill.MAGII
-import jusulsa.skill.SkillInput
+import jusulsa.skill.Skill
+import jusulsa.skill.SkillCaster
 import ocr.OcrStateHolder
 import ocr.model.TimerRegion
 
@@ -33,7 +33,7 @@ class MagiUseCase(
 
     /** 쿨타임과 상관없이 바로 건다 (단축키용) */
     suspend fun cast() {
-        SkillInput.castAlphabetMagic(MAGII, forMe = false, enter = false)
+        SkillCaster.cast(Skill.MAGII)
         lastCastAt = now()
     }
 

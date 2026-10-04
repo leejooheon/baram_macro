@@ -1,9 +1,9 @@
 package jusulsa
 
 import common.robot.Keyboard
-import jusulsa.skill.*
-import jusulsa.skill.SkillInput.focusMe
-import jusulsa.skill.SkillInput.selectAlphabetMagic
+import jusulsa.skill.Skill
+import jusulsa.skill.SkillCaster.cast
+import jusulsa.skill.Target
 import jusulsa.usecase.BomuUseCase
 import jusulsa.usecase.MagiUseCase
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +17,10 @@ import java.awt.event.KeyEvent
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
+/**
+ * 주술사 매크로. 무엇을 어떤 순서로 쓸지만 정하고,
+ * 초당 횟수, 최소 간격, 사용자 이동키 같은 규칙은 SkillCaster가 지킨다.
+ */
 class MacroDetailAction2(
     private val bomu: BomuUseCase = BomuUseCase(),
     private val magi: MagiUseCase = MagiUseCase(),
@@ -27,26 +31,14 @@ class MacroDetailAction2(
         latestDirection = event
     }
 
-    suspend fun hellfire() {
-        focusMe(
-            keyEvent = JEOJU,
-            action = {
-                Keyboard.pressAndRelease(latestDirection)
-                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
-                Keyboard.pressAndRelease(HELLFIRE)
-                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
-            }
-        )
+    suspend fun hellfire() = Keyboard.atomic {
+        cast(Skill.JEOJU, Target.Direction(latestDirection, fromMe = true))
+        cast(Skill.HELLFIRE, Target.Confirm)
     }
 
     suspend fun heal() {
-        focusMe(
-            keyEvent = HEAL,
-            action = {
-                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
-                heal(2)
-            }
-        )
+        cast(Skill.HEAL, Target.Me)
+        repeat(2) { cast(Skill.HEAL) }
 
         bomu()
 
@@ -55,71 +47,42 @@ class MacroDetailAction2(
             currentCoroutineContext().ensureActive()
             // 보무를 걸면 대상이 나로 바뀌므로 다시 탭탭으로 잡는다
             if (bomu()) tabTab()
-            heal(3)
-            delay(1.seconds)
+            // 초당 3번은 SkillCaster가 맞춘다
+            cast(Skill.HEAL)
         }
     }
 
     suspend fun mabeAroundMe() {
-        val duration = 20L
-        listOf(
-            KeyEvent.VK_UP,
-            KeyEvent.VK_LEFT,
-            KeyEvent.VK_DOWN,
-            KeyEvent.VK_RIGHT
-        ).forEach {
-            focusMe(
-                keyEvent = MABEE,
-                action = {
-                    Keyboard.pressAndRelease(it)
-                    delay(duration)
-                    Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
-                    delay(duration)
-                }
-            )
-        }
+        DIRECTIONS.forEach { cast(Skill.MABEE, Target.Direction(it, fromMe = true)) }
     }
 
     suspend fun jeoju() {
         tabTab()
         while (true) {
             currentCoroutineContext().ensureActive()
-            Keyboard.pressAndRelease(JEOJU)
-//            Keyboard.pressAndRelease(latestDirection)
-//            Keyboard.pressAndRelease(KeyEvent.VK_ENTER, SKILL_DELAY)
+            cast(Skill.JEOJU)
         }
     }
+
     private suspend fun jeoju2(direction: Int, duration: Duration) {
         val endTime = System.currentTimeMillis() + duration.inWholeMilliseconds
         while (System.currentTimeMillis() < endTime) {
             currentCoroutineContext().ensureActive()
-            Keyboard.atomic {
-                Keyboard.pressAndRelease(JEOJU)
-                Keyboard.pressAndRelease(direction)
-                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
-            }
+            cast(Skill.JEOJU, Target.Direction(direction))
         }
     }
 
     suspend fun mabee() {
         while (true) {
             currentCoroutineContext().ensureActive()
-            Keyboard.atomic {
-                Keyboard.pressAndRelease(MABEE)
-                Keyboard.pressAndRelease(latestDirection)
-                Keyboard.pressAndRelease(KeyEvent.VK_ENTER, SKILL_DELAY)
-            }
+            cast(Skill.MABEE, Target.Direction(latestDirection))
         }
     }
 
     suspend fun julmang() {
         while (true) {
             currentCoroutineContext().ensureActive()
-            Keyboard.atomic {
-                Keyboard.pressAndRelease(JULMANG)
-                Keyboard.pressAndRelease(latestDirection)
-                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
-            }
+            cast(Skill.JULMANG, Target.Direction(latestDirection))
         }
     }
 
@@ -134,14 +97,10 @@ class MacroDetailAction2(
                 directionIndex = (directionIndex + 1) % DIRECTIONS.size
             }
             if(cnt % 16 > 8) {
-                Keyboard.atomic { healMe() }
+                cast(Skill.HEAL, Target.Me)
                 delay(300)
             } else {
-                Keyboard.atomic {
-                    selectAlphabetMagic(JUNGDOK, upper = true)
-                    Keyboard.pressAndRelease(DIRECTIONS[directionIndex])
-                    Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
-                }
+                cast(Skill.JUNGDOK, Target.Direction(DIRECTIONS[directionIndex]))
                 delay(120)
             }
             cnt++
@@ -153,15 +112,15 @@ class MacroDetailAction2(
     }
 
     suspend fun samme() {
-        Keyboard.pressAndRelease(SAMME)
+        cast(Skill.SAMME)
     }
 
     suspend fun gongjeung() {
-        Keyboard.pressAndRelease(GONGJEUNG)
+        cast(Skill.GONGJEUNG)
     }
 
     suspend fun hondon() {
-        Keyboard.pressAndRelease(HONDON)
+        cast(Skill.HONDON)
     }
 
     suspend fun chumChum() = withContext(Dispatchers.Default) {
@@ -176,12 +135,11 @@ class MacroDetailAction2(
                 jungDok(30.seconds)
             }
         }
+        // 극진뢰·진뢰 각각의 간격(400ms)은 SkillCaster가 맞춘다
         launch {
             while (isActive) {
-                Keyboard.atomic { selectAlphabetMagic(CHUM1) }
-                delay(400)
-                Keyboard.atomic { selectAlphabetMagic(CHUM2) }
-                delay(400)
+                cast(Skill.CHUM1)
+                cast(Skill.CHUM2)
             }
         }
         // 보무가 끊기기 전에, 마기지체는 쿨이 돌 때마다 건다
@@ -192,22 +150,6 @@ class MacroDetailAction2(
                 delay(1.seconds)
             }
         }
-    }
-
-    private suspend fun healMe() {
-        focusMe(
-            keyEvent = HEAL,
-            action = {
-                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
-            }
-        )
-    }
-    private suspend fun heal(time: Int) {
-        Keyboard.pressKeyRepeatedly(
-            keyEvent = HEAL,
-            time = time,
-            delay = SKILL_DELAY
-        )
     }
 
     suspend fun tabTab() = Keyboard.atomic {
