@@ -16,6 +16,7 @@ import ocr.model.TimerMonitorState.RegionState
 import ocr.model.TimerMonitorState.ServerState
 import ocr.model.TimerMonitorState.TimerEntry
 import ocr.model.TimerMonitorState.WindowState
+import ocr.model.TimerLineModel
 import ocr.model.TimerRegion
 import java.awt.Rectangle
 import java.awt.geom.Rectangle2D
@@ -144,21 +145,24 @@ object TimerMonitor {
         val result = client.readTimers(image)
         val latency = System.currentTimeMillis() - capturedAt
 
+        OcrStateHolder.update(
+            region = region,
+            result = when (result) {
+                is Result.Success -> RegionResult(
+                    entries = result.data.lines.map { it.toEntry(capturedAt) },
+                    capturedAt = capturedAt,
+                    success = true,
+                )
+                is Result.Error -> RegionResult(entries = emptyList(), capturedAt = capturedAt, success = false)
+            },
+        )
+
         _state.update { state ->
             val previous = state.regions.getValue(region)
             val next = when (result) {
                 is Result.Success -> previous.copy(
                     image = image,
-                    entries = result.data.lines.map { line ->
-                        TimerEntry(
-                            name = line.name,
-                            raw = line.raw,
-                            seconds = line.seconds,
-                            confidence = line.confidence,
-                            box = line.box.let { (x, y, w, h) -> Rectangle(x, y, w, h) },
-                            capturedAt = capturedAt,
-                        )
-                    },
+                    entries = result.data.lines.map { it.toEntry(capturedAt) },
                     latencyMillis = latency,
                     ocrMillis = result.data.elapsedMs,
                     cached = result.data.cached,
@@ -181,6 +185,15 @@ object TimerMonitor {
             )
         }
     }
+
+    private fun TimerLineModel.toEntry(capturedAt: Long) = TimerEntry(
+        name = name,
+        raw = raw,
+        seconds = seconds,
+        confidence = confidence,
+        box = box.let { (x, y, w, h) -> Rectangle(x, y, w, h) },
+        capturedAt = capturedAt,
+    )
 
     private fun save() {
         val state = state.value
