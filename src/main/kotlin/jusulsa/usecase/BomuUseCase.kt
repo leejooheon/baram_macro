@@ -21,7 +21,8 @@ class BomuUseCase(
 
     enum class Buff(val label: String, val skill: Skill, val target: Target) {
         BOHO("보호", Skill.BOHO, Target.Me),
-        MUJANG("무장", Skill.MUJANG, Target.Confirm),
+        // 헬파·마비로 커서가 몹에 가 있을 수 있어서 둘 다 HOME으로 나를 잡는다
+        MUJANG("무장", Skill.MUJANG, Target.Me),
     }
 
     private val lastCastAt = ConcurrentHashMap<Buff, Long>()

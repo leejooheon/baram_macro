@@ -1,6 +1,6 @@
 package jusulsa.usecase
 
-import detector.DetectionStateHolder
+import detector.DetectionMonitor
 import jusulsa.engine.MacroUseCase
 import jusulsa.engine.ReasonLog
 import jusulsa.skill.Skill
@@ -15,7 +15,8 @@ import ocr.model.TimerRegion
  * 몹 탐지가 켜져 있으면 삼매진화는 [FiveCrossUseCase]가 5매각에 쓰므로 여기서는 쓰지 않는다.
  */
 class SammeUseCase(
-    private val detecting: (now: Long) -> Boolean = { DetectionStateHolder.state.value?.isFresh(it) == true },
+    // 탐지 결과가 잠깐 늦어도 나 기준 삼매가 나가지 않게, 결과가 아니라 탐지를 켰는지로 본다
+    private val detecting: (now: Long) -> Boolean = { DetectionMonitor.state.value.isRunning },
     private val ocr: OcrStateHolder = OcrStateHolder,
     private val now: () -> Long = System::currentTimeMillis,
 ) : MacroUseCase {

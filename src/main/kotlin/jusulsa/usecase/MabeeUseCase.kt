@@ -33,6 +33,13 @@ class MabeeUseCase(
     private var next: Pair<Tile, Aim>? = null
     private var lastCastAt = 0L
 
+    /** 내가 [step]만큼 움직이면 기억한 칸도 같이 옮긴다 (칸은 나 기준이라) */
+    fun onMoved(step: Tile) {
+        val moved = paralyzed.mapKeys { it.key.afterMyMove(step) }
+        paralyzed.clear()
+        paralyzed.putAll(moved)
+    }
+
     override fun isReady(now: Long): Boolean {
         next = plan(now)
         return next != null

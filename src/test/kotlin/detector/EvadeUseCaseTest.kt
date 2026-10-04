@@ -3,7 +3,6 @@ package detector
 import com.sun.jna.platform.win32.WinDef.HWND
 import jusulsa.usecase.EvadeUseCase
 import java.awt.Rectangle
-import java.awt.event.KeyEvent
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -16,7 +15,7 @@ class EvadeUseCaseTest {
     private fun useCase(vararg tiles: Tile, ignore: Set<Tile> = emptySet()) = EvadeUseCase(
         ignore = { ignore },
         detection = {
-            Detection(HWND(), 1000, 600, box(Tile(0, 0)), tiles.map { box(it) }, capturedAt = NOW, latencyMillis = 0)
+            Detection(HWND(), windowWidth(tile), 1200, box(Tile(0, 0)), tiles.map { box(it) }, capturedAt = NOW, latencyMillis = 0)
         },
         now = { NOW },
     )
@@ -28,18 +27,18 @@ class EvadeUseCaseTest {
 
     @Test
     fun `두 칸 앞까지 다가오면 미리 피한다`() {
-        assertEquals(KeyEvent.VK_LEFT, useCase(Tile(2, 0)).plan(NOW))
+        assertEquals(Tile(-1, 0), useCase(Tile(2, 0)).plan(NOW))
     }
 
     @Test
     fun `오른쪽에 붙으면 왼쪽으로 피한다`() {
-        assertEquals(KeyEvent.VK_LEFT, useCase(Tile(1, 0)).plan(NOW))
+        assertEquals(Tile(-1, 0), useCase(Tile(1, 0)).plan(NOW))
     }
 
     @Test
     fun `몹이 적게 붙는 쪽으로 피한다`() {
         // 오른쪽, 아래에 붙어 있고 왼쪽 칸 옆(-2,0)에도 몹이 있으면 위로
-        assertEquals(KeyEvent.VK_UP, useCase(Tile(1, 0), Tile(0, 1), Tile(-2, 0)).plan(NOW))
+        assertEquals(Tile(0, -1), useCase(Tile(1, 0), Tile(0, 1), Tile(-2, 0)).plan(NOW))
     }
 
     @Test

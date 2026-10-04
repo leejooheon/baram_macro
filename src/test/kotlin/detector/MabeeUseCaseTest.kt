@@ -15,7 +15,7 @@ class MabeeUseCaseTest {
     private fun useCase(reserved: Set<Tile>, vararg tiles: Tile) = MabeeUseCase(
         reserved = { reserved },
         detection = {
-            Detection(HWND(), 2000, 1200, box(Tile(0, 0)), tiles.map { box(it) }, capturedAt = NOW, latencyMillis = 0)
+            Detection(HWND(), windowWidth(tile), 1200, box(Tile(0, 0)), tiles.map { box(it) }, capturedAt = NOW, latencyMillis = 0)
         },
         now = { NOW },
     )

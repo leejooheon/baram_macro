@@ -22,13 +22,15 @@ import kotlin.math.abs
  */
 class EvadeUseCase(
     private val ignore: () -> Set<Tile> = { emptySet() },
+    /** 한 칸 움직였을 때 (움직인 방향). 칸을 기억하는 기능들이 같이 옮기게 알려준다 */
+    private val onMoved: (step: Tile) -> Unit = {},
     private val detection: (now: Long) -> Detection? = { DetectionStateHolder.state.value?.takeIf { d -> d.isFresh(it) } },
     private val now: () -> Long = System::currentTimeMillis,
 ) : MacroUseCase {
     override val name = "몹 피하기"
     private val reason = ReasonLog("EvadeUseCase")
     private var lastMoveAt = 0L
-    private var next: Int? = null
+    private var next: Tile? = null
 
     override fun isReady(now: Long): Boolean {
         next = if (now - lastMoveAt < MOVE_INTERVAL_MILLIS) null else plan(now)
@@ -36,14 +38,15 @@ class EvadeUseCase(
     }
 
     override suspend fun execute() {
-        val key = next ?: return
+        val step = next ?: return
         next = null
-        Keyboard.pressAndRelease(key)
+        Keyboard.pressAndRelease(MOVES.getValue(step))
         lastMoveAt = now()
+        onMoved(step)
     }
 
-    /** 누를 방향키. 피할 필요가 없거나 피할 곳이 없으면 null */
-    fun plan(now: Long): Int? {
+    /** 움직일 칸 (나 기준). 피할 필요가 없거나 피할 곳이 없으면 null */
+    fun plan(now: Long): Tile? {
         val detection = detection(now) ?: return null
         // 이동한 뒤의 화면으로 다시 판단해야 하므로, 움직인 다음에 찍은 결과만 쓴다
         if (detection.capturedAt <= lastMoveAt) return null
@@ -69,7 +72,7 @@ class EvadeUseCase(
             return null
         }
         reason.log("몹 ${here}마리 다가옴 -> ${best.key}로 피함")
-        return best.value
+        return best.key
     }
 
     companion object {

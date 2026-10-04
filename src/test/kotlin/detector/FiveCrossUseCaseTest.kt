@@ -18,8 +18,8 @@ class FiveCrossUseCaseTest {
     /** 나는 화면 (500, 300), 한 칸 40px */
     private fun detection(vararg tiles: Tile) = Detection(
         window = HWND(),
-        windowWidth = 1000,
-        windowHeight = 600,
+        windowWidth = windowWidth(tile),
+        windowHeight = 1200,
         me = box(me),
         monsters = tiles.map { box(it) },
         capturedAt = NOW,
@@ -40,9 +40,23 @@ class FiveCrossUseCaseTest {
     fun `세로로 긴 캐릭터 박스도 발 위치로 칸을 잡는다`() {
         // 칸은 40px 정사각형, 그림은 70px 높이로 칸 위로 삐져나온다
         fun tall(t: Tile) = java.awt.Rectangle(500 + t.x * tile - tile / 2, 300 + t.y * tile + tile / 2 - 70, tile, 70)
-        val d = Detection(HWND(), 2000, 1200, tall(Tile(0, 0)), listOf(tall(Tile(0, 1)), tall(Tile(0, -2))), capturedAt = NOW, latencyMillis = 0)
+        val d = Detection(HWND(), windowWidth(tile), 1200, tall(Tile(0, 0)), listOf(tall(Tile(0, 1)), tall(Tile(0, -2))), capturedAt = NOW, latencyMillis = 0)
         val grid = TileGrid.of(d)!!
         assertEquals(listOf(Tile(0, 1), Tile(0, -2)), d.monsters.map { grid.tileOf(it) })
+    }
+
+    @Test
+    fun `박스 너비가 칸보다 넓어도 칸은 창 너비로 잡는다`() {
+        // 칸은 40px, 박스는 너비 70px 높이 90px (발은 칸 아래쪽에 맞춤)
+        fun wide(t: Tile) = java.awt.Rectangle(500 + t.x * tile - 35, 300 + t.y * tile + tile / 2 - 90, 70, 90)
+        val d = Detection(HWND(), windowWidth(tile), 1200, wide(Tile(0, 0)), listOf(wide(Tile(4, 0)), wide(Tile(0, -3))), capturedAt = NOW, latencyMillis = 0)
+        val grid = TileGrid.of(d)!!
+        assertEquals(listOf(Tile(4, 0), Tile(0, -3)), d.monsters.map { grid.tileOf(it) })
+    }
+
+    @Test
+    fun `내가 움직이면 기억한 칸도 반대로 밀린다`() {
+        assertEquals(Tile(0, 1), Tile(1, 1).afterMyMove(Tile(1, 0)))
     }
 
     @Test

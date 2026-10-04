@@ -46,3 +46,6 @@ class DetectionTest {
         assertEquals(Point(5, 5), DetectionStateHolder.nearestMonster(now = 100)?.point)
     }
 }
+
+/** 한 칸이 [tile]px이 되는 게임 창 너비 */
+fun windowWidth(tile: Int) = Math.round(tile / TileGrid.TILE_RATIO).toInt()

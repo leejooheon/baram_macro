@@ -56,6 +56,14 @@ class FiveCrossUseCase(
         data class Chaos(override val aim: Aim) : Action
     }
 
+    /** 내가 [step]만큼 움직이면 기억한 칸도 같이 옮긴다 (칸은 나 기준이라) */
+    fun onMoved(step: Tile) {
+        val moved = held.mapKeys { it.key.afterMyMove(step) }
+        held.clear()
+        held.putAll(moved)
+        reserved = reserved.map { it.afterMyMove(step) }.toSet()
+    }
+
     override fun isReady(now: Long): Boolean {
         next = plan(now)
         return next != null
