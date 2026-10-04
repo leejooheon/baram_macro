@@ -137,13 +137,23 @@ private fun Thumbnail(region: TimerRegion, state: RegionState) {
                 size = Size(box.width * scale + 4, box.height * scale + 4),
                 style = Stroke(width = 2f),
             )
-            // 옆 네 칸: 몬스터가 있으면 주황, 없으면 회색
-            state.monsters?.let { monsters ->
-                monsters.cells.forEach { (direction, cell) ->
+            state.monsters?.let { reading ->
+                // 옆 네 칸: 몬스터가 있으면 주황, 없으면 회색
+                reading.cells.forEach { (direction, cell) ->
                     drawRect(
-                        color = if (direction in monsters.occupied) UnparsedColor else Color.LightGray,
+                        color = if (direction in reading.occupied) UnparsedColor else Color.LightGray,
                         topLeft = Offset(cell.x * scale, cell.y * scale),
                         size = Size(cell.width * scale, cell.height * scale),
+                        style = Stroke(width = 1.5f),
+                    )
+                }
+                // 맵에서 찾은 몬스터
+                reading.monsters.forEach { monster ->
+                    val m = monster.box
+                    drawRect(
+                        color = if (monster.direction != null) UnparsedColor else Color.Yellow,
+                        topLeft = Offset(m.x * scale, m.y * scale),
+                        size = Size(m.width * scale, m.height * scale),
                         style = Stroke(width = 1.5f),
                     )
                 }
@@ -175,10 +185,8 @@ private fun CharacterRows(region: TimerRegion, state: RegionState, monsterCount:
     Text(text, fontSize = 13.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
     val found = state.character
     if (region == TimerRegion.FIELD && found != null) {
-        val ratios = state.monsters?.ratios.orEmpty()
         Text(
-            text = "일치 ${(found.score * 100).roundToInt()}% · " +
-                Direction.entries.joinToString(" ") { "${it.arrow}${((ratios[it] ?: 0.0) * 100).roundToInt()}%" },
+            text = "일치 ${(found.score * 100).roundToInt()}% · 화면 몬스터 ${state.monsters?.monsters?.size ?: 0}",
             style = SmallText,
             color = Color.Gray,
         )

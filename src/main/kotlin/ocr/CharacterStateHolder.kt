@@ -26,8 +26,10 @@ data class CharacterState(
     /** 맵 화면에서 찾은 캐릭터 위치. 맵 영역 대비 비율(0~1, 왼쪽 위가 0). 못 찾았으면 null */
     val screenX: Double? = null,
     val screenY: Double? = null,
-    /** 몬스터(드문 색의 무언가)가 붙어 있는 방향. 캐릭터를 못 찾았으면 비어 있다 */
+    /** 등록한 몬스터가 붙어 있는 방향. 캐릭터를 못 찾았거나 몬스터를 등록하지 않았으면 비어 있다 */
     val adjacent: Set<Direction> = emptySet(),
+    /** 맵 화면에 보이는 등록한 몬스터 수 (붙은 것 포함) */
+    val visibleMonsters: Int = 0,
     val capturedAt: Long = 0,
 ) {
     /** 내 주변 네 칸 중 몬스터가 붙은 칸 수 (0~4) */

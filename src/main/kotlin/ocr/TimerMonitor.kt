@@ -264,7 +264,7 @@ object TimerMonitor {
     ) {
         val found = CharacterLocator.locate(portrait, field)
         val tileSize = (windowWidth * TILE_PER_WINDOW_WIDTH).roundToInt().coerceAtLeast(8)
-        val monsters = found?.let { AdjacentMonsterDetector.detect(field, it, tileSize, monsters) }
+        val nearby = found?.let { AdjacentMonsterDetector.detect(field, it, tileSize, monsters) }
         val coordinate = CoordinateReader.read(coords)
         CharacterStateHolder.update(
             CharacterState(
@@ -272,7 +272,8 @@ object TimerMonitor {
                 mapY = coordinate?.y,
                 screenX = found?.let { it.center.x.toDouble() / field.width },
                 screenY = found?.let { it.center.y.toDouble() / field.height },
-                adjacent = monsters?.occupied.orEmpty(),
+                adjacent = nearby?.occupied.orEmpty(),
+                visibleMonsters = nearby?.monsters?.size ?: 0,
                 capturedAt = capturedAt,
             )
         )
@@ -284,7 +285,7 @@ object TimerMonitor {
                 capturedAt = capturedAt,
                 latencyMillis = latency,
                 character = found,
-                monsters = monsters,
+                monsters = nearby,
                 error = if (found == null) "캐릭터를 못 찾았어요" else null,
             )
             val coordsState = state.regions.getValue(TimerRegion.COORDS).copy(

@@ -41,7 +41,7 @@ class CharacterLocatorTest {
     fun `등록한 몬스터가 없으면 옆 네 칸이 비어 있다`() {
         val field = load("character_field.png")
         val character = assertNotNull(CharacterLocator.locate(load("character_portrait.png"), field))
-        val monsters = AdjacentMonsterDetector.detect(field, character, tileSize = 72, monsters = emptyList())
-        assertTrue(monsters.occupied.isEmpty(), "ratios ${monsters.ratios}")
+        val monsters = AdjacentMonsterDetector.detect(field, character, tileSize = 72, samples = emptyList())
+        assertTrue(monsters.monsters.isEmpty())
     }
 }
