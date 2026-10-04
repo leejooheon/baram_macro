@@ -10,6 +10,7 @@ import jusulsa.usecase.BomuUseCase
 import jusulsa.usecase.ChumUseCase
 import jusulsa.usecase.CursePoisonUseCase
 import jusulsa.usecase.HealUseCase
+import jusulsa.usecase.HellfireUseCase
 import jusulsa.usecase.MagiUseCase
 import jusulsa.usecase.ManaUseCase
 import jusulsa.usecase.SammeUseCase
@@ -30,6 +31,7 @@ class MacroDetailAction2(
     private val mana: ManaUseCase = ManaUseCase(),
     private val sammeUseCase: SammeUseCase = SammeUseCase(),
 ) {
+    @Volatile
     private var latestDirection: Int = KeyEvent.VK_LEFT
 
     fun onDirectionChanged(event: Int) {
@@ -87,14 +89,14 @@ class MacroDetailAction2(
     /**
      * 첨첨. 할 일은 전부 UseCase이고, [MacroEngine]이 상태를 보고 하나씩 골라 실행한다.
      *
-     * 우선(앞에서부터, 할 일이 있으면 바로): 공증 > 자힐 > 보무 > 마기지체 > 삼매진화
+     * 우선(앞에서부터, 할 일이 있으면 바로): 공증 > 자힐 > 보무 > 마기지체 > 삼매진화 > 헬파이어
      * 공격(번갈아 가며): 첨 > 저주+중독 > 평타
      * 사용자가 방향키로 이동 중이면 아무것도 안 한다.
      */
     suspend fun chumChum() = withContext(Dispatchers.Default) {
         MacroEngine(
-            priority = listOf(mana, selfHeal, bomu, magi, sammeUseCase),
-            rotation = listOf(ChumUseCase(), CursePoisonUseCase(), BasicAttackUseCase()),
+            priority = listOf(mana, selfHeal, bomu, magi, sammeUseCase, HellfireUseCase({ latestDirection })),
+            rotation = listOf(ChumUseCase(), CursePoisonUseCase({ latestDirection }), BasicAttackUseCase()),
         ).run()
     }
 
