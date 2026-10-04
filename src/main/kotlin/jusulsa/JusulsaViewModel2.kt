@@ -47,7 +47,7 @@ class JusulsaViewModel2 {
             NativeKeyEvent.VC_PAGE_UP -> hellfire()
             NativeKeyEvent.VC_PAGE_DOWN -> execute { macroDetailAction.mabeAroundMe() }
 
-            NativeKeyEvent.VC_BACKQUOTE -> execute { macroDetailAction.samme() }
+            NativeKeyEvent.VC_BACKQUOTE -> execute { macroDetailAction.chumChum() }
             NativeKeyEvent.VC_SLASH -> execute { macroDetailAction.mabeAroundMe() }
             NativeKeyEvent.VC_BACK_SLASH -> execute { macroDetailAction.maagi() }
             NativeKeyEvent.VC_KANJI -> execute { macroDetailAction.jeoju() }
@@ -57,7 +57,7 @@ class JusulsaViewModel2 {
             NativeKeyEvent.VC_3 -> execute { macroDetailAction.julmang() }
 
             NativeKeyEvent.VC_F1 -> execute { macroDetailAction.hondon() }
-            NativeKeyEvent.VC_F4 -> execute { macroDetailAction.chumChum() }
+            NativeKeyEvent.VC_F4 -> execute { macroDetailAction.samme() }
 
             NativeKeyEvent.VC_UP -> macroDetailAction.onDirectionChanged(KeyEvent.VK_UP)
             NativeKeyEvent.VC_LEFT -> macroDetailAction.onDirectionChanged(KeyEvent.VK_LEFT)
