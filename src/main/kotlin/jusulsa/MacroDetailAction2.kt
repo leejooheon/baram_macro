@@ -7,6 +7,7 @@ import jusulsa.skill.Target
 import jusulsa.usecase.BomuUseCase
 import jusulsa.usecase.MagiUseCase
 import jusulsa.usecase.ManaUseCase
+import jusulsa.usecase.SammeUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -26,6 +27,7 @@ class MacroDetailAction2(
     private val bomu: BomuUseCase = BomuUseCase(),
     private val magi: MagiUseCase = MagiUseCase(),
     private val mana: ManaUseCase = ManaUseCase(),
+    private val sammeUseCase: SammeUseCase = SammeUseCase(),
 ) {
     private var latestDirection: Int = KeyEvent.VK_LEFT
 
@@ -139,12 +141,14 @@ class MacroDetailAction2(
                 cast(Skill.CHUM2)
             }
         }
-        // 보무가 끊기기 전에, 마기지체는 쿨이 돌 때마다, 공증+자힐은 마력이 떨어졌을 때 건다
+        // 보무가 끊기기 전에, 마기지체는 쿨이 돌 때마다, 공증+자힐은 마력이 떨어졌을 때,
+        // 삼매진화는 체력이 가득 차고 쿨이 돌았을 때 나를 기준으로 쓴다
         launch {
             while (isActive) {
                 bomu()
                 magi()
                 mana()
+                sammeUseCase()
                 delay(1.seconds)
             }
         }
