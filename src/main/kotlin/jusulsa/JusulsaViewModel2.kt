@@ -6,7 +6,6 @@ import common.network.createHttpClient
 import common.robot.DisplayProvider
 import common.robot.Keyboard
 import common.util.Result
-import follower.macro.MacroDetailAction2
 import io.ktor.client.plugins.logging.LogLevel
 import jusulsa.model.JusulsaUiState
 import kotlinx.coroutines.*
