@@ -17,12 +17,13 @@ enum class Skill(
     val rateGroup: RateGroup? = null,
     val minIntervalMillis: Long = 0,
 ) {
+    // 사냥용 마법칸 (2026-10-04)
     HELLFIRE(KeyEvent.VK_1),           // a(1): 헬파이어
     GONGJEUNG(KeyEvent.VK_2),          // b(2): 공력증강
-    CHUM1(KeyEvent.VK_3, minIntervalMillis = 100), // c(3): 극진뢰격참주'첨
-    CHUM2(KeyEvent.VK_4, minIntervalMillis = 100), // d(4): 진뢰격참주'첨
+    MABEE(KeyEvent.VK_3),              // c(3): 마비
+    HWALRYEOK(KeyEvent.VK_4),          // d(4): 활력
     HONDON(KeyEvent.VK_5),             // e(5): 혼돈
-    JUNGDOK(KeyEvent.VK_6),            // f(6): 중독
+    JULMANG(KeyEvent.VK_6, rateGroup = RateGroup.CURSE), // f(6): 절망
     JEOJU(KeyEvent.VK_7, rateGroup = RateGroup.CURSE),   // g(7): 저주
     SAMME(KeyEvent.VK_8),              // h(8): 삼매진화
     HEAL(KeyEvent.VK_9, rateGroup = RateGroup.HEAL), // i(9): 태양의기원
@@ -30,10 +31,6 @@ enum class Skill(
     BOHO(KeyEvent.VK_M, alphabet = true),    // m: 보호
     MUJANG(KeyEvent.VK_N, alphabet = true),  // n: 무장
     MAGII(KeyEvent.VK_O, alphabet = true),   // o: 마기지체
-    // 5매각용. 게임 마법창 칸이 다르면 여기만 바꾼다
-    MABEE(KeyEvent.VK_P, alphabet = true),   // p: 마비
-    JULMANG(KeyEvent.VK_Q, alphabet = true, rateGroup = RateGroup.CURSE), // q: 절망
-    HWALRYEOK(KeyEvent.VK_R, alphabet = true), // r: 활력
 }
 
 /** 서버 기준 1초에 쓸 수 있는 횟수를 같이 세는 마법 묶음 */
