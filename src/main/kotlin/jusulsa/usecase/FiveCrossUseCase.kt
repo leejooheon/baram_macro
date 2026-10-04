@@ -42,6 +42,10 @@ class FiveCrossUseCase(
     private var lastReleaseAt = 0L
     private var next: Action? = null
 
+    /** 지금 만들고 있는 각의 칸들 (중심 + 붙은 몹). 마비 같은 다른 기능이 건드리지 않게 알려준다 */
+    @Volatile var reserved: Set<Tile> = emptySet()
+        private set
+
     sealed interface Action {
         val aim: Aim
         data class Samme(override val aim: Aim, val center: Tile) : Action
@@ -75,6 +79,7 @@ class FiveCrossUseCase(
 
     /** 지금 할 일 하나. 테스트에서 바로 부를 수 있게 상태만 보고 정한다 */
     fun plan(now: Long): Action? {
+        reserved = emptySet()
         val detection = detection(now) ?: return null
         val grid = TileGrid.of(detection) ?: return null
         val monsters = detection.monsters.associateBy { grid.tileOf(it) }
@@ -90,6 +95,7 @@ class FiveCrossUseCase(
                 .thenBy { -(it.x * it.x + it.y * it.y) })
             ?: return null
         val filled = center.neighbors.filter { it in monsters }
+        reserved = if (filled.size >= MIN_NEIGHBORS) (listOf(center) + center.neighbors).toSet() else emptySet()
         if (filled.size < MIN_NEIGHBORS) {
             reason.log("각 후보 없음 (가장 많이 붙은 곳 ${filled.size}마리)")
             return null
