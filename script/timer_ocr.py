@@ -25,12 +25,25 @@ import numpy as np
 DEFAULT_NAMES = [
     "호체주술", "보호", "무장", "금강불체", "혼마술", "헬파이어", "공력증강",
     "저주", "마비", "절망", "중독", "삼매진화", "지폭지술", "백호의희원",
-    "파력무참", "투명", "주술마도", "부활",
+    "파력무참", "투명", "주술마도", "부활", "마기지체",
 ]
+
+# 목록에 없는 이름도 읽히지만, 여기 있으면 더 정확하다. 한 줄에 하나씩 추가한다.
+NAMES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "names.txt")
+
+
+def load_names():
+    names = list(DEFAULT_NAMES)
+    if os.path.exists(NAMES_FILE):
+        with open(NAMES_FILE, encoding="utf-8") as f:
+            for line in f:
+                name = line.strip()
+                if name and not name.startswith("#") and name not in names:
+                    names.append(name)
+    return names
 
 DIGITS = "0123456789"
 SECONDS_SUFFIX = "초"
-# 이름이 정확히 읽히지 않은 줄은 신뢰도 0.5 이상만 남긴다. 잡음은 0.3 아래, 실제 글자는 0.2 이상으로 나왔다
 MIN_CONFIDENCE = 0.15
 
 
@@ -86,9 +99,16 @@ def binarize(gray):
     return keep[labels]
 
 
-def split_lines(mask, min_height=8):
+def split_lines(mask, min_height=14):
+    """가로 투영으로 줄을 나눈다. 글자 줄보다 많이 낮은 덩어리(패널 무늬 등)는 버린다."""
+    runs = _runs(mask.sum(axis=1), min_height)
+    if not runs:
+        return []
+    tallest = max(y1 - y0 for y0, y1 in runs)
     lines = []
-    for y0, y1 in _runs(mask.sum(axis=1), min_height):
+    for y0, y1 in runs:
+        if y1 - y0 < tallest * 0.6:
+            continue
         xs = np.where(mask[y0:y1].sum(axis=0) > 0)[0]
         lines.append((y0, y1, int(xs[0]), int(xs[-1]) + 1))
     return lines
@@ -125,7 +145,7 @@ class TimerOcr:
         if gpu is None:
             gpu = torch.cuda.is_available()
         self.gpu = gpu
-        self.names = list(names or DEFAULT_NAMES)
+        self.names = list(names or load_names())
         self.name_allowlist = "".join(sorted(set("".join(self.names))))
         self.ko = easyocr.Reader(["ko", "en"], gpu=gpu, verbose=False)
         self.en = easyocr.Reader(["en"], gpu=gpu, verbose=False)
@@ -158,13 +178,23 @@ class TimerOcr:
         return value
 
     def _read_name(self, clean, y0, y1, x0, x1):
+        """
+        알려진 이름 글자로 제한해서 먼저 읽고(작은 글꼴에서 더 정확), 확실하지 않으면 제한 없이 다시 읽는다.
+        목록에 없는 이름(예: 새 마법)은 제한 없이 읽은 글자를 그대로 쓴다.
+        """
         crop = self._crop(clean, y0, y1, x0, x1)
         text, conf = self._recognize("name", crop)
-        best = difflib.get_close_matches(text, self.names, n=1, cutoff=0.5)
-        if best:
-            return best[0], text, conf
-        # 알려진 이름이 아니면 글자 제한 없이 다시 읽는다
+        if conf >= 0.5:
+            if text in self.names:
+                return text, text, conf
+            best = difflib.get_close_matches(text, self.names, n=1, cutoff=0.75)
+            if best:
+                return best[0], text, conf
+
         free, free_conf = self._recognize("free", crop)
+        best = difflib.get_close_matches(free, self.names, n=1, cutoff=0.75)
+        if best:
+            return best[0], free, free_conf
         return free, free, free_conf
 
     def _read_seconds(self, mask, clean, y0, y1, x0, x1):
@@ -218,10 +248,8 @@ class TimerOcr:
                         name_words = words[:-1]
                 name, raw, name_conf = self._read_name(clean, y0, y1, name_words[0][0], name_words[-1][1])
                 confidence = min(name_conf, sec_conf)
-                exact = raw in self.names
-                if confidence < MIN_CONFIDENCE or (not exact and confidence < 0.5):
-                    continue  # 빈 패널 무늬, 잘린 글자, 게임 배경 같은 잡음
-                if seconds is None and not _looks_like_name(name, name_conf, self.names):
+                # 'N초'가 없는 줄, 한글이 없는 줄, 신뢰도가 너무 낮은 줄은 패널 무늬나 잘린 글자 같은 잡음이다
+                if seconds is None or not _has_hangul(name) or confidence < MIN_CONFIDENCE:
                     continue
                 text = f"{raw} {seconds}{SECONDS_SUFFIX}" if seconds is not None else raw
                 lines.append({
@@ -235,12 +263,8 @@ class TimerOcr:
         return {"lines": lines, "elapsed_ms": _ms(started), "cached": False}
 
 
-def _looks_like_name(name, confidence, names):
-    """초를 못 읽은 줄은 알려진 이름이거나, 한글이 2자 이상이고 신뢰도가 높을 때만 남긴다."""
-    if name in names:
-        return True
-    hangul = sum(1 for ch in name if "가" <= ch <= "힣")
-    return hangul >= 2 and confidence >= 0.5
+def _has_hangul(text):
+    return any("가" <= ch <= "힣" for ch in text)
 
 
 def _split_glyph(line_mask, start, end, height):
