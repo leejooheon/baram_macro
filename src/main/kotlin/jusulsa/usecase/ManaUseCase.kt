@@ -3,6 +3,7 @@ package jusulsa.usecase
 import common.robot.Keyboard
 import jusulsa.skill.Skill
 import jusulsa.skill.SkillCaster
+import kotlinx.coroutines.delay
 import ocr.OcrStateHolder
 import ocr.model.TimerRegion
 import java.awt.event.KeyEvent
@@ -60,7 +61,11 @@ class ManaUseCase(
     private suspend fun gongjeung(empty: Boolean) {
         Keyboard.atomic {
             if (empty) {
-                repeat(2) { Keyboard.pressAndRelease(KeyEvent.VK_U) }
+                // 너무 빨리 누르면 씹혀서 예전 매크로(eat)의 간격을 그대로 쓴다
+                repeat(2) {
+                    delay(U_GAP_MILLIS)
+                    Keyboard.pressAndRelease(KeyEvent.VK_U, U_PRESS_MILLIS)
+                }
             }
             SkillCaster.cast(Skill.GONGJEUNG)
         }
@@ -68,6 +73,10 @@ class ManaUseCase(
     }
 
     companion object {
+        /** U를 누르고 있는 시간이자 뗀 뒤 쉬는 시간 */
+        const val U_PRESS_MILLIS = 100L
+        /** U를 누르기 전에 더 쉬는 시간 */
+        const val U_GAP_MILLIS = 60L
         const val GONGJEUNG_NAME = "공력증강"
         const val RECAST_GUARD_MILLIS = 500L
     }
