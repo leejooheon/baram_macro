@@ -5,6 +5,7 @@ import jusulsa.skill.Skill
 import jusulsa.skill.SkillCaster.cast
 import jusulsa.skill.Target
 import jusulsa.usecase.BomuUseCase
+import jusulsa.usecase.HealUseCase
 import jusulsa.usecase.MagiUseCase
 import jusulsa.usecase.ManaUseCase
 import jusulsa.usecase.SammeUseCase
@@ -26,6 +27,7 @@ import kotlin.time.Duration.Companion.seconds
 class MacroDetailAction2(
     private val bomu: BomuUseCase = BomuUseCase(),
     private val magi: MagiUseCase = MagiUseCase(),
+    private val selfHeal: HealUseCase = HealUseCase(),
     private val mana: ManaUseCase = ManaUseCase(),
     private val sammeUseCase: SammeUseCase = SammeUseCase(),
 ) {
@@ -90,7 +92,7 @@ class MacroDetailAction2(
         }
     }
 
-    // 4방향으로 중독을 돌린다. 자힐은 마력이 떨어졌을 때 ManaUseCase가 한다
+    // 4방향으로 중독을 돌린다. 자힐은 HealUseCase, ManaUseCase가 한다
     private suspend fun jungDok(duration: Duration) {
         val endTime = System.currentTimeMillis() + duration.inWholeMilliseconds
         var cnt = 0
@@ -141,12 +143,13 @@ class MacroDetailAction2(
                 cast(Skill.CHUM2)
             }
         }
-        // 보무가 끊기기 전에, 마기지체는 쿨이 돌 때마다, 공증+자힐은 마력이 떨어졌을 때,
+        // 보무가 끊기기 전에, 마기지체는 쿨이 돌 때마다, 자힐은 체력이 떨어졌을 때, 공증+자힐은 마력이 떨어졌을 때,
         // 삼매진화는 체력이 가득 차고 쿨이 돌았을 때 나를 기준으로 쓴다
         launch {
             while (isActive) {
                 bomu()
                 magi()
+                selfHeal()
                 mana()
                 sammeUseCase()
                 delay(1.seconds)

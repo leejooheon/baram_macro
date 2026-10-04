@@ -23,12 +23,7 @@ fun JusulsaApp(
     )
 
     OcrMonitorApp(
-        header = {
-            JusulsaStatusBar(
-                uiState = uiState,
-                opacity = opacity,
-                onOpacityChange = onOpacityChange,
-            )
-        }
+        header = { JusulsaStatusBar(uiState) },
+        footer = { JusulsaOpacityBar(opacity, onOpacityChange) },
     )
 }

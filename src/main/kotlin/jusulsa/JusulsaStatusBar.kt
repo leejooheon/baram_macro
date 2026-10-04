@@ -20,11 +20,7 @@ private val StatusText = TextStyle(fontSize = 12.sp)
 
 /** OCR 모니터 화면 위에 붙는 매크로 상태 줄 */
 @Composable
-internal fun JusulsaStatusBar(
-    uiState: JusulsaUiState,
-    opacity: Float,
-    onOpacityChange: (Float) -> Unit,
-) {
+internal fun JusulsaStatusBar(uiState: JusulsaUiState) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             val (label, color) =
@@ -38,6 +34,18 @@ internal fun JusulsaStatusBar(
                 Text("헬파 대기 ${uiState.count}", style = StatusText, color = Color(0xFFC62828))
             }
         }
+        Divider()
+    }
+}
+
+/** OCR 모니터 화면 맨 아래에 붙는 창 투명도 조절 */
+@Composable
+internal fun JusulsaOpacityBar(
+    opacity: Float,
+    onOpacityChange: (Float) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Divider()
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("투명도", style = StatusText)
             Spacer(Modifier.width(8.dp))
@@ -50,6 +58,5 @@ internal fun JusulsaStatusBar(
             Spacer(Modifier.width(8.dp))
             Text("${(opacity * 100).roundToInt()}%", style = StatusText)
         }
-        Divider()
     }
 }

@@ -21,7 +21,7 @@ fun main() = application {
         alwaysOnTop = true,
     ) {
         // 게임 화면 위에 떠 있으므로 반투명하게 해서 뒤가 보이게 한다
-        var opacity by remember { mutableFloatStateOf(1f) }
+        var opacity by remember { mutableFloatStateOf(0.5f) }
         LaunchedEffect(opacity) { window.applyOpacity(opacity) }
 
         RegisterNativeHook()
