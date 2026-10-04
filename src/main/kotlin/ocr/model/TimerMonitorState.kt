@@ -1,5 +1,6 @@
 package ocr.model
 
+import ocr.character.CharacterLocator
 import ocr.vitals.VitalsReader
 import java.awt.Rectangle
 import java.awt.geom.Rectangle2D
@@ -46,6 +47,8 @@ data class TimerMonitorState(
         val vitals: Vitals? = null,
         /** 체력/마력 영역만: 찾은 막대 위치 (썸네일에 그린다) */
         val bars: VitalsReader.BarReading? = null,
+        /** 내 캐릭터 영역만: 맵에서 찾은 캐릭터 (썸네일에 그린다) */
+        val character: CharacterLocator.Reading? = null,
     )
 
     /**

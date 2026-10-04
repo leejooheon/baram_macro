@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import ocr.capture.GameWindowCapture
+import ocr.character.CharacterLocator
+import ocr.model.CharacterPosition
 import ocr.model.TimerMonitorState
 import ocr.model.TimerMonitorState.RegionState
 import ocr.model.TimerMonitorState.ServerState
@@ -26,7 +28,7 @@ import java.awt.image.BufferedImage
 
 /**
  * 게임 창을 주기적으로 한 장 찍고, 그 안의 쿨타임 박스와 버프 패널을 잘라 OCR 서버로 읽는다.
- * 체력/마력 막대는 서버로 보내지 않고 여기서 색으로 잰다.
+ * 체력/마력 막대와 내 캐릭터 위치는 서버로 보내지 않고 여기서 색으로 잰다.
  * 다른 매크로에서는 [state]의 remaining(...)으로 남은 초를 읽어 쓰면 된다.
  *
  * 남은 초는 읽은 시점 기준으로 계속 줄어들게 계산하므로, OCR 주기를 길게 잡아도 표시는 매초 갱신된다.
@@ -118,13 +120,18 @@ object TimerMonitor {
             )
         }
         capture ?: return
-        // 체력/마력은 서버를 거치지 않으니 먼저 읽는다. OCR 서버가 느리거나 꺼져 있으면
+        // 체력/마력과 캐릭터 위치는 서버를 거치지 않으니 먼저 읽는다. OCR 서버가 느리거나 꺼져 있으면
         // 요청마다 수 초씩 걸려서, 뒤에 읽으면 매크로가 쓰기 전에 값이 오래된 것으로 버려진다
         regions.forEachIndexed { i, region ->
-            if (!region.usesOcr) readVitals(region, capture.images[i], capturedAt)
+            if (region.reader == TimerRegion.Reader.BARS) readVitals(region, capture.images[i], capturedAt)
         }
+        readCharacter(
+            portrait = capture.images[regions.indexOf(TimerRegion.PORTRAIT)],
+            field = capture.images[regions.indexOf(TimerRegion.FIELD)],
+            capturedAt = capturedAt,
+        )
         regions.forEachIndexed { i, region ->
-            if (region.usesOcr) read(region, capture.images[i], capturedAt)
+            if (region.reader == TimerRegion.Reader.OCR) read(region, capture.images[i], capturedAt)
         }
         if (state.value.server is ServerState.Unknown) checkServer()
     }
@@ -211,6 +218,44 @@ object TimerMonitor {
                 error = if (bars == null) "막대를 못 찾았어요" else null,
             )
             state.copy(regions = state.regions + (region to next))
+        }
+    }
+
+    private fun readCharacter(portrait: BufferedImage, field: BufferedImage, capturedAt: Long) {
+        val found = CharacterLocator.locate(portrait, field)
+        OcrStateHolder.updateCharacter(
+            found?.let {
+                val center = it.center
+                CharacterPosition(
+                    x = center.x.toDouble() / field.width,
+                    y = center.y.toDouble() / field.height,
+                    dx = center.x - field.width / 2,
+                    dy = center.y - field.height / 2,
+                    score = it.score,
+                    capturedAt = capturedAt,
+                )
+            }
+        )
+
+        val latency = System.currentTimeMillis() - capturedAt
+        _state.update { state ->
+            val portraitState = state.regions.getValue(TimerRegion.PORTRAIT).copy(
+                image = portrait,
+                capturedAt = capturedAt,
+                latencyMillis = latency,
+                character = found,
+                error = null,
+            )
+            val fieldState = state.regions.getValue(TimerRegion.FIELD).copy(
+                image = field,
+                capturedAt = capturedAt,
+                latencyMillis = latency,
+                character = found,
+                error = if (found == null) "캐릭터를 못 찾았어요" else null,
+            )
+            state.copy(
+                regions = state.regions + (TimerRegion.PORTRAIT to portraitState) + (TimerRegion.FIELD to fieldState)
+            )
         }
     }
 

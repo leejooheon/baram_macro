@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import ocr.model.CharacterPosition
 import ocr.model.TimerMonitorState.TimerEntry
 import ocr.model.TimerRegion
 import ocr.model.Vitals
@@ -42,6 +43,11 @@ object OcrStateHolder {
         }
     }
 
+    /** 내 캐릭터 위치. 못 찾았으면 null로 지운다 */
+    fun updateCharacter(position: CharacterPosition?) {
+        _state.update { it.copy(character = position) }
+    }
+
     /** 이 값 이하가 되면 [OcrEvent.ManaLow]를 보낸다 */
     const val MANA_LOW_PERCENT = 10
     /** 막대가 경계에서 흔들릴 때 이벤트가 연달아 나가지 않도록, 이만큼 회복해야 다시 보낸다 */
@@ -57,7 +63,13 @@ data class OcrResult(
     val regions: Map<TimerRegion, RegionResult> = emptyMap(),
     /** 체력/마력 막대. 아직 못 읽었으면 null */
     val vitals: Vitals? = null,
+    /** 맵 화면에서 찾은 내 캐릭터. 못 찾았으면 null */
+    val character: CharacterPosition? = null,
 ) {
+    /** 최근에 찾은 내 캐릭터 위치. 오래됐으면 null */
+    fun freshCharacter(now: Long = System.currentTimeMillis()): CharacterPosition? =
+        character?.takeIf { it.isFresh(now) }
+
     /** 최근에 읽은 체력/마력. 오래됐으면 null */
     fun freshVitals(now: Long = System.currentTimeMillis()): Vitals? = vitals?.takeIf { it.isFresh(now) }
 

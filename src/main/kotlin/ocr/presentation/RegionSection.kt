@@ -47,7 +47,8 @@ internal fun RegionSection(
             Text(
                 text = state.error ?: when {
                     state.capturedAt == 0L -> ""
-                    !region.usesOcr -> "${state.latencyMillis}ms · 막대 색으로 계산"
+                    region.reader == TimerRegion.Reader.BARS -> "${state.latencyMillis}ms · 막대 색으로 계산"
+                    region.reader == TimerRegion.Reader.CHARACTER -> "${state.latencyMillis}ms · 장비창 색으로 찾음"
                     state.cached -> "${state.latencyMillis}ms · 변화 없음"
                     else -> "${state.latencyMillis}ms · OCR ${state.ocrMillis.roundToInt()}ms"
                 },
@@ -61,12 +62,14 @@ internal fun RegionSection(
         }
 
         Row(verticalAlignment = Alignment.Top) {
-            Thumbnail(state)
+            Thumbnail(region, state)
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
-                if (!region.usesOcr) {
+                if (region.reader == TimerRegion.Reader.BARS) {
                     VitalRow("체력", state.vitals?.hpPercent, HpColor)
                     VitalRow("마력", state.vitals?.mpPercent, MpColor)
+                } else if (region.reader == TimerRegion.Reader.CHARACTER) {
+                    CharacterRows(region, state)
                 } else if (state.entries.isEmpty()) {
                     Text(
                         text = if (state.image == null) "캡처 없음" else "없음",
@@ -83,7 +86,7 @@ internal fun RegionSection(
 
 /** 캡처 위에 서버가 찾은 줄 위치를 그린다 */
 @Composable
-private fun Thumbnail(state: RegionState) {
+private fun Thumbnail(region: TimerRegion, state: RegionState) {
     val image = state.image
     if (image == null) {
         Box(Modifier.width(ThumbnailWidth).height(24.dp).background(Color(0xFFEEEEEE)))
@@ -113,6 +116,16 @@ private fun Thumbnail(state: RegionState) {
                 )
             }
         }
+        state.character?.takeIf { region == TimerRegion.FIELD }?.let { found ->
+            // 맵이 커서 썸네일에서는 잘 보이도록 굵게 그린다
+            val box = found.box
+            drawRect(
+                color = Color.Red,
+                topLeft = Offset(box.x * scale - 2, box.y * scale - 2),
+                size = Size(box.width * scale + 4, box.height * scale + 4),
+                style = Stroke(width = 2f),
+            )
+        }
         state.entries.forEach { entry ->
             drawRect(
                 color = if (entry.confidence >= 0.5) ParsedColor else UnparsedColor,
@@ -121,6 +134,26 @@ private fun Thumbnail(state: RegionState) {
                 style = Stroke(width = 1.5f),
             )
         }
+    }
+}
+
+/** 내 캐릭터: 장비창은 고른 색 개수, 맵은 찾은 위치 */
+@Composable
+private fun CharacterRows(region: TimerRegion, state: RegionState) {
+    val found = state.character
+    val image = state.image
+    val text = when {
+        image == null -> "캡처 없음"
+        found == null -> "못 찾음"
+        region == TimerRegion.PORTRAIT -> "캐릭터 색 ${found.colorCount}가지"
+        else -> {
+            val center = found.center
+            "가운데에서 (${center.x - image.width / 2}, ${center.y - image.height / 2})"
+        }
+    }
+    Text(text, fontSize = 13.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
+    if (found != null && region == TimerRegion.FIELD) {
+        Text("일치 ${(found.score * 100).roundToInt()}%", style = SmallText, color = Color.Gray)
     }
 }
 
