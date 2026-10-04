@@ -15,6 +15,8 @@ object CoordinateReader {
     private const val MIN_SIMILARITY = 0.85
     /** 두 번째로 닮은 숫자와 이만큼은 차이가 나야 한다 (3과 5가 78% 비슷하다) */
     private const val MIN_MARGIN = 0.05
+    /** 좌표 한 쪽의 자릿수 (예: 0039) */
+    private const val DIGITS_PER_NUMBER = 4
 
     data class Coordinate(val x: Int, val y: Int)
 
@@ -54,8 +56,12 @@ object CoordinateReader {
         if (gaps[split] < gaps.sorted()[gaps.size / 2] * 2) return null
 
         val text = digits.joinToString("") { it.second.toString() }
-        val x = text.substring(0, split + 1).toIntOrNull() ?: return null
-        val y = text.substring(split + 1).toIntOrNull() ?: return null
+        // 좌표는 항상 0을 채운 네 자리씩이다. 끝 글자를 조각으로 잘못 떼어 냈으면 자릿수가 모자라므로 버린다
+        val xText = text.substring(0, split + 1)
+        val yText = text.substring(split + 1)
+        if (xText.length != DIGITS_PER_NUMBER || yText.length != DIGITS_PER_NUMBER) return null
+        val x = xText.toIntOrNull() ?: return null
+        val y = yText.toIntOrNull() ?: return null
         return Coordinate(x, y)
     }
 
