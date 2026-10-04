@@ -22,7 +22,7 @@ object AdjacentMonsterDetector {
     /** 맵 전체에서 이 비율 이상 보이는 색은 흔해서 뺀다 (몬스터가 많이 모여도 그 색이 빠지지 않게 넉넉히 잡는다) */
     private const val MAX_FIELD_SHARE = 0.01
     /** 기억한 픽셀 중 이 비율 이상이 같은 자리 같은 색이면 몬스터가 있다고 본다 */
-    const val MIN_SCORE = 0.5
+    const val MIN_SCORE = 0.3
 
     data class Monster(
         /** 맵 영역 이미지 픽셀 기준 몬스터 칸 */
@@ -73,14 +73,16 @@ object AdjacentMonsterDetector {
         for (sample in samples) {
             val shape = sampleShape(sample, fieldCounts, bins.size, character.colorBins) ?: continue
             for (direction in Direction.entries) {
-                // 몬스터 그림의 아래 가운데(발밑)가 옆 칸 안에 오는 위치만 훑는다 (발끝은 칸 아래로 조금 내려온다)
+                // 몬스터 발밑(몬스터 색 픽셀의 아래 가운데)이 옆 칸 근처에 오는 위치만 훑는다.
+                // 붙어 있어도 칸에서 20~25px씩 벗어나 보이므로 좌우와 아래로 칸의 1/3씩 넓힌다
                 val tileX = standX + direction.dx * tileSize
                 val tileY = standY + direction.dy * tileSize
-                for (footY in tileY + tileSize / 4..tileY + tileSize + tileSize / 3 step step) {
-                    val oy = footY - shape.height
-                    if (oy < 0 || footY > height) continue
-                    for (footX in tileX..tileX + tileSize step step) {
-                        val ox = footX - shape.width / 2
+                val slack = tileSize / 3
+                for (footY in tileY + tileSize / 4..tileY + tileSize + slack step step) {
+                    val oy = footY - shape.footY
+                    if (oy < 0 || oy + shape.height > height) continue
+                    for (footX in tileX - slack..tileX + tileSize + slack step step) {
+                        val ox = footX - shape.footX
                         if (ox < 0 || ox + shape.width > width) continue
                         var same = 0
                         for (i in shape.xs.indices) {
@@ -101,7 +103,16 @@ object AdjacentMonsterDetector {
     }
 
     /** 몬스터 색인 픽셀의 자리(그림 왼쪽 위 기준)와 색 칸 */
-    private class SampleShape(val xs: IntArray, val ys: IntArray, val bins: IntArray, val width: Int, val height: Int)
+    private class SampleShape(
+        val xs: IntArray,
+        val ys: IntArray,
+        val bins: IntArray,
+        val width: Int,
+        val height: Int,
+        /** 몬스터 색 픽셀의 아래 가운데. 드래그할 때 들어간 바닥 여백과 상관없이 발밑으로 쓴다 */
+        val footX: Int,
+        val footY: Int,
+    )
 
     private fun sampleShape(sample: BufferedImage, fieldCounts: IntArray, fieldTotal: Int, characterBins: Set<Int>): SampleShape? {
         val w = sample.width
@@ -133,6 +144,16 @@ object AdjacentMonsterDetector {
         }
         // 몬스터 색이 너무 적으면 (지금 맵에 흔한 색뿐이면) 이 그림으로는 찾지 않는다
         if (xs.size < 20) return null
-        return SampleShape(xs.toIntArray(), ys.toIntArray(), keyBins.toIntArray(), w, h)
+        val sortedX = xs.sorted()
+        val sortedY = ys.sorted()
+        return SampleShape(
+            xs = xs.toIntArray(),
+            ys = ys.toIntArray(),
+            bins = keyBins.toIntArray(),
+            width = w,
+            height = h,
+            footX = sortedX[sortedX.size / 2],
+            footY = sortedY[sortedY.size * 98 / 100],
+        )
     }
 }
