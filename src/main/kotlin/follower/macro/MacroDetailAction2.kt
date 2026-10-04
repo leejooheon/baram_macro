@@ -7,8 +7,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.awt.event.KeyEvent
 import kotlin.time.Duration
@@ -17,9 +15,6 @@ import kotlin.time.Duration.Companion.seconds
 class MacroDetailAction2 {
     private var bomuTime = 0L
     private var latestDirection: Int = KeyEvent.VK_LEFT
-
-    // 동시에 도는 매크로끼리 키 입력이 섞이지 않게 한다
-    private val keyMutex = Mutex()
 
     fun onDirectionChanged(event: Int) {
         latestDirection = event
@@ -92,7 +87,7 @@ class MacroDetailAction2 {
         val endTime = System.currentTimeMillis() + duration.inWholeMilliseconds
         while (System.currentTimeMillis() < endTime) {
             currentCoroutineContext().ensureActive()
-            keyMutex.withLock {
+            Keyboard.atomic {
                 Keyboard.pressAndRelease(JEOJU)
                 Keyboard.pressAndRelease(direction)
                 Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
@@ -103,18 +98,22 @@ class MacroDetailAction2 {
     suspend fun mabee() {
         while (true) {
             currentCoroutineContext().ensureActive()
-            Keyboard.pressAndRelease(MABEE)
-            Keyboard.pressAndRelease(latestDirection)
-            Keyboard.pressAndRelease(KeyEvent.VK_ENTER, DELAY)
+            Keyboard.atomic {
+                Keyboard.pressAndRelease(MABEE)
+                Keyboard.pressAndRelease(latestDirection)
+                Keyboard.pressAndRelease(KeyEvent.VK_ENTER, DELAY)
+            }
         }
     }
 
     suspend fun julmang() {
         while (true) {
             currentCoroutineContext().ensureActive()
-            Keyboard.pressAndRelease(JULMANG)
-            Keyboard.pressAndRelease(latestDirection)
-            Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+            Keyboard.atomic {
+                Keyboard.pressAndRelease(JULMANG)
+                Keyboard.pressAndRelease(latestDirection)
+                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+            }
         }
     }
 
@@ -129,10 +128,10 @@ class MacroDetailAction2 {
                 directionIndex = (directionIndex + 1) % DIRECTIONS.size
             }
             if(cnt % 16 > 8) {
-                keyMutex.withLock { healMe() }
+                Keyboard.atomic { healMe() }
                 delay(300)
             } else {
-                keyMutex.withLock {
+                Keyboard.atomic {
                     selectAlphabetMagic(JUNGDOK, upper = true)
                     Keyboard.pressAndRelease(DIRECTIONS[directionIndex])
                     Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
@@ -176,9 +175,9 @@ class MacroDetailAction2 {
         }
         launch {
             while (isActive) {
-                keyMutex.withLock { selectAlphabetMagic(CHUM1) }
+                Keyboard.atomic { selectAlphabetMagic(CHUM1) }
                 delay(400)
-                keyMutex.withLock { selectAlphabetMagic(CHUM2) }
+                Keyboard.atomic { selectAlphabetMagic(CHUM2) }
                 delay(400)
             }
         }
@@ -207,7 +206,7 @@ class MacroDetailAction2 {
         )
     }
 
-    suspend fun tabTab() {
+    suspend fun tabTab() = Keyboard.atomic {
         val duration = 30L
         Keyboard.pressAndRelease(KeyEvent.VK_TAB, duration)
         Keyboard.pressAndRelease(KeyEvent.VK_HOME, duration)
@@ -217,7 +216,7 @@ class MacroDetailAction2 {
     private suspend inline fun focusMe(
         keyEvent: Int,
         crossinline action: suspend () -> Unit,
-    ) {
+    ) = Keyboard.atomic {
         Keyboard.pressAndRelease(keyEvent)
         Keyboard.pressAndRelease(KeyEvent.VK_HOME)
         action.invoke()
@@ -227,22 +226,24 @@ class MacroDetailAction2 {
         args.forEach { arg ->
             val (magic, forMe, enter) = arg
 
-            selectAlphabetMagic(magic)
+            Keyboard.atomic {
+                selectAlphabetMagic(magic)
 
-            if(forMe) {
-                delay(DELAY)
-                Keyboard.pressAndRelease(KeyEvent.VK_HOME)
-            }
-            
-            if(enter) {
-                delay(DELAY)
-                Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+                if(forMe) {
+                    delay(DELAY)
+                    Keyboard.pressAndRelease(KeyEvent.VK_HOME)
+                }
+
+                if(enter) {
+                    delay(DELAY)
+                    Keyboard.pressAndRelease(KeyEvent.VK_ENTER)
+                }
             }
         }
     }
 
     // shift+z 후 알파벳, 대문자 칸은 shift를 누른 채로 알파벳까지 입력
-    private suspend fun selectAlphabetMagic(magic: Int, upper: Boolean = false) {
+    private suspend fun selectAlphabetMagic(magic: Int, upper: Boolean = false) = Keyboard.atomic {
         Keyboard.press(KeyEvent.VK_SHIFT)
         try {
             delay(DELAY)
