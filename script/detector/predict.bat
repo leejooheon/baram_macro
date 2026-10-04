@@ -6,6 +6,6 @@ cd /d %~dp0
 call setup.bat
 set SOURCE=%1
 if "%SOURCE%"=="" set SOURCE=%USERPROFILE%\.baram_macro\dataset\images\val
-.venv\Scripts\yolo detect predict model="%USERPROFILE%\.baram_macro\detector\train\weights\best.pt" source="%SOURCE%" imgsz=960 conf=0.4 device=cpu project="%USERPROFILE%\.baram_macro\detector" name=predict exist_ok=True
+.venv\Scripts\yolo detect predict model="%USERPROFILE%\.baram_macro\detector\train\weights\best.pt" source="%SOURCE%" imgsz=960 conf=0.4 project="%USERPROFILE%\.baram_macro\detector" name=predict exist_ok=True
 explorer "%USERPROFILE%\.baram_macro\detector\predict"
 pause

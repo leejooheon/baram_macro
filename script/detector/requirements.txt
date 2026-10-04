@@ -1,4 +1,4 @@
 # 몹 탐지 모델 학습/확인용 (python 3.10 - 3.12)
-# GPU가 없으면 CPU 전용 torch를 먼저 깐다 (setup.bat이 해준다)
+# torch는 setup.bat이 먼저 깐다 (NVIDIA 그래픽카드가 있으면 GPU용, 없으면 CPU용)
 ultralytics
 labelImg

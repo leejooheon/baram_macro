@@ -9,6 +9,6 @@ set EPOCHS=%1
 if "%EPOCHS%"=="" set EPOCHS=100
 
 .venv\Scripts\python prepare_dataset.py || goto :end
-.venv\Scripts\yolo detect train data="%USERPROFILE%\.baram_macro\dataset\data.yaml" model=yolov8n.pt epochs=%EPOCHS% imgsz=960 batch=8 workers=2 device=cpu project="%USERPROFILE%\.baram_macro\detector" name=train exist_ok=True
+.venv\Scripts\yolo detect train data="%USERPROFILE%\.baram_macro\dataset\data.yaml" model=yolov8n.pt epochs=%EPOCHS% imgsz=960 batch=8 workers=2 project="%USERPROFILE%\.baram_macro\detector" name=train exist_ok=True
 :end
 pause

@@ -23,7 +23,7 @@
 ## 3. 학습
 `train.bat`을 실행한다 (`train.bat 50`처럼 에폭 수를 줄 수 있다).
 라벨 있는 사진만 골라 학습 85% / 검증 15%로 나누고 학습한다.
-CPU로는 500장 100에폭에 몇 시간 걸린다. 결과 모델은
+NVIDIA 그래픽카드가 있으면 자동으로 GPU로 학습한다 (500장 100에폭에 수 분~수십 분). CPU로는 몇 시간 걸린다. 결과 모델은
 `%USERPROFILE%\.baram_macro\detector\train\weights\best.pt`.
 
 ## 4. 확인
