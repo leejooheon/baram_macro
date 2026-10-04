@@ -20,6 +20,7 @@ class ManaUseCase(
     private val now: () -> Long = System::currentTimeMillis,
 ) : MacroUseCase {
     override val name = "공증"
+    override val neverYield = true
     private var lastGongjeungAt: Long? = null
     private val reason = ReasonLog("ManaUseCase")
 

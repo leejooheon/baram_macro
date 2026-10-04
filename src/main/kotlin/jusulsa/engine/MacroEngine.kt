@@ -22,6 +22,8 @@ class MacroEngine(
     private val now: () -> Long = System::currentTimeMillis,
 ) {
     private var nextRotation = 0
+    /** 직전에 우선 목록 일을 했는지. 했으면 다음 한 번은 공격에게 양보한다 */
+    private var lastWasPriority = false
     private val counts = linkedMapOf<String, Int>()
     private var summaryAt = 0L
 
@@ -34,14 +36,18 @@ class MacroEngine(
             }
 
             val time = now()
-            val urgent = priority.firstOrNull { it.isReady(time) }
-            val task = urgent ?: pickRotation(time)
+            val ready = priority.firstOrNull { it.isReady(time) }
+            // 힐·버프가 계속 할 일이 있어도 첨이 굶지 않게, 우선 목록 일을 한 뒤에는 공격에게 한 차례 양보한다
+            val yielded = if (ready != null && lastWasPriority && !ready.neverYield) pickRotation(time) else null
+            val urgent = if (yielded == null) ready else null
+            val task = yielded ?: urgent ?: pickRotation(time)
             if (task == null) {
                 delay(IDLE_MILLIS)
                 continue
             }
             // 공격은 너무 자주라 생존·버프만 찍는다
             if (urgent != null && urgent.logEachRun) println("[MacroEngine] ${task.name}")
+            lastWasPriority = urgent != null && urgent.logEachRun
             Keyboard.atomic { task.execute() }
             counts[task.name] = (counts[task.name] ?: 0) + 1
             summarize(time)

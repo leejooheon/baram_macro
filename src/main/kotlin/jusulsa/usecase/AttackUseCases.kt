@@ -61,40 +61,63 @@ class CurseAroundUseCase(
 }
 
 /**
- * 6번 칸(지금은 [Skill.JUNGDOK])을 맵 전체에 퍼뜨린다. 방향키는 지금 커서 위치에서 그 방향의 다음 몹으로 옮겨 가므로,
- * 같은 방향을 이어서 눌러야 멀리까지 퍼진다. 한 차례에 최대 [BURST]번을 이어서 걸고,
- * 한 방향에 [PER_DIRECTION]번을 건 뒤 다음 방향으로 넘어간다. 방향 순서는 캐릭터가 마지막으로 바라본 방향부터.
- * 저주 한도(RateGroup.CURSE)가 [CURSE_RESERVE]번 이하로 남았으면 사방 저주 몫으로 두고 쉰다.
+ * 6번 칸(지금은 [Skill.JUNGDOK])을 [REFRESH_MILLIS]마다 한 차례 맵 전체에 퍼뜨린다.
+ * 한 차례는 바라보는 방향부터 네 방향으로, 방향마다 나를 기준으로 시작해 같은 방향키를 이어 눌러 [PER_DIRECTION]마리까지 건다.
+ * 방향키는 지금 커서 위치에서 그 방향의 다음 몹으로 옮겨 가므로, 이어서 눌러야 멀리까지 퍼진다.
+ * 첨이 밀리지 않게 엔진 차례마다 [BURST]번씩 나눠서 걸고, 이동키로 끊긴 방향은 나를 기준으로 다시 시작한다.
  */
 class DespairSpreadUseCase(
     private val facing: () -> Int = { KeyEvent.VK_LEFT },
 ) : MacroUseCase {
     override val name = "6번(맵 전체)"
-    private var count = 0
+    private var roundStartedAt = 0L
+    /** 이번 차례에 남은 (방향, 그 방향에서 몇 번째) */
+    private val pending = ArrayDeque<Pair<Int, Int>>()
 
-    override fun isReady(now: Long) = canCast()
+    override fun isReady(now: Long): Boolean {
+        if (pending.isEmpty() && now - roundStartedAt >= REFRESH_MILLIS) {
+            startRound()
+            roundStartedAt = now
+        }
+        return pending.isNotEmpty() && canCast()
+    }
 
     override suspend fun execute() {
         repeat(BURST) {
-            if (!canCast()) return
-            // 이동키 때문에 취소됐으면 이번 차례는 끝낸다
-            if (!SkillCaster.tryCast(Skill.JUNGDOK, Target.Direction(direction()))) return
-            count++
+            if (pending.isEmpty() || !canCast()) return
+            val (direction, step) = pending.first()
+            // 방향마다 처음은 나를 기준으로 잡아야 다른 마법이 옮겨 놓은 커서와 상관없이 퍼진다
+            if (!SkillCaster.tryCast(Skill.JUNGDOK, Target.Direction(direction, fromMe = step == 0))) {
+                restartDirection(direction)
+                return
+            }
+            pending.removeFirst()
         }
     }
 
     private fun canCast() =
         SkillCaster.readyIn(Skill.JUNGDOK) == 0L && SkillCaster.remaining(RateGroup.CURSE) > CURSE_RESERVE
 
-    /** 바라보는 방향을 먼저, 그다음은 시계 반대 방향으로 돈다 */
-    private fun direction(): Int {
+    /** 바라보는 방향을 먼저, 그다음은 시계 반대 방향으로 */
+    private fun startRound() {
         val first = DIRECTIONS.indexOf(facing()).coerceAtLeast(0)
-        return DIRECTIONS[(first + count / PER_DIRECTION) % DIRECTIONS.size]
+        repeat(DIRECTIONS.size) { i ->
+            val direction = DIRECTIONS[(first + i) % DIRECTIONS.size]
+            repeat(PER_DIRECTION) { step -> pending.addLast(direction to step) }
+        }
+    }
+
+    /** 끊긴 방향의 남은 칸을 나를 기준으로 다시 시작하게 바꾼다 */
+    private fun restartDirection(direction: Int) {
+        val left = pending.count { it.first == direction }
+        pending.removeAll { it.first == direction }
+        repeat(left) { step -> pending.addFirst(direction to (left - 1 - step)) }
     }
 
     companion object {
+        const val REFRESH_MILLIS = 10_000L
         const val BURST = 2
-        const val PER_DIRECTION = 6
+        const val PER_DIRECTION = 4
         const val CURSE_RESERVE = 1
         private val DIRECTIONS = listOf(KeyEvent.VK_UP, KeyEvent.VK_LEFT, KeyEvent.VK_DOWN, KeyEvent.VK_RIGHT)
     }
