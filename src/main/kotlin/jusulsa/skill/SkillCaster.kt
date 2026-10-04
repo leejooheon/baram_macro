@@ -33,7 +33,7 @@ object SkillCaster {
         }
     }
 
-    private suspend fun tryCast(skill: Skill, target: Target): Boolean {
+    suspend fun tryCast(skill: Skill, target: Target = Target.Current): Boolean {
         val startedAt = now()
         if (waitMillis(skill, startedAt) > 0) return false
 

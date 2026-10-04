@@ -18,18 +18,17 @@ enum class Skill(
 ) {
     HELLFIRE(KeyEvent.VK_1),           // a(1): 헬파이어
     GONGJEUNG(KeyEvent.VK_2),          // b(2): 공력증강
-    MABEE(KeyEvent.VK_3),              // c(3): 마비
+    CHUM1(KeyEvent.VK_3, minIntervalMillis = 100), // c(3): 극진뢰격참주'첨
+    CHUM2(KeyEvent.VK_4, minIntervalMillis = 100), // d(4): 진뢰격참주'첨
     HONDON(KeyEvent.VK_5),             // e(5): 혼돈
-    JULMANG(KeyEvent.VK_6, rateGroup = RateGroup.CURSE), // f(6): 절망
+    JUNGDOK(KeyEvent.VK_6),            // f(6): 중독
     JEOJU(KeyEvent.VK_7, rateGroup = RateGroup.CURSE),   // g(7): 저주
     SAMME(KeyEvent.VK_8),              // h(8): 삼매진화
-    HEAL(KeyEvent.VK_9, rateGroup = RateGroup.HEAL), // 9: 힐
+    HEAL(KeyEvent.VK_9, rateGroup = RateGroup.HEAL), // i(9): 태양의기원
+    JIPOK(KeyEvent.VK_0),              // j(0): 지폭지술
     BOHO(KeyEvent.VK_M, alphabet = true),    // m: 보호
     MUJANG(KeyEvent.VK_N, alphabet = true),  // n: 무장
     MAGII(KeyEvent.VK_O, alphabet = true),   // o: 마기지체
-    CHUM1(KeyEvent.VK_Q, alphabet = true, minIntervalMillis = 400), // q: 극진뢰격참주'첨
-    CHUM2(KeyEvent.VK_R, alphabet = true, minIntervalMillis = 400), // r: 진뢰격참주'첨
-    JUNGDOK(KeyEvent.VK_G, alphabet = true, upper = true, minIntervalMillis = 120), // G: 중독
 }
 
 /** 서버 기준 1초에 쓸 수 있는 횟수를 같이 세는 마법 묶음 */
