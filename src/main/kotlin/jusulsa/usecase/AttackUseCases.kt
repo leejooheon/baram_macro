@@ -2,6 +2,7 @@ package jusulsa.usecase
 
 import common.robot.Keyboard
 import jusulsa.engine.MacroUseCase
+import jusulsa.skill.RateGroup
 import jusulsa.skill.Skill
 import jusulsa.skill.SkillCaster
 import jusulsa.skill.Target
@@ -26,28 +27,54 @@ class ChumUseCase : MacroUseCase {
 }
 
 /**
- * 한 방향으로 저주를 걸어 다음 몹으로 커서를 옮기고, 같은 몹에 바로 중독을 건다.
- * 방향키는 지금 커서 위치에서 그 방향의 다음 몹으로 옮겨 가므로, 같은 방향을 이어서 눌러야 멀리까지 퍼진다.
- * 한 방향에 [PER_DIRECTION]마리를 걸고 다음 방향으로 넘어간다. 방향 순서는 캐릭터가 마지막으로 바라본 방향부터.
- * 한 차례에 저주 한도(초당 8번, RateGroup.CURSE)가 남아 있는 만큼 최대 [PAIRS_PER_TURN]쌍을 건다.
+ * 저주는 내 사방 4칸에만 건다. 매번 HOME으로 나를 잡고 방향키를 눌러 바로 옆 몹에 건다.
+ * 칸마다 [REFRESH_MILLIS]마다 다시 걸고, 가장 오래된 칸부터 건다.
  */
-class CursePoisonUseCase(
-    private val facing: () -> Int = { KeyEvent.VK_LEFT },
+class CurseAroundUseCase(
+    private val now: () -> Long = System::currentTimeMillis,
 ) : MacroUseCase {
-    override val name = "저주+중독"
-    private var count = 0
+    override val name = "저주(사방)"
+    private val lastAt = DIRECTIONS.associateWith { 0L }.toMutableMap()
 
-    override fun isReady(now: Long) = SkillCaster.readyIn(Skill.JEOJU) == 0L
+    override fun isReady(now: Long) =
+        SkillCaster.readyIn(Skill.JEOJU) == 0L && lastAt.values.any { now - it >= REFRESH_MILLIS }
 
     override suspend fun execute() {
-        repeat(PAIRS_PER_TURN) {
-            if (SkillCaster.readyIn(Skill.JEOJU) > 0L) return
-            // 저주가 이동키 때문에 취소됐으면 중독은 쓰지 않는다 (엉뚱한 대상에게 갈 수 있다)
-            if (!SkillCaster.tryCast(Skill.JEOJU, Target.Direction(direction()))) return
-            SkillCaster.tryCast(Skill.JUNGDOK)
+        val direction = lastAt.minBy { it.value }.key
+        if (SkillCaster.tryCast(Skill.JEOJU, Target.Direction(direction, fromMe = true))) lastAt[direction] = now()
+    }
+
+    companion object {
+        const val REFRESH_MILLIS = 2_000L
+        private val DIRECTIONS = listOf(KeyEvent.VK_UP, KeyEvent.VK_LEFT, KeyEvent.VK_DOWN, KeyEvent.VK_RIGHT)
+    }
+}
+
+/**
+ * 6번 칸(지금은 [Skill.JUNGDOK])을 맵 전체에 퍼뜨린다. 방향키는 지금 커서 위치에서 그 방향의 다음 몹으로 옮겨 가므로,
+ * 같은 방향을 이어서 눌러야 멀리까지 퍼진다. 한 차례에 최대 [BURST]번을 이어서 걸고,
+ * 한 방향에 [PER_DIRECTION]번을 건 뒤 다음 방향으로 넘어간다. 방향 순서는 캐릭터가 마지막으로 바라본 방향부터.
+ * 저주 한도(RateGroup.CURSE)가 [CURSE_RESERVE]번 이하로 남았으면 사방 저주 몫으로 두고 쉰다.
+ */
+class DespairSpreadUseCase(
+    private val facing: () -> Int = { KeyEvent.VK_LEFT },
+) : MacroUseCase {
+    override val name = "6번(맵 전체)"
+    private var count = 0
+
+    override fun isReady(now: Long) = canCast()
+
+    override suspend fun execute() {
+        repeat(BURST) {
+            if (!canCast()) return
+            // 이동키 때문에 취소됐으면 이번 차례는 끝낸다
+            if (!SkillCaster.tryCast(Skill.JUNGDOK, Target.Direction(direction()))) return
             count++
         }
     }
+
+    private fun canCast() =
+        SkillCaster.readyIn(Skill.JUNGDOK) == 0L && SkillCaster.remaining(RateGroup.CURSE) > CURSE_RESERVE
 
     /** 바라보는 방향을 먼저, 그다음은 시계 반대 방향으로 돈다 */
     private fun direction(): Int {
@@ -56,8 +83,9 @@ class CursePoisonUseCase(
     }
 
     companion object {
-        const val PER_DIRECTION = 5
-        const val PAIRS_PER_TURN = 2
+        const val BURST = 3
+        const val PER_DIRECTION = 6
+        const val CURSE_RESERVE = 1
         private val DIRECTIONS = listOf(KeyEvent.VK_UP, KeyEvent.VK_LEFT, KeyEvent.VK_DOWN, KeyEvent.VK_RIGHT)
     }
 }
