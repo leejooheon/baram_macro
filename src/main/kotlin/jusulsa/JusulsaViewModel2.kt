@@ -28,7 +28,8 @@ class JusulsaViewModel2 : BaseViewModel() {
     }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + exceptionHandler)
     private val macroDetailAction = MacroDetailAction2()
-    private var actionJob: Job? = null
+    @Volatile private var actionJob: Job? = null
+    @Volatile private var hellfireJob: Job? = null
     private val _uiState = MutableStateFlow(JusulsaUiState.default)
     internal val uiState = _uiState.asStateFlow()
     private val hellfireCount = MutableStateFlow(0)
@@ -66,14 +67,16 @@ class JusulsaViewModel2 : BaseViewModel() {
     }
 
     private fun hellfire() {
-        hellfireCount.value += 1
+        // 헬파이어가 이미 돌고 있으면 횟수만 쌓는다. 다른 매크로가 돌고 있을 땐 그걸 멈추고 헬파이어를 시작한다
+        if (hellfireJob?.isActive == true) {
+            hellfireCount.update { it + 1 }
+            return
+        }
+        hellfireCount.value = 1
 
-        if (actionJob?.isActive == true) return
-        else hellfireCount.value = 1
-
-        execute {
+        hellfireJob = execute {
             while (hellfireCount.value > 0) {
-                hellfireCount.value -= 1
+                hellfireCount.update { it - 1 }
                 hellfireInternal()
             }
         }
@@ -157,9 +160,18 @@ class JusulsaViewModel2 : BaseViewModel() {
         }
     }
 
-    private fun execute(block: suspend CoroutineScope.() -> Unit) {
-        actionJob?.cancel()
-        actionJob = scope.launch { block() }
+    private fun execute(block: suspend CoroutineScope.() -> Unit): Job {
+        val previous = actionJob
+        previous?.cancel()
+        return scope.launch {
+            // 이전 매크로가 눌린 키를 다 떼고 끝난 뒤에 시작해야 입력이 섞이지 않는다
+            previous?.join()
+            try {
+                block()
+            } finally {
+                withContext(NonCancellable) { Keyboard.releaseAll() }
+            }
+        }.also { actionJob = it }
     }
 
     override fun dispatch(event: UiEvent): Job { throw IllegalAccessException("not implementation") }
