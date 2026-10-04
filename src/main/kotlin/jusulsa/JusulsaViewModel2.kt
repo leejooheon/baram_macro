@@ -5,7 +5,6 @@ import common.base.BaseViewModel
 import common.model.UiEvent
 import common.robot.DisplayProvider
 import common.robot.Keyboard
-import common.robot.WindowKeyboard
 import follower.macro.MacroDetailAction2
 import follower.ocr.TextDetecter
 import jusulsa.model.JusulsaUiState
@@ -55,12 +54,7 @@ class JusulsaViewModel2 : BaseViewModel() {
             NativeKeyEvent.VC_2 -> execute { macroDetailAction.mabee() }
             NativeKeyEvent.VC_3 -> execute { macroDetailAction.julmang() }
 
-            // 임시: PostMessage 키 전달 테스트. 원래는 혼돈(hondon)
-            NativeKeyEvent.VC_F1 -> execute {
-                val window = WindowKeyboard.foregroundWindow() ?: return@execute
-                println("PostMessage 보무 테스트: ${WindowKeyboard.describe(window)}")
-                macroDetailAction.bomuByPostMessage(window)
-            }
+            NativeKeyEvent.VC_F1 -> execute { macroDetailAction.hondon() }
             NativeKeyEvent.VC_F4 -> execute { macroDetailAction.chumChum() }
 
             NativeKeyEvent.VC_UP -> macroDetailAction.onDirectionChanged(KeyEvent.VK_UP)
