@@ -1,8 +1,5 @@
 package common.network
 
-import common.model.api.OcrModel
-import common.model.api.PositionListModel
-import common.model.api.PositionModel
 import common.util.NetworkError
 import common.util.Result
 import ocr.model.OcrHealthModel
@@ -16,52 +13,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
-import java.io.File
-import java.net.URL
-import java.util.*
 import javax.imageio.ImageIO
 
 class OcrClient(
     private val httpClient: HttpClient
 ) {
-    suspend fun readImage(
-        bufferedImage: BufferedImage
-    ): Result<OcrModel, NetworkError> = withContext(Dispatchers.IO) {
-        val fileName = UUID.randomUUID().toString()
-        val file = File(fileName)
-        val response = try {
-            ImageIO.write(bufferedImage, "png", file)
-
-            httpClient.submitFormWithBinaryData(
-                url = "http://$host:$ocrPort/ocr/",
-                formData = formData {
-                    append(
-                        "file",
-                        file.readBytes(),
-                        Headers.build {
-                            append(HttpHeaders.ContentType, "image/png")
-                            append(HttpHeaders.ContentDisposition, "form-data; name=\"file\"; filename=\"$fileName.png\"")
-                        }
-                    )
-                }
-            )
-        } catch (e: Exception) {
-            file.delete()
-            return@withContext Result.Error(NetworkError.REQUEST_TIMEOUT)
-        }
-        finally {
-            file.delete()
-        }
-
-        return@withContext when(val status = response.status.value) {
-            in 200..299 -> {
-                val model = response.body<OcrModel>()
-                Result.Success(model)
-            }
-            else -> parseError(status)
-        }
-    }
-
     /** 쿨타임 박스나 버프 패널 캡처를 보내 '이름 N초' 줄 목록을 받는다. 임시 파일 없이 메모리에서 바로 보낸다. */
     suspend fun readTimers(
         bufferedImage: BufferedImage
@@ -103,43 +59,6 @@ class OcrClient(
 
         return@withContext when(val status = response.status.value) {
             in 200..299 -> Result.Success(response.body<OcrHealthModel>())
-            else -> parseError(status)
-        }
-    }
-
-    suspend fun findKing(): Result<PositionModel, NetworkError> = withContext(Dispatchers.IO) {
-        val response = try {
-            httpClient.get(
-                url = URL("http://$host:$ocrPort/find/king"),
-            )
-        } catch (e: Exception) {
-            return@withContext Result.Error(NetworkError.REQUEST_TIMEOUT)
-        }
-
-        return@withContext when(val status = response.status.value) {
-            in 200..299 -> {
-                val model = response.body<PositionModel>()
-                Result.Success(model)
-            }
-            else -> parseError(status)
-        }
-    }
-
-
-    suspend fun conversationWithKing(): Result<PositionListModel, NetworkError> = withContext(Dispatchers.IO) {
-        val response = try {
-            httpClient.get(
-                url = URL("http://$host:$ocrPort/conversation/king"),
-            )
-        } catch (e: Exception) {
-            return@withContext Result.Error(NetworkError.REQUEST_TIMEOUT)
-        }
-
-        return@withContext when(val status = response.status.value) {
-            in 200..299 -> {
-                val model = response.body<PositionListModel>()
-                Result.Success(model)
-            }
             else -> parseError(status)
         }
     }

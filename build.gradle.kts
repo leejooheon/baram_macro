@@ -15,18 +15,10 @@ dependencies {
     implementation(compose.desktop.currentOs)
     implementation(libs.compose.material.icons.core)
 
-    // Include the Test API
-    testImplementation(libs.compose.ui.test.junit4)
-
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.jnativehook)
     implementation(libs.jna)
     implementation(libs.jna.platform)
-
-//    implementation(files("libs/tess4j-5.10.0.jar"))
-    implementation(libs.tess4j) {
-        exclude(group = "net.sourceforge.tess4j", module = "tess4j")
-    }
 
     implementation(libs.bundles.ktor)
 }

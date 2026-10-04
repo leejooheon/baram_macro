@@ -4,5 +4,4 @@
 easyocr
 opencv-python-headless
 flask
-pyautogui
 numpy
