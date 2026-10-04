@@ -71,9 +71,8 @@ object Keyboard {
         }
     }
 
-    // Windows에서는 스캔코드 SendInput, 그 외(개발 환경)에서는 Robot
+    // 게임에서 동작이 확인된 Robot으로 보낸다. 매크로 입력은 KeyHook이 LLKHF_INJECTED로 걸러낸다
     private fun send(keyEvent: Int, pressed: Boolean) {
-        if (WinInput.isAvailable && WinInput.sendKey(keyEvent, pressed)) return
         if (pressed) robot.keyPress(keyEvent) else robot.keyRelease(keyEvent)
     }
 

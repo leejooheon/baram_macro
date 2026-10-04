@@ -6,7 +6,6 @@ import com.github.kwhat.jnativehook.GlobalScreen
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener
 import common.robot.KeyHook
-import common.robot.WinInput
 
 /**
  * 전역 키 입력을 받는다. 키 코드는 jnativehook의 VC_* 값.
@@ -21,7 +20,7 @@ fun ObserveKeyEvents(
     consumeKeys: Set<Int> = emptySet(),
 ) {
     DisposableEffect(Unit) {
-        if (WinInput.isAvailable) {
+        if (KeyHook.isAvailable) {
             val listener = object : KeyHook.Listener {
                 override val consumeKeys = consumeKeys
                 override fun onKey(keyCode: Int, pressed: Boolean) {
