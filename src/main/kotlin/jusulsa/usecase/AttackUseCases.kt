@@ -159,6 +159,6 @@ class BasicAttackUseCase(
     }
 
     companion object {
-        const val INTERVAL_MILLIS = 150L
+        const val INTERVAL_MILLIS = 450L
     }
 }
