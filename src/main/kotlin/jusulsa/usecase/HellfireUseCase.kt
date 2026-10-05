@@ -26,14 +26,20 @@ class HellfireUseCase(
     private val reason = ReasonLog("HellfireUseCase")
 
     override fun isReady(now: Long): Boolean {
-        // 쓴 직후에는 쿨타임 박스에 아직 안 잡힌다
-        lastCastAt?.let { if (now - it < RECAST_GUARD_MILLIS) return false }
+        // 쓴 직후에는 쿨타임 박스에 아직 안 잡힌다. 정해 둔 시간 대신, 쓴 뒤에 찍은 쿨타임 박스가 들어올 때까지만 기다린다
+        lastCastAt?.let { if (now - it < MIN_GUARD_MILLIS) return false }
 
         if (!ManaReading.isEnough(ocr, now, reason::log)) return false
         val cooldown = ocr.state.value.fresh(TimerRegion.COOLDOWN, now)
         if (cooldown == null) {
             reason.log("쿨타임 박스 읽기 실패라 안 씀")
             return false
+        }
+        lastCastAt?.let {
+            if (cooldown.capturedAt < it + CAPTURE_LAG_MILLIS) {
+                reason.log("쓴 뒤 쿨타임 박스 다시 읽는 중")
+                return false
+            }
         }
         // 삼매진화가 곧 돌아오면 마력을 아껴 둔다. 삼매가 쓸 수 있는 상태면 우선 목록에서 삼매가 먼저 나간다
         val samme = cooldown.find(SammeUseCase.NAME)?.remainingSeconds(now)
@@ -59,7 +65,10 @@ class HellfireUseCase(
 
     companion object {
         const val NAME_KEY = "헬"
-        const val RECAST_GUARD_MILLIS = 5_000L
+        /** 쓴 뒤 최소한 기다리는 시간. 1 + Enter가 연달아 나가 채팅창이 열리는 것을 막는다 */
+        const val MIN_GUARD_MILLIS = 1_000L
+        /** 쓴 뒤 게임 쿨타임 박스에 헬파이어가 뜨기까지 걸리는 시간 */
+        const val CAPTURE_LAG_MILLIS = 300L
         /** 삼매진화 쿨타임이 이 이하로 남았으면 헬파이어를 쓰지 않고 기다린다 */
         const val SAMME_HOLD_SECONDS = 3
     }
