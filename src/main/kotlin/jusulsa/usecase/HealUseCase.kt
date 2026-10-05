@@ -34,7 +34,5 @@ class HealUseCase(
 
     companion object {
         const val HEAL_BELOW_PERCENT = 90
-        /** 이 아래면 첨첨보다 먼저 힐한다 */
-        const val URGENT_BELOW_PERCENT = 50
     }
 }

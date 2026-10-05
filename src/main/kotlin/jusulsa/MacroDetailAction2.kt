@@ -29,7 +29,6 @@ class MacroDetailAction2(
     private val bomu: BomuUseCase = BomuUseCase(),
     private val magi: MagiUseCase = MagiUseCase(),
     private val selfHeal: HealUseCase = HealUseCase(),
-    private val urgentHeal: HealUseCase = HealUseCase(HealUseCase.URGENT_BELOW_PERCENT, "자힐(위급)"),
     private val mana: ManaUseCase = ManaUseCase(),
     private val sammeUseCase: SammeUseCase = SammeUseCase(),
 ) {
@@ -91,16 +90,16 @@ class MacroDetailAction2(
     /**
      * 첨첨. 할 일은 전부 UseCase이고, [MacroEngine]이 상태를 보고 하나씩 골라 실행한다.
      *
-     * 우선(앞에서부터, 할 일이 있으면 바로): 공증 > 평타 > 자힐(체력 50% 미만) > 보무 > 마기지체 > 삼매진화 > 저주(사방) > 헬파이어
-     * 공격(번갈아 가며): 첨 > 자힐(체력 90% 미만) > 첨 > 6번 맵 전체. 첨이 자힐보다 두 배 자주 차례를 받는다
+     * 우선(앞에서부터, 할 일이 있으면 바로): 공증 > 삼매진화 > 헬파이어 > 자힐(체력 90% 미만) > 평타 > 마기지체 > 보무 > 저주(사방)
+     * 공격(우선 일을 한 번 하면 다음 한 번은 공격 차례): 첨 > 6번 맵 전체
      * 평타: 첨을 쓸 때마다 바로 뒤에 섞고, 첨이 없을 때도 0.25초마다 누른다. 다른 일은 한 차례에 마법 하나씩이라 평타가 오래 밀리지 않는다
      * 사용자가 방향키로 이동 중이면 아무것도 안 한다.
      */
     suspend fun chumChum() = withContext(Dispatchers.Default) {
         val basicAttack = BasicAttackUseCase()
         MacroEngine(
-            priority = listOf(mana, basicAttack, urgentHeal, bomu, magi, sammeUseCase, CurseAroundUseCase(), HellfireUseCase({ latestDirection })),
-            rotation = ChumUseCase(basicAttack).let { chum -> listOf(chum, selfHeal, chum, DespairSpreadUseCase({ latestDirection })) },
+            priority = listOf(mana, sammeUseCase, HellfireUseCase({ latestDirection }), selfHeal, basicAttack, magi, bomu, CurseAroundUseCase()),
+            rotation = listOf(ChumUseCase(basicAttack), DespairSpreadUseCase({ latestDirection })),
         ).run()
     }
 
