@@ -8,15 +8,20 @@ import jusulsa.skill.SkillCaster
 import jusulsa.skill.Target
 import java.awt.event.KeyEvent
 
-/** 극진뢰·진뢰 첨. 각자 최소 간격([Skill.minIntervalMillis])이 지나면 직전 대상에게 쓴다 */
-class ChumUseCase : MacroUseCase {
+/**
+ * 극진뢰·진뢰 첨. 각자 최소 간격([Skill.minIntervalMillis])이 지나면 직전 대상에게 쓴다.
+ * 예전 매크로처럼 첨 사이에 평타를 섞는다: 첨 하나 쓰고 바로 스페이스.
+ */
+class ChumUseCase(
+    private val basicAttack: BasicAttackUseCase,
+) : MacroUseCase {
     override val name = "첨"
 
     override fun isReady(now: Long) = next() != null
 
     override suspend fun execute() {
         val skill = next() ?: return
-        SkillCaster.tryCast(skill)
+        if (SkillCaster.tryCast(skill)) basicAttack.press()
     }
 
     private fun next() = CHUMS.firstOrNull { SkillCaster.readyIn(it) == 0L }
@@ -27,9 +32,9 @@ class ChumUseCase : MacroUseCase {
 }
 
 /**
- * 저주는 내 사방 4칸에만 건다. [REFRESH_MILLIS]마다 한 번, 4칸을 한 차례에 몰아서 건다.
+ * 저주는 내 사방 4칸에만 건다. [REFRESH_MILLIS]마다 한 번, 4칸을 연달아 건다.
  * 칸마다 HOME으로 나를 잡고 방향키를 눌러 바로 옆 몹에 건다.
- * 이동키나 한도 때문에 일부만 걸었으면 남은 칸만 다음 차례에 이어서 건다.
+ * 평타가 밀리지 않게 엔진 차례마다 한 칸씩만 걸고, 남은 칸은 바로 다음 차례에 이어서 건다.
  */
 class CurseAroundUseCase(
     private val now: () -> Long = System::currentTimeMillis,
@@ -47,11 +52,8 @@ class CurseAroundUseCase(
     }
 
     override suspend fun execute() {
-        while (pending.isNotEmpty()) {
-            if (SkillCaster.readyIn(Skill.JEOJU) > 0L) return
-            if (!SkillCaster.tryCast(Skill.JEOJU, Target.Direction(pending.first(), fromMe = true))) return
-            pending.removeFirst()
-        }
+        val direction = pending.firstOrNull() ?: return
+        if (SkillCaster.tryCast(Skill.JEOJU, Target.Direction(direction, fromMe = true))) pending.removeFirst()
     }
 
     companion object {
@@ -64,7 +66,7 @@ class CurseAroundUseCase(
  * 6번 칸(지금은 [Skill.JUNGDOK])을 [REFRESH_MILLIS]마다 한 차례 맵 전체에 퍼뜨린다.
  * 한 차례는 바라보는 방향부터 네 방향으로, 방향마다 나를 기준으로 시작해 같은 방향키를 이어 눌러 [PER_DIRECTION]마리까지 건다.
  * 방향키는 지금 커서 위치에서 그 방향의 다음 몹으로 옮겨 가므로, 이어서 눌러야 멀리까지 퍼진다.
- * 첨이 밀리지 않게 엔진 차례마다 [BURST]번씩 나눠서 걸고, 이동키로 끊긴 방향은 나를 기준으로 다시 시작한다.
+ * 첨·평타가 밀리지 않게 엔진 차례마다 [BURST]번씩 나눠서 걸고, 이동키로 끊긴 방향은 나를 기준으로 다시 시작한다.
  */
 class DespairSpreadUseCase(
     private val facing: () -> Int = { KeyEvent.VK_LEFT },
@@ -116,7 +118,7 @@ class DespairSpreadUseCase(
 
     companion object {
         const val REFRESH_MILLIS = 10_000L
-        const val BURST = 2
+        const val BURST = 1
         const val PER_DIRECTION = 4
         const val CURSE_RESERVE = 1
         private val DIRECTIONS = listOf(KeyEvent.VK_UP, KeyEvent.VK_LEFT, KeyEvent.VK_DOWN, KeyEvent.VK_RIGHT)
@@ -126,22 +128,28 @@ class DespairSpreadUseCase(
 /**
  * 평타. 예전 매크로처럼 스페이스바를 꾹 누르지 않고 [INTERVAL_MILLIS]마다 한 번씩 누른다.
  * 키 하나라 금방 끝나므로 공격 순환에서 차례를 기다리지 않게 우선 목록에 둔다.
+ * 다른 UseCase는 한 차례에 마법 하나만 쓰므로, 평타는 마법 사이사이에 끼어 [INTERVAL_MILLIS]에 가깝게 나간다.
  */
 class BasicAttackUseCase(
     private val now: () -> Long = System::currentTimeMillis,
 ) : MacroUseCase {
     override val name = "평타"
     override val logEachRun = false
+    /** 키 하나라 공격에게 양보할 필요가 없다 */
+    override val neverYield = true
     private var lastAt = 0L
 
     override fun isReady(now: Long) = now - lastAt >= INTERVAL_MILLIS
 
-    override suspend fun execute() {
+    override suspend fun execute() = press()
+
+    /** 스페이스 한 번. 첨 사이에 섞을 때도 이걸 불러 간격을 같이 센다 */
+    suspend fun press() {
         Keyboard.pressAndRelease(KeyEvent.VK_SPACE)
         lastAt = now()
     }
 
     companion object {
-        const val INTERVAL_MILLIS = 450L
+        const val INTERVAL_MILLIS = 250L
     }
 }

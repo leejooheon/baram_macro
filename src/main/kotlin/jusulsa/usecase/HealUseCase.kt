@@ -1,6 +1,5 @@
 package jusulsa.usecase
 
-import common.robot.UserInput
 import jusulsa.engine.MacroUseCase
 import jusulsa.skill.RateGroup
 import jusulsa.skill.Skill
@@ -9,8 +8,8 @@ import jusulsa.skill.Target
 import ocr.OcrStateHolder
 
 /**
- * 체력이 [healBelow] 아래면 자힐. 게임은 1초에 앞의 3번만 받으니, 쓸 수 있는 만큼 한 번에 몰아서 쓴다.
- * 첫 번째만 HOME으로 나를 잡고 나머지는 직전 대상(나)에게 쓴다. 대상이 나로 바뀌는 횟수가 줄어 저주 방향 잡기가 덜 흔들린다.
+ * 체력이 [healBelow] 아래면 자힐. 게임은 1초에 앞의 3번만 받는다(RateGroup.HEAL).
+ * 평타·첨이 밀리지 않게 한 차례에 한 번만 쓴다. 사이에 다른 마법이 대상을 바꾸므로 매번 HOME으로 나를 잡는다.
  * 체력 막대를 못 읽으면 아무것도 하지 않는다.
  */
 class HealUseCase(
@@ -29,14 +28,8 @@ class HealUseCase(
     override fun isReady(now: Long) =
         needsHeal() && SkillCaster.remaining(RateGroup.HEAL) > 0 && SkillCaster.readyIn(Skill.HEAL) == 0L
 
-    /** 남은 만큼 몰아서 쓴다. 첫 번째만 나를 잡고 나머지는 직전 대상(나)에게 */
     override suspend fun execute() {
-        val count = SkillCaster.remaining(RateGroup.HEAL)
-        if (!SkillCaster.tryCast(Skill.HEAL, Target.Me)) return
-        repeat(count - 1) {
-            if (UserInput.isMoving()) return
-            SkillCaster.tryCast(Skill.HEAL)
-        }
+        SkillCaster.tryCast(Skill.HEAL, Target.Me)
     }
 
     companion object {
