@@ -97,9 +97,10 @@ class MacroDetailAction2(
      */
     suspend fun chumChum() = withContext(Dispatchers.Default) {
         val basicAttack = BasicAttackUseCase()
+        val attackBetween: suspend () -> Unit = { if (basicAttack.isReady(System.currentTimeMillis())) basicAttack.execute() }
         MacroEngine(
-            priority = listOf(mana, sammeUseCase, HellfireUseCase({ latestDirection }), selfHeal, basicAttack, magi, bomu, CurseAroundUseCase()),
-            rotation = ChumUseCase().let { chum -> listOf(chum, chum, chum, DespairSpreadUseCase({ latestDirection })) },
+            priority = listOf(mana, sammeUseCase, HellfireUseCase({ latestDirection }), selfHeal, basicAttack, magi, bomu, CurseAroundUseCase(attackBetween)),
+            rotation = ChumUseCase().let { chum -> listOf(chum, chum, chum, DespairSpreadUseCase({ latestDirection }, attackBetween)) },
             between = basicAttack,
         ).run()
     }

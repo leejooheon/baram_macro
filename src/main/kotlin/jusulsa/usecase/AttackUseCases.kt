@@ -6,6 +6,7 @@ import jusulsa.skill.RateGroup
 import jusulsa.skill.Skill
 import jusulsa.skill.SkillCaster
 import jusulsa.skill.Target
+import kotlinx.coroutines.delay
 import java.awt.event.KeyEvent
 
 /**
@@ -34,6 +35,8 @@ class ChumUseCase : MacroUseCase {
  * 이동키나 한도 때문에 끊기면 남은 칸만 다음 차례에 이어서 걸고, 쉬는 시간은 다 건 뒤부터 센다.
  */
 class CurseAroundUseCase(
+    /** 한 바퀴 도중 마법 사이에 할 일 (평타) */
+    private val afterCast: suspend () -> Unit = {},
     private val now: () -> Long = System::currentTimeMillis,
 ) : MacroUseCase {
     override val name = "저주(사방)"
@@ -50,6 +53,9 @@ class CurseAroundUseCase(
             if (SkillCaster.readyIn(Skill.JEOJU) > 0L) return
             if (!SkillCaster.tryCast(Skill.JEOJU, Target.Direction(pending.first(), fromMe = true))) return
             pending.removeFirst()
+            afterCast()
+            // 예전 매크로(jeoju)의 간격
+            delay(GAP_MILLIS)
         }
         roundEndedAt = now()
     }
@@ -57,6 +63,8 @@ class CurseAroundUseCase(
     companion object {
         /** 한 바퀴를 다 건 뒤 쉬는 시간 */
         const val REST_MILLIS = 5_000L
+        /** 마법 사이 간격 */
+        const val GAP_MILLIS = 80L
         private val DIRECTIONS = listOf(KeyEvent.VK_UP, KeyEvent.VK_LEFT, KeyEvent.VK_DOWN, KeyEvent.VK_RIGHT)
     }
 }
@@ -69,6 +77,8 @@ class CurseAroundUseCase(
  */
 class DespairSpreadUseCase(
     private val facing: () -> Int = { KeyEvent.VK_LEFT },
+    /** 한 바퀴 도중 마법 사이에 할 일 (평타) */
+    private val afterCast: suspend () -> Unit = {},
 ) : MacroUseCase {
     override val name = "6번(맵 전체)"
     private var roundEndedAt = 0L
@@ -90,6 +100,9 @@ class DespairSpreadUseCase(
                 return
             }
             pending.removeFirst()
+            afterCast()
+            // 예전 매크로(jungdok)의 간격
+            delay(GAP_MILLIS)
         }
         roundEndedAt = System.currentTimeMillis()
     }
@@ -116,6 +129,8 @@ class DespairSpreadUseCase(
     companion object {
         /** 한 바퀴를 다 건 뒤 쉬는 시간 */
         const val REST_MILLIS = 10_000L
+        /** 마법 사이 간격 */
+        const val GAP_MILLIS = 120L
         const val PER_DIRECTION = 4
         const val CURSE_RESERVE = 1
         private val DIRECTIONS = listOf(KeyEvent.VK_UP, KeyEvent.VK_LEFT, KeyEvent.VK_DOWN, KeyEvent.VK_RIGHT)
