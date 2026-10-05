@@ -11,11 +11,8 @@ import java.awt.event.KeyEvent
 
 /**
  * 극진뢰·진뢰 첨. 각자 최소 간격([Skill.minIntervalMillis])이 지나면 직전 대상에게 쓴다.
- * 자힐·삼매 등으로 대상이 나로 바뀌어 있으면, 첨이 나에게 가지 않게 바라보는 방향의 바로 옆 몹을 다시 잡아서 쓴다.
  */
-class ChumUseCase(
-    private val facing: () -> Int = { KeyEvent.VK_LEFT },
-) : MacroUseCase {
+class ChumUseCase : MacroUseCase {
     override val name = "첨"
     /** 자주 돌아서 5초 요약에만 남긴다 */
     override val logEachRun = false
@@ -24,8 +21,7 @@ class ChumUseCase(
 
     override suspend fun execute() {
         val skill = next() ?: return
-        val target = if (SkillCaster.targetIsMe) Target.Direction(facing(), fromMe = true) else Target.Current
-        SkillCaster.tryCast(skill, target)
+        SkillCaster.tryCast(skill)
     }
 
     private fun next() = CHUMS.firstOrNull { SkillCaster.readyIn(it) == 0L }
