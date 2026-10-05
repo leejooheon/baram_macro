@@ -19,6 +19,8 @@ import kotlinx.coroutines.isActive
 class MacroEngine(
     private val priority: List<MacroUseCase>,
     private val rotation: List<MacroUseCase>,
+    /** 다른 일을 하나 할 때마다 그 뒤에 끼워 넣을 일 (평타). 준비됐을 때만 */
+    private val between: MacroUseCase? = null,
     private val now: () -> Long = System::currentTimeMillis,
 ) {
     private var nextRotation = 0
@@ -48,7 +50,13 @@ class MacroEngine(
             // 공격은 너무 자주라 생존·버프만 찍는다
             if (urgent != null && urgent.logEachRun) println("[MacroEngine] ${task.name}")
             lastWasPriority = urgent != null && urgent.logEachRun
-            Keyboard.atomic { task.execute() }
+            Keyboard.atomic {
+                task.execute()
+                if (task !== between && between != null && between.isReady(now())) {
+                    between.execute()
+                    counts[between.name] = (counts[between.name] ?: 0) + 1
+                }
+            }
             counts[task.name] = (counts[task.name] ?: 0) + 1
             summarize(time)
         }

@@ -10,18 +10,15 @@ import java.awt.event.KeyEvent
 
 /**
  * 극진뢰·진뢰 첨. 각자 최소 간격([Skill.minIntervalMillis])이 지나면 직전 대상에게 쓴다.
- * 예전 매크로처럼 첨 사이에 평타를 섞는다: 첨 하나 쓰고 바로 스페이스.
  */
-class ChumUseCase(
-    private val basicAttack: BasicAttackUseCase,
-) : MacroUseCase {
+class ChumUseCase : MacroUseCase {
     override val name = "첨"
 
     override fun isReady(now: Long) = next() != null
 
     override suspend fun execute() {
         val skill = next() ?: return
-        if (SkillCaster.tryCast(skill)) basicAttack.press()
+        SkillCaster.tryCast(skill)
     }
 
     private fun next() = CHUMS.firstOrNull { SkillCaster.readyIn(it) == 0L }
@@ -128,7 +125,7 @@ class DespairSpreadUseCase(
 /**
  * 평타. 예전 매크로처럼 스페이스바를 꾹 누르지 않고 [INTERVAL_MILLIS]마다 한 번씩 누른다.
  * 키 하나라 금방 끝나므로 공격 순환에서 차례를 기다리지 않게 우선 목록에 둔다.
- * 다른 UseCase는 한 차례에 마법 하나만 쓰므로, 평타는 마법 사이사이에 끼어 [INTERVAL_MILLIS]에 가깝게 나간다.
+ * 예전 매크로처럼 마법 사이에 섞는다: 엔진이 마법 하나를 쓸 때마다 바로 뒤에 한 번 누른다(MacroEngine.between).
  */
 class BasicAttackUseCase(
     private val now: () -> Long = System::currentTimeMillis,
@@ -141,15 +138,12 @@ class BasicAttackUseCase(
 
     override fun isReady(now: Long) = now - lastAt >= INTERVAL_MILLIS
 
-    override suspend fun execute() = press()
-
-    /** 스페이스 한 번. 첨 사이에 섞을 때도 이걸 불러 간격을 같이 센다 */
-    suspend fun press() {
+    override suspend fun execute() {
         Keyboard.pressAndRelease(KeyEvent.VK_SPACE)
         lastAt = now()
     }
 
     companion object {
-        const val INTERVAL_MILLIS = 250L
+        const val INTERVAL_MILLIS = 150L
     }
 }
