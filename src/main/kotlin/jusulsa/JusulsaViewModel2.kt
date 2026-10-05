@@ -44,11 +44,11 @@ class JusulsaViewModel2 {
         UserInput.onKey(keyEvent, pressed = false)
 
         when(keyEvent) {
-            NativeKeyEvent.VC_BACKQUOTE -> execute { macroDetailAction.chumChum() }
+            // PgUp은 `와 같이 첨첨 시작
+            NativeKeyEvent.VC_BACKQUOTE,
+            NativeKeyEvent.VC_PAGE_UP -> execute { macroDetailAction.chumChum() }
 
             // 개편 중이라 나머지 단축키는 잠시 꺼둔다
-//            NativeKeyEvent.VC_PAGE_UP -> hellfire()
-//            NativeKeyEvent.VC_PAGE_DOWN -> execute { macroDetailAction.mabeAroundMe() }
 //            NativeKeyEvent.VC_SLASH -> execute { macroDetailAction.mabeAroundMe() }
 //            NativeKeyEvent.VC_BACK_SLASH -> execute { macroDetailAction.maagi() }
 //            NativeKeyEvent.VC_KANJI -> execute { macroDetailAction.jeoju() }
@@ -64,6 +64,17 @@ class JusulsaViewModel2 {
             NativeKeyEvent.VC_RIGHT -> macroDetailAction.onDirectionChanged(KeyEvent.VK_RIGHT)
 
             NativeKeyEvent.VC_ESCAPE -> actionJob?.cancel()
+            NativeKeyEvent.VC_PAGE_DOWN -> stopAndPressEscape()
+        }
+    }
+
+    /** PgDn: 매크로를 멈추고, 매크로가 키를 다 뗀 뒤 게임에 ESC를 보낸다 */
+    private fun stopAndPressEscape() {
+        val job = actionJob
+        job?.cancel()
+        scope.launch {
+            job?.join()
+            Keyboard.atomic { Keyboard.pressAndRelease(KeyEvent.VK_ESCAPE) }
         }
     }
 
@@ -144,6 +155,8 @@ class JusulsaViewModel2 {
         // 매크로 단축키는 게임에 넘기지 않는다. 방향키와 ESC는 게임에서도 써야 하므로 뺀다
         internal val MACRO_KEYS = setOf(
             NativeKeyEvent.VC_BACKQUOTE,
+            NativeKeyEvent.VC_PAGE_UP,
+            NativeKeyEvent.VC_PAGE_DOWN,
         )
     }
     fun dispatchKeyPressEvent(keyEvent: Int) {

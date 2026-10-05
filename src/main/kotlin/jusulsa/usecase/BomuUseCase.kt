@@ -1,6 +1,7 @@
 package jusulsa.usecase
 
 import jusulsa.engine.MacroUseCase
+import jusulsa.engine.ReasonLog
 import jusulsa.skill.Skill
 import jusulsa.skill.SkillCaster
 import jusulsa.skill.Target
@@ -18,6 +19,7 @@ class BomuUseCase(
     private val now: () -> Long = System::currentTimeMillis,
 ) : MacroUseCase {
     override val name = "보무"
+    private val reason = ReasonLog("BomuUseCase")
 
     enum class Buff(val label: String, val skill: Skill, val target: Target) {
         BOHO("보호", Skill.BOHO, Target.Me),
@@ -48,10 +50,23 @@ class BomuUseCase(
 
         val byTimer = last == null || time - last >= FALLBACK_INTERVAL_MILLIS
         // 패널을 못 읽었거나 버프가 하나도 안 보이면 패널이 가려졌을 수도 있으니 타이머로 판단한다
-        if (panel == null || panel.entries.isEmpty()) return byTimer
+        if (panel == null || panel.entries.isEmpty()) {
+            if (byTimer) reason.log("${buff.label}: 버프 패널 못 읽음 -> 시간 기준으로 다시 걸기")
+            return byTimer
+        }
 
-        val entry = panel.find(buff.label) ?: return true
+        val entry = panel.find(buff.label)
+        if (entry == null) {
+            // 건 지 얼마 안 됐는데 안 보이면 끝난 게 아니라 이름을 못 읽은 것이다. 5초마다 다시 걸지 않게 한다
+            if (last != null && time - last < MISSING_GRACE_MILLIS) {
+                reason.log("${buff.label}: 패널에 안 보이지만 ${(time - last) / 1000}초 전에 걸어서 대기 (읽은 이름: ${panel.entries.joinToString { it.name }})")
+                return false
+            }
+            reason.log("${buff.label}: 패널에 없음 -> 다시 걸기 (읽은 이름: ${panel.entries.joinToString { it.name }})")
+            return true
+        }
         val remaining = entry.remainingSeconds(time) ?: return byTimer
+        if (remaining <= RENEW_BEFORE_SECONDS) reason.log("${buff.label}: $remaining 초 남음 -> 다시 걸기")
         return remaining <= RENEW_BEFORE_SECONDS
     }
 
@@ -60,5 +75,7 @@ class BomuUseCase(
         const val RENEW_BEFORE_SECONDS = 10
         const val RECAST_GUARD_MILLIS = 5_000L
         const val FALLBACK_INTERVAL_MILLIS = 160_000L
+        /** 건 뒤 이 시간 안에는 패널에 이름이 안 보여도 다시 걸지 않는다 */
+        const val MISSING_GRACE_MILLIS = 60_000L
     }
 }

@@ -13,6 +13,12 @@ interface MacroUseCase {
     /** 로그에 찍을 이름 */
     val name: String
 
+    /** 우선 목록에서 실행할 때마다 로그를 찍을지. 자주 도는 것은 5초 요약에만 남긴다 */
+    val logEachRun: Boolean get() = true
+
+    /** 우선 목록에서 공격에게 차례를 양보하지 않고 항상 먼저 할지 (공증처럼 미루면 위험한 것만) */
+    val neverYield: Boolean get() = false
+
     fun isReady(now: Long): Boolean
 
     suspend fun execute()

@@ -10,7 +10,7 @@ import ocr.model.TimerRegion
 
 /**
  * 삼매진화. 쿨타임 박스에 삼매진화가 없을 때 나를 기준으로 쓴다.
- * 쿨타임 박스를 못 읽으면 쓰지 않는다.
+ * 쿨타임 박스를 못 읽으면 쓰지 않는다. 마력이 공증 기준 이하이거나, 헬파이어 등으로 마력을 쓴 뒤 막대를 아직 다시 못 읽었으면 쓰지 않는다.
  */
 class SammeUseCase(
     private val ocr: OcrStateHolder = OcrStateHolder,
@@ -31,6 +31,8 @@ class SammeUseCase(
                 return false 
             }
         }
+
+        if (!ManaReading.isEnough(ocr, time, reason::log)) return false
 
         val cooldown = ocr.state.value.fresh(TimerRegion.COOLDOWN, time)
         if (cooldown == null) {

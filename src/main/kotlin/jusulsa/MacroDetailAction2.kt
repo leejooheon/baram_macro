@@ -1,20 +1,24 @@
 package jusulsa
 
 import common.robot.Keyboard
+import common.robot.UserInput
 import jusulsa.skill.Skill
 import jusulsa.skill.SkillCaster.cast
 import jusulsa.skill.Target
 import jusulsa.engine.MacroEngine
-import jusulsa.usecase.BasicAttackUseCase
 import jusulsa.usecase.BomuUseCase
 import jusulsa.usecase.ChumUseCase
-import jusulsa.usecase.CursePoisonUseCase
+import jusulsa.usecase.CurseAroundUseCase
+import jusulsa.usecase.DespairSpreadUseCase
 import jusulsa.usecase.HealUseCase
 import jusulsa.usecase.HellfireUseCase
 import jusulsa.usecase.MagiUseCase
 import jusulsa.usecase.ManaUseCase
 import jusulsa.usecase.SammeUseCase
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
@@ -87,16 +91,34 @@ class MacroDetailAction2(
     }
 
     /**
-     * 첨첨. 할 일은 전부 UseCase이고, [MacroEngine]이 상태를 보고 하나씩 골라 실행한다.
+     * 첨첨. 예전에 잘 되던 구조(#14)처럼 첨은 따로 도는 루프가 쉬지 않고 쓰고,
+     * 나머지는 [MacroEngine]이 상태를 보고 하나씩 고른 뒤 0.06초 쉬어 첨에게 키보드를 넘긴다.
      *
-     * 우선(앞에서부터, 할 일이 있으면 바로): 공증 > 자힐 > 보무 > 마기지체 > 삼매진화 > 헬파이어
-     * 공격(번갈아 가며): 첨 > 저주+중독 > 평타
-     * 사용자가 방향키로 이동 중이면 아무것도 안 한다.
+     * 첨 루프: 극진뢰·진뢰를 준비되는 대로 (이동 중이 아닐 때)
+     * 엔진 우선: 공증 > 삼매진화 > 헬파이어 > 자힐 > 마기지체 > 보무 > 저주(사방, 5초 쉼)
+     * 엔진 그 외: 6번 맵 전체 (10초 쉼)
+     * 저주·6번을 몰아 걸 때도 마법 사이에 첨이 준비돼 있으면 끼워 쓴다.
      */
     suspend fun chumChum() = withContext(Dispatchers.Default) {
+        val chum = ChumUseCase()
+        val chumBetween: suspend () -> Unit = { if (chum.isReady(System.currentTimeMillis())) chum.execute() }
+
+        launch {
+            while (isActive) {
+                val moving = UserInput.waitMillis()
+                if (moving > 0) {
+                    delay(moving)
+                    continue
+                }
+                if (chum.isReady(System.currentTimeMillis())) Keyboard.atomic { chum.execute() }
+                else delay(CHUM_IDLE_MILLIS)
+            }
+        }
+
         MacroEngine(
-            priority = listOf(mana, selfHeal, bomu, magi, sammeUseCase, HellfireUseCase({ latestDirection })),
-            rotation = listOf(ChumUseCase(), CursePoisonUseCase({ latestDirection }), BasicAttackUseCase()),
+            priority = listOf(mana, sammeUseCase, HellfireUseCase({ latestDirection }), selfHeal, magi, bomu, CurseAroundUseCase(chumBetween)),
+            rotation = listOf(DespairSpreadUseCase({ latestDirection }, chumBetween)),
+            breathMillis = AUX_BREATH_MILLIS,
         ).run()
     }
 
@@ -107,4 +129,10 @@ class MacroDetailAction2(
         Keyboard.pressAndRelease(KeyEvent.VK_TAB, duration)
     }
 
+    companion object {
+        /** 첨이 준비 안 됐을 때 다시 보기까지 쉬는 시간 (#14와 같은 값) */
+        private const val CHUM_IDLE_MILLIS = 20L
+        /** 보조 마법을 하나 쓴 뒤 첨에게 키보드를 넘기려고 쉬는 시간 (#14와 같은 값) */
+        private const val AUX_BREATH_MILLIS = 60L
+    }
 }

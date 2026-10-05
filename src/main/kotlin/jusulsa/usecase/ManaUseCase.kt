@@ -20,6 +20,7 @@ class ManaUseCase(
     private val now: () -> Long = System::currentTimeMillis,
 ) : MacroUseCase {
     override val name = "공증"
+    override val neverYield = true
     private var lastGongjeungAt: Long? = null
     private val reason = ReasonLog("ManaUseCase")
 
@@ -70,8 +71,8 @@ class ManaUseCase(
                 Keyboard.pressAndRelease(KeyEvent.VK_U, U_PRESS_MILLIS)
             }
         }
-        SkillCaster.tryCast(Skill.GONGJEUNG)
-        lastGongjeungAt = now()
+        // 이동키 등으로 못 썼으면 대기 없이 다음 차례에 바로 다시 쓴다
+        if (SkillCaster.tryCast(Skill.GONGJEUNG)) lastGongjeungAt = now()
     }
 
     companion object {
