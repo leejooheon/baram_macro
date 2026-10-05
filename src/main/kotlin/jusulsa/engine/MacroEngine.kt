@@ -21,6 +21,8 @@ class MacroEngine(
     private val rotation: List<MacroUseCase>,
     /** 다른 일을 하나 할 때마다 그 뒤에 끼워 넣을 일 (평타). 준비됐을 때만 */
     private val between: MacroUseCase? = null,
+    /** 일을 하나 한 뒤 쉬는 시간. 그동안 다른 루프(첨)가 키보드를 쓴다 */
+    private val breathMillis: Long = 0,
     private val now: () -> Long = System::currentTimeMillis,
 ) {
     private var nextRotation = 0
@@ -59,6 +61,7 @@ class MacroEngine(
             }
             counts[task.name] = (counts[task.name] ?: 0) + 1
             summarize(time)
+            if (breathMillis > 0) delay(breathMillis)
         }
     }
 
