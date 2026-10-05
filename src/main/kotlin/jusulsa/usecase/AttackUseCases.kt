@@ -14,6 +14,8 @@ import java.awt.event.KeyEvent
  */
 class ChumUseCase : MacroUseCase {
     override val name = "첨"
+    /** 자주 돌아서 5초 요약에만 남긴다 */
+    override val logEachRun = false
 
     override fun isReady(now: Long) = next() != null
 

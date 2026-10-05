@@ -65,8 +65,11 @@ class HellfireUseCase(
 
     companion object {
         const val NAME_KEY = "헬"
-        /** 쓴 뒤 최소한 기다리는 시간. 1 + Enter가 연달아 나가 채팅창이 열리는 것을 막는다 */
-        const val MIN_GUARD_MILLIS = 1_000L
+        /**
+         * 쓴 뒤 최소한 기다리는 시간. 쿨타임 박스에 헬파이어 쿨이 안 잡혀서, 이게 없으면 1초 남짓마다 써서 마력이 계속 바닥난다.
+         * 실제 쿨타임을 알면 그 값으로 맞춘다
+         */
+        const val MIN_GUARD_MILLIS = 5_000L
         /** 쓴 뒤 게임 쿨타임 박스에 헬파이어가 뜨기까지 걸리는 시간 */
         const val CAPTURE_LAG_MILLIS = 300L
         /** 삼매진화 쿨타임이 이 이하로 남았으면 헬파이어를 쓰지 않고 기다린다 */
