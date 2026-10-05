@@ -18,8 +18,8 @@ enum class Skill(
 ) {
     HELLFIRE(KeyEvent.VK_1),           // a(1): 헬파이어
     GONGJEUNG(KeyEvent.VK_2),          // b(2): 공력증강
-    CHUM1(KeyEvent.VK_3, minIntervalMillis = 400), // c(3): 극진뢰격참주'첨
-    CHUM2(KeyEvent.VK_4, minIntervalMillis = 400), // d(4): 진뢰격참주'첨
+    CHUM1(KeyEvent.VK_3, minIntervalMillis = 100), // c(3): 극진뢰격참주'첨
+    CHUM2(KeyEvent.VK_4, minIntervalMillis = 100), // d(4): 진뢰격참주'첨
     HONDON(KeyEvent.VK_5),             // e(5): 혼돈
     JUNGDOK(KeyEvent.VK_6),            // f(6): 중독
     JEOJU(KeyEvent.VK_7, rateGroup = RateGroup.CURSE),   // g(7): 저주

@@ -90,17 +90,17 @@ class MacroDetailAction2(
     /**
      * 첨첨. 할 일은 전부 UseCase이고, [MacroEngine]이 상태를 보고 하나씩 골라 실행한다.
      *
-     * 앞에서부터 할 일이 있는 첫 번째를 실행한다:
-     * 공증 > 삼매진화 > 헬파이어 > 첨(극진뢰·진뢰 각각 0.4초) > 자힐 > 평타(0.45초) > 마기지체 > 보무 > 저주(사방, 5초 쉼) > 6번 맵 전체(10초 쉼)
-     * 첨은 0.4초마다만 준비되므로 앞에 둬도 뒤의 일이 굶지 않는다.
+     * 우선(앞에서부터, 할 일이 있으면 바로): 공증 > 삼매진화 > 헬파이어 > 자힐(체력 90% 미만) > 평타 > 마기지체 > 보무 > 저주(사방)
+     * 공격(우선 일을 한 번 하면 다음 한 번은 공격 차례): 첨 세 번에 6번 맵 전체 한 번
+     * 평타: 마법을 하나 쓸 때마다 바로 뒤에 스페이스(0.15초 안에 이미 눌렀으면 건너뜀). 할 일이 없을 때도 0.15초마다 누른다
      * 사용자가 방향키로 이동 중이면 아무것도 안 한다.
      */
     suspend fun chumChum() = withContext(Dispatchers.Default) {
         val basicAttack = BasicAttackUseCase()
         val attackBetween: suspend () -> Unit = { if (basicAttack.isReady(System.currentTimeMillis())) basicAttack.execute() }
         MacroEngine(
-            priority = listOf(mana, sammeUseCase, HellfireUseCase({ latestDirection }), ChumUseCase(), selfHeal, basicAttack, magi, bomu, CurseAroundUseCase(attackBetween), DespairSpreadUseCase({ latestDirection }, attackBetween)),
-            rotation = emptyList(),
+            priority = listOf(mana, sammeUseCase, HellfireUseCase({ latestDirection }), selfHeal, basicAttack, magi, bomu, CurseAroundUseCase(attackBetween)),
+            rotation = ChumUseCase().let { chum -> listOf(chum, chum, chum, DespairSpreadUseCase({ latestDirection }, attackBetween)) },
             between = basicAttack,
         ).run()
     }
