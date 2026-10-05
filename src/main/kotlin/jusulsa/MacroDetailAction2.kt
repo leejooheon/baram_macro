@@ -99,7 +99,7 @@ class MacroDetailAction2(
         val basicAttack = BasicAttackUseCase()
         val attackBetween: suspend () -> Unit = { if (basicAttack.isReady(System.currentTimeMillis())) basicAttack.execute() }
         MacroEngine(
-            priority = listOf(mana, sammeUseCase, HellfireUseCase({ latestDirection }), ChumUseCase(), selfHeal, basicAttack, magi, bomu, CurseAroundUseCase(attackBetween), DespairSpreadUseCase({ latestDirection }, attackBetween)),
+            priority = listOf(mana, sammeUseCase, HellfireUseCase({ latestDirection }), ChumUseCase({ latestDirection }), selfHeal, basicAttack, magi, bomu, CurseAroundUseCase(attackBetween), DespairSpreadUseCase({ latestDirection }, attackBetween)),
             rotation = emptyList(),
             between = basicAttack,
         ).run()

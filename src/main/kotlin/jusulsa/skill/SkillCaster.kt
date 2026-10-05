@@ -20,6 +20,11 @@ object SkillCaster {
     private val limiters = RateGroup.entries.associateWith { RateLimiter(it.limit) }
     private val lastCastAt = ConcurrentHashMap<Skill, Long>()
 
+    /** 마지막으로 잡은 대상이 나인지. 자힐·삼매처럼 HOME으로 나를 잡으면 그 뒤 숫자 칸 마법이 나에게 간다 */
+    @Volatile
+    var targetIsMe: Boolean = false
+        private set
+
     /** 규칙을 지킬 수 있을 때까지 기다렸다가 시전한다 */
     suspend fun cast(skill: Skill, target: Target = Target.Current) {
         while (true) {
@@ -61,6 +66,11 @@ object SkillCaster {
             }
         }
 
+        when (target) {
+            Target.Me -> targetIsMe = true
+            is Target.Direction -> targetIsMe = false
+            else -> Unit
+        }
         // 마지막 키를 보낸 시점을 시전 시각으로 센다. 시작할 때 확인했고 그 사이엔 락을 잡고 있었으므로 제한을 넘지 않는다
         val castAt = now()
         skill.rateGroup?.let { limiters.getValue(it).record(castAt) }
