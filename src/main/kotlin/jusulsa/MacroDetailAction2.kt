@@ -96,12 +96,13 @@ class MacroDetailAction2(
      * 사용자가 방향키로 이동 중이면 아무것도 안 한다.
      */
     suspend fun chumChum() = withContext(Dispatchers.Default) {
+        // 시험: 평타(스페이스)를 끄고 첨이 게임에서 나가는지 본다. 평타가 첨을 씹히게 하는지 확인용
         val basicAttack = BasicAttackUseCase()
-        val attackBetween: suspend () -> Unit = { if (basicAttack.isReady(System.currentTimeMillis())) basicAttack.execute() }
+        val attackBetween: suspend () -> Unit = { if (BASIC_ATTACK_ON && basicAttack.isReady(System.currentTimeMillis())) basicAttack.execute() }
         MacroEngine(
-            priority = listOf(mana, sammeUseCase, HellfireUseCase({ latestDirection }), selfHeal, basicAttack, magi, bomu, CurseAroundUseCase(attackBetween)),
+            priority = listOfNotNull(mana, sammeUseCase, HellfireUseCase({ latestDirection }), selfHeal, basicAttack.takeIf { BASIC_ATTACK_ON }, magi, bomu, CurseAroundUseCase(attackBetween)),
             rotation = ChumUseCase().let { chum -> listOf(chum, chum, chum, DespairSpreadUseCase({ latestDirection }, attackBetween)) },
-            between = basicAttack,
+            between = basicAttack.takeIf { BASIC_ATTACK_ON },
         ).run()
     }
 
@@ -112,4 +113,8 @@ class MacroDetailAction2(
         Keyboard.pressAndRelease(KeyEvent.VK_TAB, duration)
     }
 
+    companion object {
+        /** 평타(스페이스) 사용 여부. 첨이 씹히는 원인인지 확인하려고 잠시 끔 */
+        const val BASIC_ATTACK_ON = false
+    }
 }
