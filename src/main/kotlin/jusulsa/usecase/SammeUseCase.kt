@@ -16,6 +16,7 @@ class SammeUseCase(
 ) {
     private var lastCastAt: Long? = null
 
+
     fun canCast(): Boolean {
         val time = now()
         // 쓴 직후에는 쿨타임 박스에 아직 안 잡힌다
@@ -24,17 +25,6 @@ class SammeUseCase(
                 println("[SammeUseCase] 방어: 최근 5초 이내에 이미 사용함")
                 return false 
             }
-        }
-
-        val vitals = ocr.state.value.freshVitals(time)
-        if (vitals == null) {
-            println("[SammeUseCase] 방어: freshVitals(체력바 OCR) 읽기 실패 또는 지연됨")
-            return false
-        }
-        val hp = vitals.hpPercent
-        if (hp < FULL_HP_PERCENT) {
-            println("[SammeUseCase] 방어: 체력이 $hp% 라서 시도 안 함 (기준: $FULL_HP_PERCENT%)")
-            return false
         }
 
         val cooldown = ocr.state.value.fresh(TimerRegion.COOLDOWN, time)
@@ -63,8 +53,6 @@ class SammeUseCase(
 
     companion object {
         const val NAME = "삼매진화"
-        /** 자힐 기준(HealUseCase.HEAL_BELOW_PERCENT)과 같게 둬야 힐 뒤에 삼매가 나간다 */
-        const val FULL_HP_PERCENT = 90
         const val RECAST_GUARD_MILLIS = 5_000L
     }
 }

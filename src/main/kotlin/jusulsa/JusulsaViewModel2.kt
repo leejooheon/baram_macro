@@ -48,7 +48,7 @@ class JusulsaViewModel2 {
 
             // 개편 중이라 나머지 단축키는 잠시 꺼둔다
 //            NativeKeyEvent.VC_PAGE_UP -> hellfire()
-//            NativeKeyEvent.VC_PAGE_DOWN -> execute { macroDetailAction.mabeAroundMe() }
+            NativeKeyEvent.VC_PAGE_DOWN -> actionJob?.cancel()
 //            NativeKeyEvent.VC_SLASH -> execute { macroDetailAction.mabeAroundMe() }
 //            NativeKeyEvent.VC_BACK_SLASH -> execute { macroDetailAction.maagi() }
 //            NativeKeyEvent.VC_KANJI -> execute { macroDetailAction.jeoju() }

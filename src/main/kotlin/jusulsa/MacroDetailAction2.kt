@@ -8,6 +8,7 @@ import jusulsa.skill.SkillCaster.cast
 import jusulsa.skill.Target
 import jusulsa.usecase.BomuUseCase
 import jusulsa.usecase.HealUseCase
+import jusulsa.usecase.HellfireUseCase
 import jusulsa.usecase.MagiUseCase
 import jusulsa.usecase.ManaUseCase
 import jusulsa.usecase.SammeUseCase
@@ -30,11 +31,13 @@ class MacroDetailAction2(
     private val selfHeal: HealUseCase = HealUseCase(),
     private val mana: ManaUseCase = ManaUseCase(),
     private val sammeUseCase: SammeUseCase = SammeUseCase(),
+    private val hellfireUseCase: HellfireUseCase = HellfireUseCase(),
 ) {
     private var latestDirection: Int = KeyEvent.VK_LEFT
 
     fun onDirectionChanged(event: Int) {
         latestDirection = event
+        hellfireUseCase.latestDirection = event
     }
 
     suspend fun hellfire() = Keyboard.atomic {
@@ -96,9 +99,25 @@ class MacroDetailAction2(
      * 5. 남는 시간에 저주 5초 -> 4방향 중독 30초 반복
      */
     suspend fun chumChum() = kotlinx.coroutines.coroutineScope {
-        val attack = CursePoisonCycle()
+        var lastJeojuTime = 0L
+        val jeojuQueue = ArrayDeque<Int>()
 
-        // 1. 공격 전담 코루틴: 첨첨 마법 2개는 최우선으로 끊임없이 발사 (이동 중이 아닐 때만)
+        var lastJungdokTime = 0L
+        // 1-1. 평타 전담 코루틴: 140ms 간격으로 스페이스바 연타 (예전 코드 템포 그대로 복구)
+        launch(Dispatchers.Default) {
+            while (isActive) {
+                val moving = UserInput.waitMillis()
+                if (moving > 0) {
+                    delay(moving)
+                    continue
+                }
+                // 아주 짧은 락(10ms)만 걸고 바로 빠짐
+                Keyboard.pressAndRelease(KeyEvent.VK_SPACE, 10L)
+                delay(140)
+            }
+        }
+        
+        // 1-2. 첨첨 전담 코루틴: 3번, 4번 마법을 400ms, 520ms 간격으로 교차 시전 (예전 코드 템포 그대로 복구)
         launch(Dispatchers.Default) {
             while (isActive) {
                 val moving = UserInput.waitMillis()
@@ -107,13 +126,16 @@ class MacroDetailAction2(
                     continue
                 }
                 
-                if (!chum()) {
-                    delay(IDLE_MILLIS)
-                }
+                // 복잡한 SkillCaster 판정을 거치지 않고 다이렉트로 키를 꽂음
+                Keyboard.pressAndRelease(Skill.CHUM1.key, 10L)
+                delay(400)
+                
+                Keyboard.pressAndRelease(Skill.CHUM2.key, 10L)
+                delay(520)
             }
         }
-
-        // 2. 보조 전담 코루틴: 힐, 저주/중독, 삼매, 버프 등은 선택적으로 돌아감
+        
+        // 2. 보조 전담 코루틴: 공증, 헬파, 삼매, 보무, 마기, 저주, 중독
         launch(Dispatchers.Default) {
             while (isActive) {
                 val moving = UserInput.waitMillis()
@@ -122,65 +144,32 @@ class MacroDetailAction2(
                     continue
                 }
 
-                // || (OR) 로 묶여 있어서 앞에서 하나라도 실행되면 뒤의 것은 스킵됨 (선택적 실행)
-                // 힐이나 마력 충전이 급하면 먼저 하고, 여유 있을 때 삼매나 저주/중독을 건다
-                val casted = selfHeal() || mana() ||
-                    bomu() || magi() || sammeUseCase() ||
-                    attack.step()
+
+                val now = System.currentTimeMillis()
+                
+                // 7초가 지났고 큐가 비어있다면 4방향 대기열에 추가
+                if (now - lastJeojuTime >= 7000L && jeojuQueue.isEmpty()) {
+                    jeojuQueue.addAll(DIRECTIONS)
+                    lastJeojuTime = now
+                }
+
+                // 우선순위: 공증 -> 헬파 -> 삼매 -> 보무 -> 마기 -> 저주(큐에 남은 것 1개씩 처리)
+                val casted = mana() || hellfireUseCase() || sammeUseCase() || bomu() || magi() ||
+                    (jeojuQueue.isNotEmpty() && Keyboard.atomic {
+                        val dir = jeojuQueue.removeFirst()
+                        SkillCaster.tryCast(Skill.JEOJU, Target.Direction(dir, fromMe = true))
+                    })
                 
                 if (!casted) {
                     delay(IDLE_MILLIS)
                 } else {
-                    // 보조 마법을 하나 걸었으면, 공격(첨첨) 코루틴이 키보드를 쓸 수 있도록 잠깐 숨을 고름
+                    // 보조 마법을 하나 시전했으면, 공격 코루틴이 틈을 탈 수 있게 잠깐 딜레이
                     delay(60L)
                 }
             }
         }
     }
 
-    private suspend fun chum(): Boolean {
-        val skill = CHUMS.firstOrNull { SkillCaster.readyIn(it) == 0L } ?: return false
-        cast(skill)
-        return true
-    }
-
-    /** 저주와 중독을 0.5초 간격으로 번갈아가며 4방향으로 골고루 건다 */
-    private class CursePoisonCycle {
-        private var lastCastAt = 0L
-        private val interval = 500L // 0.5초 간격으로 하나씩 시전
-        private var isJeojuTurn = true
-        private var directionIndex = 0
-
-        /** 지금 쓸 수 있으면 하나 쓴다. 썼으면 true */
-        suspend fun step(): Boolean {
-            val now = System.currentTimeMillis()
-            if (now - lastCastAt < interval) return false
-
-            val dir = DIRECTIONS[directionIndex]
-            var casted = false
-            
-            if (isJeojuTurn) {
-                if (SkillCaster.readyIn(Skill.JEOJU) == 0L) {
-                    if (Keyboard.atomic { SkillCaster.tryCast(Skill.JEOJU, Target.Direction(dir)) }) {
-                        casted = true
-                        isJeojuTurn = false // 다음엔 중독
-                        lastCastAt = now
-                    }
-                }
-            } else {
-                if (SkillCaster.readyIn(Skill.JUNGDOK) == 0L) {
-                    if (Keyboard.atomic { SkillCaster.tryCast(Skill.JUNGDOK, Target.Direction(dir)) }) {
-                        casted = true
-                        isJeojuTurn = true // 다음엔 저주
-                        directionIndex = (directionIndex + 1) % DIRECTIONS.size // 중독까지 걸었으면 다음 방향으로 회전
-                        lastCastAt = now
-                    }
-                }
-            }
-            
-            return casted
-        }
-    }
     suspend fun tabTab() = Keyboard.atomic {
         val duration = 30L
         Keyboard.pressAndRelease(KeyEvent.VK_TAB, duration)

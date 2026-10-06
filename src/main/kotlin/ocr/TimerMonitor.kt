@@ -53,6 +53,11 @@ object TimerMonitor {
     )
     val state: StateFlow<TimerMonitorState> = _state.asStateFlow()
 
+    fun focusGameWindow() {
+        window?.let { GameWindowCapture.setForeground(it) }
+    }
+
+
     fun start() {
         if (job?.isActive == true) return
         _state.update { it.copy(isRunning = true) }
