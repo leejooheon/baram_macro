@@ -16,7 +16,7 @@ import java.awt.event.KeyEvent
 /**
  * 도적용 경량 매크로.
  * - F2: 스페이스 연타(100ms에 1번) 켜기/끄기
- * - ` 누르면 8, / 누르면 , 를 대신 보낸다(원래 키는 게임에 안 넘어간다). 꾹 누르면 그대로 꾹 누른 것처럼 동작한다.
+ * - 켜져 있는 동안만 ` 누르면 8, / 누르면 , 를 대신 보낸다(원래 키는 게임에 안 넘어간다). 꾹 누르면 그대로 꾹 누른 것처럼 동작한다.
  */
 object DojeokMacro {
     private const val SPACE_INTERVAL = 100L
@@ -34,11 +34,14 @@ object DojeokMacro {
         private set
 
     private val listener = object : KeyHook.Listener {
-        override val consumeKeys = remap.keys + NativeKeyEvent.VC_F2
+        // 꺼져 있을 땐 ` 와 / 를 그대로 게임에 넘긴다
+        override val consumeKeys: Set<Int>
+            get() = if (isRunning) remap.keys + NativeKeyEvent.VC_F2 else setOf(NativeKeyEvent.VC_F2)
 
         override fun onKey(keyCode: Int, pressed: Boolean) {
             remap[keyCode]?.let { target ->
-                if (pressed) Keyboard.press(target) else Keyboard.release(target)
+                // 끈 뒤에 뗀 키는 눌린 채로 남지 않게 항상 떼 준다
+                if (pressed && isRunning) Keyboard.press(target) else if (!pressed) Keyboard.release(target)
                 return
             }
             if (keyCode == NativeKeyEvent.VC_F2 && pressed) toggle()
