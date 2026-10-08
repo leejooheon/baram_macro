@@ -22,6 +22,7 @@ class OcrClient(
     suspend fun readTimers(
         bufferedImage: BufferedImage
     ): Result<TimerOcrModel, NetworkError> = withContext(Dispatchers.IO) {
+        ImageIO.setUseCache(false) // 임시 파일 대신 메모리를 쓰도록 설정 (디스크 I/O 병목 및 NPE 방지)
         val bytes = ByteArrayOutputStream().use {
             ImageIO.write(bufferedImage, "png", it)
             it.toByteArray()
@@ -45,7 +46,14 @@ class OcrClient(
         }
 
         return@withContext when(val status = response.status.value) {
-            in 200..299 -> Result.Success(response.body<TimerOcrModel>())
+            in 200..299 -> {
+                try {
+                    Result.Success(response.body<TimerOcrModel>())
+                } catch (e: Exception) {
+                    // 가끔 서버 응답이 꼬여서 JsonArray 등 엉뚱한 포맷이 날아와도 앱이 죽지 않게 방어
+                    Result.Error(NetworkError.SERVER_ERROR)
+                }
+            }
             else -> parseError(status)
         }
     }

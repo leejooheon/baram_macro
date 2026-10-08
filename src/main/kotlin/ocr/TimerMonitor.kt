@@ -33,12 +33,10 @@ import java.awt.image.BufferedImage
  */
 object TimerMonitor {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    /** 체력/마력 막대를 읽는 주기 */
-    private const val VITALS_INTERVAL_MILLIS = 200L
     // 매 요청마다 PNG 본문을 로그로 찍지 않도록 로그를 끈 클라이언트를 따로 쓴다
     private val client = OcrClient(createHttpClient(logLevel = LogLevel.NONE))
     private var job: Job? = null
-    @Volatile private var window: GameWindowCapture.GameWindow? = null
+    private var window: GameWindowCapture.GameWindow? = null
 
     private val _state = MutableStateFlow(
         RegionStore.load().let { saved ->
@@ -55,20 +53,15 @@ object TimerMonitor {
     )
     val state: StateFlow<TimerMonitorState> = _state.asStateFlow()
 
+    fun focusGameWindow() {
+        window?.let { GameWindowCapture.setForeground(it) }
+    }
+
+
     fun start() {
         if (job?.isActive == true) return
         _state.update { it.copy(isRunning = true) }
         job = scope.launch {
-            // 체력/마력은 서버를 거치지 않아 빠르니 OCR 주기와 따로 자주 읽는다.
-            // OCR 서버가 느려도 막대 값은 늦어지지 않고, 마력이 떨어지면 바로 상태에 반영된다
-            launch {
-                while (isActive) {
-                    val startedAt = System.currentTimeMillis()
-                    tickVitals()
-                    val elapsed = System.currentTimeMillis() - startedAt
-                    delay((VITALS_INTERVAL_MILLIS - elapsed).coerceAtLeast(20))
-                }
-            }
             checkServer()
             while (isActive) {
                 val startedAt = System.currentTimeMillis()
@@ -116,26 +109,12 @@ object TimerMonitor {
         _state.update { it.copy(server = server) }
     }
 
-    /** 쿨타임 박스, 버프 패널 같은 OCR 영역을 읽는다 */
     private suspend fun tick() {
-        val regions = TimerRegion.entries.filter { it.usesOcr }
-        val (capture, capturedAt) = capture(regions) ?: return
-        regions.forEachIndexed { i, region -> read(region, capture.images[i], capturedAt) }
-        if (state.value.server is ServerState.Unknown) checkServer()
-    }
-
-    /** 체력/마력 막대를 색으로 잰다 */
-    private fun tickVitals() {
-        val regions = TimerRegion.entries.filter { !it.usesOcr }
-        val (capture, capturedAt) = capture(regions) ?: return
-        regions.forEachIndexed { i, region -> readVitals(region, capture.images[i], capturedAt) }
-    }
-
-    /** 게임 창 전체가 아니라 영역들만 옮겨 온다 */
-    private fun capture(regions: List<TimerRegion>): Pair<GameWindowCapture.RegionCapture, Long>? {
         val capturedAt = System.currentTimeMillis()
-        val target = findWindow() ?: return null
+        val target = findWindow() ?: return
+        val regions = TimerRegion.entries
         val fractions = regions.map { state.value.regions.getValue(it).fraction }
+        // 게임 창 전체가 아니라 영역들만 옮겨 온다
         val capture = runCatching { GameWindowCapture.captureRegions(target, fractions) }.getOrNull()
         _state.update {
             it.copy(
@@ -143,7 +122,16 @@ object TimerMonitor {
                          else WindowState.Found(target.title, capture.windowSize.width, capture.windowSize.height)
             )
         }
-        return capture?.let { it to capturedAt }
+        capture ?: return
+        // 체력/마력은 서버를 거치지 않으니 먼저 읽는다. OCR 서버가 느리거나 꺼져 있으면
+        // 요청마다 수 초씩 걸려서, 뒤에 읽으면 매크로가 쓰기 전에 값이 오래된 것으로 버려진다
+        regions.forEachIndexed { i, region ->
+            if (!region.usesOcr) readVitals(region, capture.images[i], capturedAt)
+        }
+        regions.forEachIndexed { i, region ->
+            if (region.usesOcr) read(region, capture.images[i], capturedAt)
+        }
+        if (state.value.server is ServerState.Unknown) checkServer()
     }
 
     private fun findWindow(): GameWindowCapture.GameWindow? {

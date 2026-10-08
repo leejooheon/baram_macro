@@ -1,7 +1,6 @@
 package jusulsa.usecase
 
-import common.robot.UserInput
-import jusulsa.engine.MacroUseCase
+import common.robot.Keyboard
 import jusulsa.skill.RateGroup
 import jusulsa.skill.Skill
 import jusulsa.skill.SkillCaster
@@ -16,29 +15,30 @@ import ocr.OcrStateHolder
 class HealUseCase(
     private val ocr: OcrStateHolder = OcrStateHolder,
     private val now: () -> Long = System::currentTimeMillis,
-) : MacroUseCase {
-    override val name = "자힐"
-
+) {
     fun needsHeal(): Boolean {
         val hp = ocr.state.value.freshVitals(now())?.hpPercent ?: return false
         return hp < HEAL_BELOW_PERCENT
     }
 
-    /** 체력이 부족하고 이번 1초에 힐이 남아 있으면 */
-    override fun isReady(now: Long) =
-        needsHeal() && SkillCaster.remaining(RateGroup.HEAL) > 0 && SkillCaster.readyIn(Skill.HEAL) == 0L
-
-    /** 남은 만큼 몰아서 쓴다. 첫 번째만 나를 잡고 나머지는 직전 대상(나)에게 */
-    override suspend fun execute() {
+    /** 체력이 부족하고 이번 1초에 힐이 남아 있으면 남은 만큼 자힐한다. 기다리지 않는다. 했으면 true */
+    suspend operator fun invoke(): Boolean {
+        if (!needsHeal()) return false
         val count = SkillCaster.remaining(RateGroup.HEAL)
-        if (!SkillCaster.tryCast(Skill.HEAL, Target.Me)) return
-        repeat(count - 1) {
-            if (UserInput.isMoving()) return
-            SkillCaster.tryCast(Skill.HEAL)
+        if (count <= 0 || SkillCaster.readyIn(Skill.HEAL) > 0) return false
+
+        Keyboard.atomic {
+            if (!SkillCaster.tryCast(Skill.HEAL, Target.Me)) return@atomic
+            repeat(count - 1) { 
+                if (common.robot.UserInput.isMoving()) return@atomic
+                SkillCaster.tryCast(Skill.HEAL) 
+            }
         }
+        return true
     }
 
     companion object {
+        /** 삼매진화 기준(SammeUseCase.FULL_HP_PERCENT)과 같게 둬야 힐도 삼매도 안 나가는 구간이 없다 */
         const val HEAL_BELOW_PERCENT = 90
     }
 }
