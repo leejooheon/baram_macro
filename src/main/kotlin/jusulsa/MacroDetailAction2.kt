@@ -3,7 +3,6 @@ package jusulsa
 import common.robot.Keyboard
 import common.robot.UserInput
 import jusulsa.skill.Skill
-import jusulsa.skill.SkillCaster
 import jusulsa.skill.SkillCaster.cast
 import jusulsa.skill.Target
 import jusulsa.usecase.BomuUseCase
@@ -13,6 +12,7 @@ import jusulsa.usecase.MagiUseCase
 import jusulsa.usecase.ManaUseCase
 import jusulsa.usecase.SammeUseCase
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
@@ -155,9 +155,9 @@ class MacroDetailAction2(
 
                 // 우선순위: 공증 -> 헬파 -> 삼매 -> 보무 -> 마기 -> 저주(큐에 남은 것 1개씩 처리)
                 val casted = mana() || hellfireUseCase() || sammeUseCase() || bomu() || magi() ||
-                    (jeojuQueue.isNotEmpty() && Keyboard.atomic {
-                        val dir = jeojuQueue.removeFirst()
-                        SkillCaster.tryCast(Skill.JEOJU, Target.Direction(dir, fromMe = true))
+                    (jeojuQueue.isNotEmpty() && run {
+                        holdCast(Skill.JEOJU, jeojuQueue.removeFirst())
+                        true
                     })
                 
                 if (!casted) {
@@ -167,6 +167,30 @@ class MacroDetailAction2(
                     delay(60L)
                 }
             }
+        }
+    }
+
+    /**
+     * 마법 칸 키 -> 방향키 -> 엔터를 차례로 누른 채 [HOLD_MILLIS] 동안 두면 게임이 그 방향으로 계속 시전한다.
+     * 저주, 중독, 절망이 같이 쓴다. 다른 마법은 칸만 바꿔 넘기면 된다.
+     */
+    suspend fun holdCast(skill: Skill, direction: Int, holdMillis: Long = HOLD_MILLIS) = Keyboard.atomic {
+        val keys = listOf(skill.key, direction, KeyEvent.VK_ENTER)
+        val pressed = mutableListOf<Int>()
+        try {
+            keys.forEach {
+                Keyboard.press(it)
+                pressed.add(it)
+                delay(Keyboard.DEFAULT_DELAY)
+            }
+            // 프로그램이 누른 키는 눌러만 둬서는 반복 입력이 안 생기므로, 실제 키보드처럼 마지막 키(엔터)를 계속 다시 누른다
+            val until = System.currentTimeMillis() + holdMillis
+            while (System.currentTimeMillis() < until) {
+                delay(REPEAT_MILLIS)
+                Keyboard.press(keys.last())
+            }
+        } finally {
+            withContext(NonCancellable) { pressed.reversed().forEach { Keyboard.release(it) } }
         }
     }
 
@@ -180,6 +204,10 @@ class MacroDetailAction2(
     companion object {
         /** 쓸 수 있는 마법이 없을 때 다시 고르기까지 쉬는 시간 */
         private const val IDLE_MILLIS = 20L
+        /** 저주·중독·절망 키를 누르고 있는 시간 (한 방향) */
+        private const val HOLD_MILLIS = 1_000L
+        /** 누르고 있는 동안 키를 다시 보내는 간격 (실제 키보드의 반복 입력 대신) */
+        private const val REPEAT_MILLIS = 30L
         private const val JEOJU_MILLIS = 5_000L
         private const val JUNGDOK_MILLIS = 30_000L
         private val CHUMS = listOf(Skill.CHUM1, Skill.CHUM2)
