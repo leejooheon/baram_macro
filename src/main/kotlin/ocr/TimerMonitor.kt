@@ -53,11 +53,8 @@ object TimerMonitor {
     )
     val state: StateFlow<TimerMonitorState> = _state.asStateFlow()
 
-    /** 게임 창을 앞으로 가져온다. 게임 창을 아직 못 찾았으면 false */
-    fun focusGameWindow(): Boolean {
-        val target = window ?: return false
-        GameWindowCapture.setForeground(target)
-        return true
+    fun focusGameWindow() {
+        window?.let { GameWindowCapture.setForeground(it) }
     }
 
 

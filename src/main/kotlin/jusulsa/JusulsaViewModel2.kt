@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
-import ocr.TimerMonitor
 import java.awt.Rectangle
 import java.awt.event.KeyEvent
 import kotlin.time.Duration.Companion.seconds
@@ -100,36 +99,6 @@ class JusulsaViewModel2 {
         }
     }
 
-    /**
-     * 테스트 탭: 게임 창을 앞으로 가져온 뒤 기능 하나만 실행한다.
-     * 게임 창을 못 찾았으면 그 사이에 게임 창을 직접 누를 수 있게 3초 기다린다.
-     */
-    fun test(name: String, block: suspend MacroDetailAction2.() -> Unit) {
-        execute {
-            val focused = TimerMonitor.focusGameWindow()
-            setTestStatus(if (focused) "$name 실행 중" else "$name: 3초 안에 게임 창을 눌러 주세요")
-            delay(if (focused) TEST_FOCUS_MILLIS else TEST_MANUAL_FOCUS_MILLIS)
-            setTestStatus("$name 실행 중")
-            try {
-                macroDetailAction.block()
-                setTestStatus("$name 끝")
-            } catch (e: CancellationException) {
-                setTestStatus("$name 멈춤")
-                throw e
-            }
-        }
-    }
-
-    /** 테스트 탭의 정지 버튼. 멈출 때 보내는 키(넘버락 등)가 게임에 가도록 게임 창을 먼저 앞으로 가져온다 */
-    fun stop() {
-        TimerMonitor.focusGameWindow()
-        actionJob?.cancel()
-    }
-
-    private fun setTestStatus(status: String) {
-        _uiState.update { it.copy(testStatus = status) }
-    }
-
     private fun observeScreens() = scope.launch {
         hellfireCount.collectLatest {
             _uiState.update { state -> state.copy(count = it) }
@@ -168,10 +137,6 @@ class JusulsaViewModel2 {
     }
 
     companion object {
-        /** 게임 창을 앞으로 가져온 뒤 키를 보내기까지 기다리는 시간 */
-        private const val TEST_FOCUS_MILLIS = 500L
-        private const val TEST_MANUAL_FOCUS_MILLIS = 3_000L
-
         /** 화면 우상단 스킬 쿨타임 박스 */
         private val COOLDOWN_RECT = Rectangle(1267, 60, 170, 120)
 

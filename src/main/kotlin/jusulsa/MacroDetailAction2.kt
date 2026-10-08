@@ -157,7 +157,7 @@ class MacroDetailAction2(
     }
 
     /** 3·4를 누른 채 넘버락을 누르면 게임이 첨을 알아서 계속 쓴다. 그 뒤엔 3·4를 떼도 된다 */
-    suspend fun startAutoChum() = Keyboard.atomic {
+    private suspend fun startAutoChum() = Keyboard.atomic {
         val chums = listOf(Skill.CHUM1.key, Skill.CHUM2.key)
         try {
             chums.forEach {
