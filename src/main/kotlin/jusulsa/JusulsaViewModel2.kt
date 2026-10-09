@@ -44,19 +44,19 @@ class JusulsaViewModel2 {
         UserInput.onKey(keyEvent, pressed = false)
 
         when(keyEvent) {
-            NativeKeyEvent.VC_BACKQUOTE -> execute { macroDetailAction.chumChum() }
+            NativeKeyEvent.VC_BACKQUOTE -> scope.launch { Keyboard.pressAndRelease(KeyEvent.VK_8) }
+            NativeKeyEvent.VC_PAGE_UP -> execute { macroDetailAction.chumChum() }
 
             // 개편 중이라 나머지 단축키는 잠시 꺼둔다
 //            NativeKeyEvent.VC_PAGE_UP -> hellfire()
-//            NativeKeyEvent.VC_PAGE_DOWN -> execute { macroDetailAction.mabeAroundMe() }
+            NativeKeyEvent.VC_PAGE_DOWN -> actionJob?.cancel()
 //            NativeKeyEvent.VC_SLASH -> execute { macroDetailAction.mabeAroundMe() }
 //            NativeKeyEvent.VC_BACK_SLASH -> execute { macroDetailAction.maagi() }
 //            NativeKeyEvent.VC_KANJI -> execute { macroDetailAction.jeoju() }
 //            NativeKeyEvent.VC_1 -> execute { macroDetailAction.heal() }
 //            NativeKeyEvent.VC_2 -> execute { macroDetailAction.mabee() }
 //            NativeKeyEvent.VC_3 -> execute { macroDetailAction.julmang() }
-//            NativeKeyEvent.VC_F1 -> execute { macroDetailAction.hondon() }
-//            NativeKeyEvent.VC_F4 -> execute { macroDetailAction.samme() }
+            NativeKeyEvent.VC_F1 -> execute { macroDetailAction.hondon() }
 
             NativeKeyEvent.VC_UP -> macroDetailAction.onDirectionChanged(KeyEvent.VK_UP)
             NativeKeyEvent.VC_LEFT -> macroDetailAction.onDirectionChanged(KeyEvent.VK_LEFT)
@@ -144,6 +144,7 @@ class JusulsaViewModel2 {
         // 매크로 단축키는 게임에 넘기지 않는다. 방향키와 ESC는 게임에서도 써야 하므로 뺀다
         internal val MACRO_KEYS = setOf(
             NativeKeyEvent.VC_BACKQUOTE,
+            NativeKeyEvent.VC_PAGE_UP,
         )
     }
     fun dispatchKeyPressEvent(keyEvent: Int) {
