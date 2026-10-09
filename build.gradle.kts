@@ -27,7 +27,7 @@ dependencies {
 
 compose.desktop {
     application {
-        // 다른 앱 실행: gradlew run -PmainClass=OcrMonitorKt (OCR 모니터)
+        // 다른 앱 실행: gradlew run -PmainClass=OcrMonitorKt (OCR 모니터), -PmainClass=DojeokKt (도적)
         mainClass = (findProperty("mainClass") as String?) ?: "JusulsaKt"
 
         nativeDistributions {
