@@ -35,7 +35,7 @@ sealed interface OcrMonitorEvent {
     data class ChangeWindowKeyword(val keyword: String) : OcrMonitorEvent
 }
 
-private val intervals = listOf(500L, 1000L, 2000L, 3000L)
+private val intervals = listOf(200L, 500L, 1000L, 2000L, 3000L)
 internal val SmallText = TextStyle(fontSize = 12.sp)
 
 @Composable

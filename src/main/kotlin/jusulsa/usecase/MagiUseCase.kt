@@ -1,6 +1,5 @@
 package jusulsa.usecase
 
-import jusulsa.engine.MacroUseCase
 import jusulsa.skill.Skill
 import jusulsa.skill.SkillCaster
 import ocr.OcrStateHolder
@@ -13,11 +12,8 @@ import ocr.model.TimerRegion
 class MagiUseCase(
     private val ocr: OcrStateHolder = OcrStateHolder,
     private val now: () -> Long = System::currentTimeMillis,
-) : MacroUseCase {
-    override val name = "마기지체"
+) {
     private var lastCastAt: Long? = null
-
-    override fun isReady(now: Long) = canCast()
 
     fun canCast(): Boolean {
         val time = now()
@@ -28,8 +24,11 @@ class MagiUseCase(
         return (entry.remainingSeconds(time) ?: return false) <= 0
     }
 
-    override suspend fun execute() {
-        if (SkillCaster.tryCast(Skill.MAGII)) lastCastAt = now()
+    /** 쿨이 돌았으면 마기지체를 건다. 걸었으면 true */
+    suspend operator fun invoke(): Boolean {
+        if (!canCast()) return false
+        cast()
+        return true
     }
 
     /** 쿨타임과 상관없이 바로 건다 (단축키용) */
