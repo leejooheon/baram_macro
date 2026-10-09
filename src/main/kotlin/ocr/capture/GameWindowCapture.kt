@@ -49,8 +49,11 @@ object GameWindowCapture {
         }, null)
         return found
     }
-
     fun isAlive(window: GameWindow): Boolean = User32.INSTANCE.IsWindow(window.hwnd)
+
+    fun setForeground(window: GameWindow) {
+        User32.INSTANCE.SetForegroundWindow(window.hwnd)
+    }
 
     /** 게임 창 클라이언트 영역 전체 (영역 지정 화면용). 창이 최소화돼 있으면 null */
     fun capture(window: GameWindow): BufferedImage? =
