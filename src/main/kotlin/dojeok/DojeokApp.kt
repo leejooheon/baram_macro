@@ -15,12 +15,15 @@ import java.awt.event.KeyEvent
 
 /**
  * 도적용 경량 매크로.
- * - F2: 스페이스 연타(100ms에 1번) 켜기/끄기
- * - F3: 1 연타(100ms에 1번) 켜기/끄기. 둘 중 하나만 돈다(다른 쪽을 누르면 그쪽으로 바뀐다)
+ * - F2: 스페이스 연타(50ms에 1번) 켜기/끄기
+ * - F3: 1 연타(50ms에 1번) 켜기/끄기. 둘 중 하나만 돈다(다른 쪽을 누르면 그쪽으로 바뀐다)
  * - 켜져 있는 동안만 ` 누르면 8, / 누르면 , 를 대신 보낸다(원래 키는 게임에 안 넘어간다). 꾹 누르면 그대로 꾹 누른 것처럼 동작한다.
  */
 object DojeokMacro {
-    private const val INTERVAL = 100L
+    private const val INTERVAL = 50L
+
+    // 누르고 있는 시간. 기본값(25ms 누름 + 25ms 쉼)이면 50ms 주기가 꽉 차서 밀리므로 줄인다
+    private const val HOLD = 20L
 
     // 단축키(VC) -> 연타할 키(AWT VK)
     private val toggleKeys = mapOf(
@@ -75,7 +78,7 @@ object DojeokMacro {
         repeatJob = scope.launch {
             var next = System.currentTimeMillis()
             while (isActive) {
-                Keyboard.pressAndRelease(key)
+                Keyboard.pressAndRelease(key, HOLD)
                 next += INTERVAL
                 delay((next - System.currentTimeMillis()).coerceAtLeast(0))
             }
