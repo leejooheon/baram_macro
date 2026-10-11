@@ -9,7 +9,7 @@ fun main() = application {
         onCloseRequest = ::exitApplication,
         title = "도적",
         state = rememberWindowState(
-            size = DpSize(240.dp, 160.dp),
+            size = DpSize(240.dp, 190.dp),
             position = WindowPosition.PlatformDefault,
         ),
         alwaysOnTop = true,

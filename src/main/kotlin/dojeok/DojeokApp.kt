@@ -17,6 +17,7 @@ import java.awt.event.KeyEvent
  * 도적용 경량 매크로.
  * - F2: 스페이스 연타(50ms에 1번) 켜기/끄기
  * - F3: 1 연타(50ms에 1번) 켜기/끄기. 둘 중 하나만 돈다(다른 쪽을 누르면 그쪽으로 바뀐다)
+ * - F1: 5초에 1번 ' → ↑ → Enter 켜기/끄기. F2/F3 연타와 따로 돈다
  * - 켜져 있는 동안만 ` 누르면 8, / 누르면 , 를 대신 보낸다(원래 키는 게임에 안 넘어간다). 꾹 누르면 그대로 꾹 누른 것처럼 동작한다.
  */
 object DojeokMacro {
@@ -25,6 +26,9 @@ object DojeokMacro {
     // 누르고 있는 시간. 기본값(25ms 누름 + 25ms 쉼)이면 50ms 주기가 꽉 차서 밀리므로 줄인다
     private const val HOLD = 20L
 
+    private const val LOOP_INTERVAL = 5000L
+    private val loopKeys = listOf(KeyEvent.VK_QUOTE, KeyEvent.VK_UP, KeyEvent.VK_ENTER)
+
     // 단축키(VC) -> 연타할 키(AWT VK)
     private val toggleKeys = mapOf(
         NativeKeyEvent.VC_F2 to KeyEvent.VK_SPACE,
@@ -32,6 +36,8 @@ object DojeokMacro {
     )
 
     // 사용자 키(VC) -> 대신 보낼 키(AWT VK)
+    private const val LOOP_KEY = NativeKeyEvent.VC_F1
+
     private val remap = mapOf(
         NativeKeyEvent.VC_BACKQUOTE to KeyEvent.VK_8,
         NativeKeyEvent.VC_SLASH to KeyEvent.VK_COMMA,
@@ -46,10 +52,16 @@ object DojeokMacro {
 
     val isRunning get() = repeatingKey != null
 
+    private var loopJob: Job? = null
+
+    /** F1 루프(' → ↑ → Enter) 켜짐 여부 */
+    var isLooping by mutableStateOf(false)
+        private set
+
     private val listener = object : KeyHook.Listener {
         // 꺼져 있을 땐 ` 와 / 를 그대로 게임에 넘긴다
         override val consumeKeys: Set<Int>
-            get() = if (isRunning) remap.keys + toggleKeys.keys else toggleKeys.keys
+            get() = if (isRunning) remap.keys + toggleKeys.keys + LOOP_KEY else toggleKeys.keys + LOOP_KEY
 
         override fun onKey(keyCode: Int, pressed: Boolean) {
             remap[keyCode]?.let { target ->
@@ -57,6 +69,7 @@ object DojeokMacro {
                 if (pressed && isRunning) Keyboard.press(target) else if (!pressed) Keyboard.release(target)
                 return
             }
+            if (pressed && keyCode == LOOP_KEY) return toggleLoop()
             if (pressed) toggleKeys[keyCode]?.let { toggle(it) }
         }
     }
@@ -84,6 +97,29 @@ object DojeokMacro {
             }
         }
     }
+
+    @Synchronized
+    fun toggleLoop() {
+        loopJob?.cancel()
+        loopJob = null
+        if (isLooping) {
+            isLooping = false
+            println("[도적] F1 루프 정지")
+            return
+        }
+        isLooping = true
+        println("[도적] F1 루프 시작")
+        loopJob = scope.launch {
+            var next = System.currentTimeMillis()
+            while (isActive) {
+                // 스페이스 연타가 사이에 끼지 않게 한 번에 보낸다
+                Keyboard.atomic { loopKeys.forEach { Keyboard.pressAndRelease(it) } }
+                println("[도적] ' ↑ Enter 보냄")
+                next += LOOP_INTERVAL
+                delay((next - System.currentTimeMillis()).coerceAtLeast(0))
+            }
+        }
+    }
 }
 
 @Composable
@@ -104,6 +140,11 @@ fun DojeokApp() {
                 },
                 color = if (key != null) Color(0xFF2E7D32) else Color.Gray,
                 style = MaterialTheme.typography.subtitle1,
+            )
+            Text(
+                text = if (DojeokMacro.isLooping) "F1 루프 중: 5초마다 ' ↑ Enter" else "F1 루프 꺼짐",
+                color = if (DojeokMacro.isLooping) Color(0xFF2E7D32) else Color.Gray,
+                style = MaterialTheme.typography.body2,
             )
             Text("` → 8", style = MaterialTheme.typography.body2)
             Text("/ → ,", style = MaterialTheme.typography.body2)
