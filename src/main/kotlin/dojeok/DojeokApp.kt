@@ -17,7 +17,7 @@ import java.awt.event.KeyEvent
  * 도적용 경량 매크로.
  * - F2: 스페이스 연타(50ms에 1번) 켜기/끄기
  * - F3: 1 연타(50ms에 1번) 켜기/끄기. 둘 중 하나만 돈다(다른 쪽을 누르면 그쪽으로 바뀐다)
- * - F1: 5초에 1번 ' → ↑ → Enter 켜기/끄기. F2/F3 연타와 따로 돈다
+ * - F1: 5초에 1번 ' → Enter 켜기/끄기. F2/F3 연타와 따로 돈다
  * - 켜져 있는 동안만 ` 누르면 8, / 누르면 , 를 대신 보낸다(원래 키는 게임에 안 넘어간다). 꾹 누르면 그대로 꾹 누른 것처럼 동작한다.
  */
 object DojeokMacro {
@@ -27,7 +27,7 @@ object DojeokMacro {
     private const val HOLD = 20L
 
     private const val LOOP_INTERVAL = 5000L
-    private val loopKeys = listOf(KeyEvent.VK_QUOTE, KeyEvent.VK_UP, KeyEvent.VK_ENTER)
+    private val loopKeys = listOf(KeyEvent.VK_QUOTE, KeyEvent.VK_ENTER)
 
     // 단축키(VC) -> 연타할 키(AWT VK)
     private val toggleKeys = mapOf(
@@ -54,7 +54,7 @@ object DojeokMacro {
 
     private var loopJob: Job? = null
 
-    /** F1 루프(' → ↑ → Enter) 켜짐 여부 */
+    /** F1 루프(' → Enter) 켜짐 여부 */
     var isLooping by mutableStateOf(false)
         private set
 
@@ -114,7 +114,7 @@ object DojeokMacro {
             while (isActive) {
                 // 스페이스 연타가 사이에 끼지 않게 한 번에 보낸다
                 Keyboard.atomic { loopKeys.forEach { Keyboard.pressAndRelease(it) } }
-                println("[도적] ' ↑ Enter 보냄")
+                println("[도적] ' Enter 보냄")
                 next += LOOP_INTERVAL
                 delay((next - System.currentTimeMillis()).coerceAtLeast(0))
             }
@@ -142,7 +142,7 @@ fun DojeokApp() {
                 style = MaterialTheme.typography.subtitle1,
             )
             Text(
-                text = if (DojeokMacro.isLooping) "F1 루프 중: 5초마다 ' ↑ Enter" else "F1 루프 꺼짐",
+                text = if (DojeokMacro.isLooping) "F1 루프 중: 5초마다 ' Enter" else "F1 루프 꺼짐",
                 color = if (DojeokMacro.isLooping) Color(0xFF2E7D32) else Color.Gray,
                 style = MaterialTheme.typography.body2,
             )
